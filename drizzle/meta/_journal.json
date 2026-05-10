@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778445066137,
+      "tag": "0000_init_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778446066234,
+      "tag": "0001_d2_full_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778447076274,
+      "tag": "0002_d2_rebuy",
+      "breakpoints": true
+    }
+  ]
+}

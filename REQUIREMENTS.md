@@ -1,0 +1,249 @@
+# DWIGHT — Requirements
+
+> **DWIGHT** is a generic, programmable drinking-game framework. The Game Master designs custom bets and rules; players bet money on round outcomes, and a parallel drink economy lets players cash out money by drinking.
+>
+> Marble racing is **not** the product. It is one **example Mode** used as battle-test content during development.
+
+---
+
+## 0. Vocabulary
+
+| Term | Meaning |
+|---|---|
+| **Session** | One play night. Has a host, players, money balances, and a bound Mode. |
+| **Mode** | A reusable game template (terminology, default entities, trackables, default config). Built-in or user-authored. |
+| **Entity** | The thing rounds are played with — a marble, a player, a card, a coin, anything. |
+| **Trackable** | A countable in-round event type defined on a Mode, scope=`global` or `entity` (e.g. foul, overtake). |
+| **RoundEvent** | One proposed counter increment (`+1`) for a Trackable (optionally for one Entity), then GM-confirmed or cancelled. |
+| **Predicate** | Boolean expression over counter values (`count(trackable, entity?) cmp n` with AND/OR/NOT). |
+| **BetMarket** | A round-scoped pool containing multiple Outcomes (predicates) that share one stake pool. |
+| **BetOutcome** | One labeled predicate inside a BetMarket. |
+| **Bet** | A player's stake on one BetOutcome. Money-only economy. |
+| **Drink** | A drink event: SCHLUCK, KURZER, or BIER_EXEN. Either SELF-issued (cash-out) or FORCE-issued (paid by attacker). |
+| **GameMaster (GM)** | Session host; runs rounds, declares outcomes, can confirm drinks, edits config. |
+
+---
+
+## 1. Identity & Branding (REQ-BRAND-***)
+
+- **REQ-BRAND-001** Product name is `DWIGHT`. Always set in caps in copy and frontend titles.
+- **REQ-BRAND-002** No tagline shipped in V1. Tagline slot reserved for future use.
+- **REQ-BRAND-003** Theme: dark, modern, "Quantum Plasma" — photon green primary, iris violet secondary, plasma pink accent, deep void base. Defined in `layout.css` as DaisyUI theme `dwight`.
+- **REQ-BRAND-004** Type stack: Space Grotesk (display/wordmark), Inter (body), Geist Mono (tabular numerics).
+- **REQ-BRAND-005** Logo mark: hex frame (photon→iris gradient), inner hex outline, plasma core with corner spark. Wordmark in Space Grotesk uppercase, weight 700, tracking 0.04em.
+- **REQ-BRAND-006** Mobile-first PWA: viewport-fit cover, manifest, favicon, theme-color `#050511`, install prompt later.
+- **REQ-BRAND-007** UI language: German (de-DE) for all player-facing copy. Code, comments, docs in English.
+
+---
+
+## 2. Authentication & Accounts (REQ-AUTH-***)
+
+- **REQ-AUTH-001** Username + password registration. Minimum 3 chars username (a-z 0-9 _ -), minimum 8 chars password.
+- **REQ-AUTH-002** Passwords stored only as argon2id hashes (no plaintext, no reversible scheme).
+- **REQ-AUTH-003** Session is a signed JWT in an HttpOnly Secure SameSite=Lax cookie named `dwight_session`. Issuer=`dwight`, Audience=`dwight-web`. Default lifetime 30 days; refreshed on each request.
+- **REQ-AUTH-004** Login endpoint is rate-limited per IP (sliding window, e.g. 10 attempts / 5 min). Failed attempts return generic error (no user-enumeration).
+- **REQ-AUTH-005** Logout clears the cookie server-side (POST `/logout`).
+- **REQ-AUTH-006** All session-scoped routes (`/s/:id/*`) reject unauthenticated requests with 302 to `/login`.
+- **REQ-AUTH-007** A user has a stable UUID `id` and a stable display `username`. Username is unique (case-sensitive at storage; UI shows as entered).
+
+---
+
+## 3. Modes (REQ-MODE-***)
+
+- **REQ-MODE-001** Every Session is bound to exactly one Mode at create-time. Mode is immutable for the Session's lifetime.
+- **REQ-MODE-002** Modes are stored in a `modes` table. Built-in Modes have `owner_user_id = null`. User-authored Modes have an owner.
+- **REQ-MODE-003** A Mode declares: slug (unique), name, description, terminology overrides (round noun / entity noun / live-verb), default entity list, Trackables (`id`, `label`, `scope`, optional visual attributes), and default config blob.
+- **REQ-MODE-004** Modes are user-authored by default; no mandatory built-in battle-test mode in V1.
+- **REQ-MODE-005** Session-create UI shows a Mode picker over the user's available Modes.
+- **REQ-MODE-006** A Mode's terminology is consulted by the UI helper `useTerminology(modeId)` which returns `{ round, entity, startedVerb }` with sensible defaults (`Runde` / `Entität` / `läuft`).
+
+---
+
+## 4. Entities (REQ-ENT-***)
+
+- **REQ-ENT-001** Entities are session-scoped. Created from `mode.defaultEntities` at Session creation.
+- **REQ-ENT-002** Each Entity has: kind (free text, e.g. `marble`, `player`, `card`), name, attributes JSONB (color, emoji, image, etc.), order index.
+- **REQ-ENT-003** Host can edit, reorder, add, remove entities while no Round is LIVE.
+
+---
+
+## 5. Rounds (REQ-ROUND-***)
+
+- **REQ-ROUND-001** A Round has status `SETUP → BETTING_OPEN → LIVE → RESOLVING → SETTLED`. Forward-only transitions; no skipping (except `SETUP → CANCELLED` via host).
+- **REQ-ROUND-002** Only the GM can transition a Round status.
+- **REQ-ROUND-003** New bets are accepted only in `BETTING_OPEN`. They are locked at `LIVE`.
+- **REQ-ROUND-004** During `LIVE`, players may propose RoundEvents and the GM confirms or cancels them. Confirmed events mutate the round counter state; cancelled events do not count.
+- **REQ-ROUND-005** A Session has at most one non-SETTLED Round at a time.
+
+---
+
+## 6. Trackables & Predicates (REQ-TRACK-***)
+
+- **REQ-TRACK-001** A Trackable is defined at Mode-level and snapshotted onto each Session at create-time.
+- **REQ-TRACK-002** Trackable scope is either `global` (one counter per round) or `entity` (one counter per round and entity).
+- **REQ-TRACK-003** Predicates are AST JSON (`count` leaf with `gte/lte/eq`, plus `and/or/not`).
+- **REQ-TRACK-004** Predicate evaluation uses the round's confirmed counter snapshot at settle-time.
+
+---
+
+## 7. Round Events (REQ-EVENT-***)
+
+- **REQ-EVENT-001** A RoundEvent always represents `delta = +1` for a Trackable; it can target an Entity when scope=`entity`.
+- **REQ-EVENT-002** Players can propose events; only GM can confirm or cancel.
+- **REQ-EVENT-003** Undo is supported by cancelling a previously confirmed event (or equivalent negative correction internally), followed by re-evaluation at settle.
+- **REQ-EVENT-004** Event timeline is audit-visible (who proposed, who decided, when, status).
+
+---
+
+## 8. Markets & Outcomes (REQ-MARKET-***)
+
+- **REQ-MARKET-001** A BetMarket belongs to one Round and has 2..N Outcomes; all Outcomes in a market share one stake pool.
+- **REQ-MARKET-002** GM/Host creates BetMarkets (players do not create offers directly in V1).
+- **REQ-MARKET-003** Single-market creation auto-generates a counter-outcome: `JA` predicate plus `NEIN` = logical NOT.
+- **REQ-MARKET-004** Bulk entity-market creation creates one shared market with one outcome per Entity plus one auto `keine davon` outcome.
+- **REQ-MARKET-005** Bulk sibling outcomes share one market pool (multi-outcome market), not isolated mini-pools.
+- **REQ-MARKET-006** If multiple outcomes evaluate true at settle, the market pool is split equally across winning outcomes before bettor-level proportional payouts.
+
+---
+
+## 9. Bets & Settlement (REQ-BET-***)
+
+- **REQ-BET-001** A Bet locks: `outcome_id`, `stake`, `created_at`; stake is deducted immediately.
+- **REQ-BET-002** Bets are accepted only while market status is `OPEN` and round status is `BETTING_OPEN`.
+- **REQ-BET-003** On round settle, each outcome predicate is evaluated against the confirmed counter snapshot and marked winner/loser.
+- **REQ-BET-004** Market payout model is parimutuel, no house edge: full market pool is redistributed to winning outcomes (REQ-MARKET-006), then to winning bets proportionally by stake.
+- **REQ-BET-005** If a market has no winning outcomes, it is VOID and all stakes in that market are refunded.
+- **REQ-BET-006** Bet history is immutable once settled/voided.
+
+---
+
+## 10. Money Economy (REQ-ECON-***)
+
+- **REQ-ECON-001** Every player has a per-Session integer money balance (cents/units; never floats). Initial balance from `mode.defaultConfig.startingMoney`.
+- **REQ-ECON-002** Bet placement is atomic and validated against canonical money balance (no race conditions; PG transaction with row-level lock on `session_players`).
+- **REQ-ECON-003** On placement: stake is deducted immediately. On settle/void: payout or refund is credited exactly once.
+- **REQ-ECON-004** Payout math uses integer-safe distribution rules; residual rounding remainder stays deterministic (implementation-defined but consistent and audited).
+- **REQ-ECON-005** Bet history is immutable once SETTLED.
+
+---
+
+## 11. Live Market View (REQ-ODDS-***)
+
+- **REQ-ODDS-001** Players see dynamic, informational market metrics during betting (`pool total`, `stake per outcome`, `implied share`).
+- **REQ-ODDS-002** Displayed metrics are indicative only; actual payout is determined at settle-time by parimutuel distribution.
+- **REQ-ODDS-003** Market metrics are rebroadcast over SSE whenever a bet is accepted.
+
+---
+
+## 12. Drink Economy (REQ-DRINK-***)
+
+- **REQ-DRINK-001** Three drink tiers: `SCHLUCK` (sip), `KURZER` (shot), `BIER_EXEN` (chug a beer).
+- **REQ-DRINK-002** Each tier has a money value configured per Mode (`drinkPrices.{SCHLUCK,KURZER,BIER_EXEN}`). The same value serves both as the SELF cash-out and the FORCE price (single source of truth).
+- **REQ-DRINK-003** **SELF (cash-out)**: a player chooses a drink tier and self-issues a Drink with `origin = SELF`. On confirmation, the player's balance is credited by `priceSnapshot`.
+- **REQ-DRINK-004** **FORCE**: an attacker chooses a drink tier and a target. `priceSnapshot` is debited from the attacker. A Drink with `origin = FORCE` is created in PENDING status assigned to the target. On confirmation, **no money credit** to the target — force-drinks are pure punishment.
+- **REQ-DRINK-005** A Drink's `priceSnapshot` is captured at issue time and never changes if the Mode config later changes.
+- **REQ-DRINK-006** Confirmation rule per Mode (`confirmationMode`): `GM` (1 GM signoff), `PEERS` (N distinct peer signoffs, `peerConfirmationsRequired`), `EITHER` (whichever comes first satisfies).
+- **REQ-DRINK-007** A Drink can be cancelled by the GM at any time before confirmation. Cancelled SELF drinks do not credit. Cancelled FORCE drinks **refund** the attacker.
+- **REQ-DRINK-008** Only drink tiers in `mode.forceDrinkTypesAllowed` may be used to FORCE another player. SELF can use any tier.
+- **REQ-DRINK-009** Drinks are session-scoped, not round-scoped. They can be issued and confirmed at any time during the Session.
+- **REQ-DRINK-010** Self-confirming your own drink as a peer is forbidden. The target cannot count as a confirmation peer for their own Drink.
+
+---
+
+## 13. Rebuy via Drink (REQ-REBUY-***)
+
+- **REQ-REBUY-001** Each Session has a `rebuy` config object: `{ enabled: boolean, drinkType: DrinkType, amount: number }`. Defaults come from the Mode but the Host can override at session creation and via GM edit.
+- **REQ-REBUY-002** When `rebuy.enabled = true` and a player's `moneyBalance ≤ 0`, the player can self-trigger a Rebuy: the server creates a `Drink` row with `origin = SELF`, `drinkType = rebuy.drinkType`, `priceSnapshot = drinkPrices[drinkType]`, and `rebuy_amount = rebuy.amount`. The Drink starts as `PENDING`.
+- **REQ-REBUY-003** Money is **only** credited once the Drink is confirmed per the session's `confirmationMode` (GM / PEERS / EITHER). On confirmation, `+rebuy_amount` is added to the player's `moneyBalance` and the rebuy event is broadcast.
+- **REQ-REBUY-004** Rebuys are unlimited per player per session.
+- **REQ-REBUY-005** A pending rebuy does NOT immediately unlock the player; the player remains bet-blocked until the rebuy drink is confirmed (so they can't double-dip a single rebuy across rounds).
+- **REQ-REBUY-006** Rebuy state changes are broadcast via SSE so all clients update balances + lock indicators in real time.
+
+---
+
+## 14. Real-Time (REQ-RT-***)
+
+- **REQ-RT-001** Each Session has one SSE channel (`/s/:id/stream`). Authorized players subscribe; unauthorized requests close.
+- **REQ-RT-002** Event types broadcast:
+  - `round_opened`, `round_live`, `round_settled`, `round_cancelled`
+  - `round_event_proposed`, `round_event_confirmed`, `round_event_cancelled`
+  - `market_created`, `market_locked`, `market_settled`, `bet_placed`
+  - `market_metrics_updated` (market-id + per-outcome stakes/shares)
+  - `drink_initiated`, `drink_confirmed`, `drink_cancelled`
+  - `balance_updated` (per player)
+  - `bet_lock_changed` (per player)
+- **REQ-RT-003** Broadcaster is in-process for V1 (single Node process). Cluster/multi-instance defers to V2 (Redis pub/sub).
+- **REQ-RT-004** SSE messages carry only IDs and the diff. Clients re-fetch full state on reconnect.
+
+---
+
+## 15. UI Routes (REQ-UI-***)
+
+- **REQ-UI-001** Public:
+  - `/` — landing (guest) or lobby (logged-in)
+  - `/login`, `/register`
+- **REQ-UI-002** Authed:
+  - `/s/create` — Mode picker + session config overrides + initial entity edit
+  - `/s/join` — invite code
+  - `/s/:id` — session lobby (players, balances, drinks tab, history)
+  - `/s/:id/round` — current round (player view; market list, stake placement, live metrics)
+  - `/s/:id/round/host` — GM control panel (status transitions, event approvals, market creation, settle)
+  - `/s/:id/drinks` — drink dashboard (initiate self, force, confirm pending, history)
+  - `/s/:id/stats` — leaderboard + my stats + round history
+- **REQ-UI-003** All player-facing copy is German. Numbers use `tabular` (Geist Mono ss01).
+- **REQ-UI-004** Mobile viewports are first-class. Desktop is a side-effect of fluid layout.
+
+---
+
+## 16. Game Master Tools (REQ-GM-***)
+
+- **REQ-GM-001** GM can edit per-Session config (drink prices, confirmation mode, rebuy config, etc.) at any time. Changes take effect for new actions; existing Drinks keep their `priceSnapshot`.
+- **REQ-GM-002** GM defines BetMarkets per Round at SETUP/LIVE (within status constraints), including single and bulk entity markets.
+- **REQ-GM-003** GM moderates proposed RoundEvents (confirm/cancel) and can undo mistaken events.
+- **REQ-GM-004** GM can confirm or cancel any pending Drink. GM can manually adjust any player's balance (audit logged).
+
+---
+
+## 17. Stats (REQ-STAT-***)
+
+- **REQ-STAT-001** Per-Session leaderboard: balance, bets won/lost, ROI%, drinks (self/forced/forced-on-others), money won/lost.
+- **REQ-STAT-002** Per-player round history with stake / payout / drink list per round.
+- **REQ-STAT-003** All-time per-user stats live in `users.total_stats` JSONB. Updated transactionally with each bet resolve / drink confirm.
+
+---
+
+## 18. Data (REQ-DATA-***)
+
+- **REQ-DATA-001** PostgreSQL 16. Schema in Drizzle (typescript-first). All schema changes via Drizzle migrations.
+- **REQ-DATA-002** All money in **integer** units, no floats anywhere in the money or drink-price math.
+- **REQ-DATA-003** All timestamps `timestamptz`, written as UTC.
+- **REQ-DATA-004** JSONB used for: `mode.terminology`, `mode.default_entities`, `mode.trackables`, `mode.default_config`, `session.config`, `session.trackables`, `entity.attributes`, `bet_outcome.predicate`, `user.total_stats`.
+- **REQ-DATA-005** Foreign keys with `onDelete: cascade` between `session → entities/rounds/round_events/bet_markets/bet_outcomes/bets/drinks` so Session deletion is surgical.
+
+---
+
+## 19. Infra (REQ-INFRA-***)
+
+- **REQ-INFRA-001** Local dev: `docker-compose up` brings up `dwight-db` (postgres:16-alpine, port 5433) + `dwight-redis` (redis:7-alpine, port 6380, optional V2).
+- **REQ-INFRA-002** Migrations: `pnpm db:generate` (Drizzle Kit) + apply via the documented `psql -f` workflow when running headless. Interactive `pnpm db:push` for normal local work.
+- **REQ-INFRA-003** Production deploy is out of scope for the requirements doc. Sprint plan covers it.
+
+---
+
+## 20. Testing (REQ-TEST-***)
+
+- **REQ-TEST-001** Vitest unit tests for: predicate eval (AND/OR/NOT, global/entity counters), market settle math (single winner, multi-winner split, void), drink lifecycle (SELF + FORCE × confirmation modes), rebuy crediting on confirmation.
+- **REQ-TEST-002** Playwright E2E for: register/login, create Mode with trackables, create Session, create market (single + bulk), propose/confirm events, place bets, settle round, drink cash-out, force-drink confirmed by peers, rebuy via drink.
+- **REQ-TEST-003** Fixtures use explicit custom Modes and Trackables; no mandatory marble fixture.
+
+---
+
+## 21. Out of Scope (V1)
+
+- Multi-tenancy / org accounts
+- Pluggable BetTemplate marketplace (V1 has only the registry; sharing UI deferred)
+- Mobile native app (PWA only)
+- I18n beyond German
+- Loans / credit between players
+- Drinks scheduled to expire automatically
+- External event ingestion / automation (API/webhook/vision) for auto-counting events

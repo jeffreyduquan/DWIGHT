@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<defs>
+		<linearGradient id="hex" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+			<stop offset="0%" stop-color="#00FFA3" />
+			<stop offset="100%" stop-color="#A78BFA" />
+		</linearGradient>
+		<radialGradient id="core" cx="50%" cy="50%" r="50%">
+			<stop offset="0%" stop-color="#D7FFEB" />
+			<stop offset="60%" stop-color="#00FFA3" />
+			<stop offset="100%" stop-color="#00FFA3" stop-opacity="0" />
+		</radialGradient>
+		<filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+			<feGaussianBlur stdDeviation="2.5" />
+		</filter>
+	</defs>
+	<rect width="64" height="64" rx="14" fill="#050511" />
+	<polygon points="32,8 54,20 54,44 32,56 10,44 10,20" stroke="url(#hex)" stroke-width="2.5" stroke-linejoin="round" fill="none" />
+	<polygon points="32,16 46,24 46,40 32,48 18,40 18,24" stroke="#A78BFA" stroke-opacity="0.4" stroke-width="1" fill="none" />
+	<circle cx="32" cy="32" r="10" fill="url(#core)" filter="url(#glow)" />
+	<circle cx="32" cy="32" r="4" fill="#D7FFEB" />
+	<circle cx="54" cy="20" r="2.5" fill="#FF3D71" filter="url(#glow)" />
+</svg>

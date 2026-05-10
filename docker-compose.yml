@@ -1,0 +1,42 @@
+# DWIGHT — Docker Compose (LOCAL DEVELOPMENT)
+#
+# - Postgres 16 on host port 5433 (avoids clash with default 5432)
+# - Redis 7 on host port 6380 (deferred to V2 SSE multi-instance fan-out, but available now)
+# - Volumes namespaced so a teardown is unambiguous: `docker compose down -v`
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: dwight-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dwight
+      POSTGRES_PASSWORD: dwight
+      POSTGRES_DB: dwight
+    ports:
+      - '5433:5432'
+    volumes:
+      - dwight_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dwight -d dwight']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: dwight-redis
+    restart: unless-stopped
+    ports:
+      - '6380:6379'
+    volumes:
+      - dwight_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dwight_pgdata:
+  dwight_redisdata:

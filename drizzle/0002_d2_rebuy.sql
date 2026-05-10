@@ -1,0 +1,1 @@
+ALTER TABLE "drinks" ADD COLUMN "rebuy_amount" integer;
