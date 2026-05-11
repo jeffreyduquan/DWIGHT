@@ -2,4 +2,5 @@ packages:
   - '.'
 onlyBuiltDependencies:
   - '@tailwindcss/oxide'
+  - argon2
   - esbuild
