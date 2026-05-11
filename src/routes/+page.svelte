@@ -4,7 +4,10 @@
 -->
 <script lang="ts">
 	import Logo from '$lib/components/Logo.svelte';
+	import VersionFooter from '$lib/components/VersionFooter.svelte';
 	import { enhance } from '$app/forms';
+	import { LogOut, Plus, KeyRound, Layers, Shield, ArrowRight, Sparkles } from '@lucide/svelte';
+	import IconBubble from '$lib/components/IconBubble.svelte';
 
 	let { data } = $props();
 </script>
@@ -34,25 +37,23 @@
 				</div>
 
 				<div class="fade-up flex w-full flex-col gap-3" style="animation-delay: 160ms">
-					<a href="/register" class="btn btn-primary glow-primary h-14 rounded-xl text-base">
-						Konto erstellen
+					<a href="/register" class="btn btn-primary glow-primary h-14 gap-2 rounded-xl text-base">
+						Konto erstellen <ArrowRight size={16} />
 					</a>
-					<a href="/login" class="btn btn-ghost glass h-14 rounded-xl text-base">
-						Einloggen
+					<a href="/login" class="btn btn-ghost glass h-14 gap-2 rounded-xl text-base">
+						Einloggen <ArrowRight size={16} />
 					</a>
 				</div>
 			</header>
 
-			<footer class="text-base-content/40 tabular pt-12 text-center text-xs">
-				DWIGHT · v0.2
-			</footer>
+			<VersionFooter />
 		{:else}
 			<!-- Logged-in lobby placeholder (full sessions wiring lands in D2) -->
 			<header class="flex items-center justify-between">
 				<Logo size={36} showWordmark />
 				<form method="POST" action="/logout" use:enhance>
-					<button type="submit" class="text-base-content/50 hover:text-base-content text-sm">
-						Logout
+					<button type="submit" class="text-base-content/50 hover:text-base-content inline-flex items-center gap-1.5 text-sm transition">
+						<LogOut size={14} /> Logout
 					</button>
 				</form>
 			</header>
@@ -65,26 +66,29 @@
 			</section>
 
 			<section class="fade-up mt-10 flex-1" style="animation-delay: 80ms">
-				<h2 class="text-base-content/70 mb-4 text-sm font-medium uppercase tracking-wider">
-					Deine Sessions
-				</h2>
+				<div class="mb-4 flex items-center gap-2">
+					<IconBubble tone="primary" size="sm"><Layers size={14} /></IconBubble>
+					<h2 class="eyebrow">Deine Sessions</h2>
+				</div>
 
 				{#if data.sessions.length === 0}
-					<div class="glass rounded-2xl px-6 py-12 text-center">
-						<div class="mx-auto mb-4 opacity-40">
-							<Logo size={40} />
+					<div class="glass-xl px-6 py-12 text-center">
+						<div class="mx-auto mb-4 flex justify-center">
+							<IconBubble tone="neutral" size="lg"><Sparkles size={22} /></IconBubble>
 						</div>
 						<p class="text-base-content/60 text-sm">Noch keine Sessions.</p>
 					</div>
 				{:else}
-					<ul class="space-y-3">
+					<ul class="space-y-2">
 						{#each data.sessions as s (s.id)}
 							<li>
-								<a href="/s/{s.id}" class="glass block rounded-xl p-4 transition hover:scale-[1.01]">
-									<div class="flex items-baseline justify-between">
-										<span class="font-medium">{s.name}</span>
-										<span class="tabular text-base-content/50 text-xs">{s.inviteCode}</span>
+								<a href="/s/{s.id}" class="glass-interactive group flex items-center gap-3 rounded-xl p-3">
+									<IconBubble tone="primary" size="sm"><Layers size={14} /></IconBubble>
+									<div class="flex flex-1 flex-col">
+										<span class="font-medium leading-tight">{s.name}</span>
+										<span class="tabular-nums text-base-content/50 text-[0.65rem] uppercase tracking-wider">{s.inviteCode}</span>
 									</div>
+									<ArrowRight size={16} class="text-base-content/40 group-hover:text-primary transition" />
 								</a>
 							</li>
 						{/each}
@@ -93,23 +97,31 @@
 			</section>
 
 			<section class="fade-up mt-8 flex flex-col gap-3" style="animation-delay: 160ms">
-				<a href="/s/create" class="btn btn-primary glow-primary h-14 rounded-xl text-base">
-					Session erstellen
+				{#if data.isAdmin}
+					<a href="/s/create" class="btn btn-primary glow-primary h-14 gap-2 rounded-xl text-base">
+						<Plus size={18} /> Session erstellen
+					</a>
+				{/if}
+				<a href="/s/join" class="btn btn-ghost glass h-14 gap-2 rounded-xl text-base">
+					<KeyRound size={18} /> Mit Code beitreten
 				</a>
-				<a href="/s/join" class="btn btn-ghost glass h-14 rounded-xl text-base">
-					Mit Code beitreten
-				</a>
-				<a
-					href="/modes"
-					class="text-base-content/50 hover:text-base-content pt-2 text-center text-sm"
-				>
-					Modes verwalten →
-				</a>
+				{#if data.isAdmin}
+					<a
+						href="/modes"
+						class="text-base-content/50 hover:text-base-content inline-flex items-center justify-center gap-1.5 pt-2 text-center text-sm transition"
+					>
+						<Layers size={14} /> Modes verwalten <ArrowRight size={12} />
+					</a>
+					<a
+						href="/admin"
+						class="text-base-content/50 hover:text-base-content inline-flex items-center justify-center gap-1.5 text-center text-sm transition"
+					>
+						<Shield size={14} /> Admin-Panel <ArrowRight size={12} />
+					</a>
+				{/if}
 			</section>
 
-			<footer class="text-base-content/40 tabular pt-8 text-center text-xs">
-				DWIGHT · v0.2
-			</footer>
+			<VersionFooter isLoggedIn isAdmin={data.isAdmin} />
 		{/if}
 	</div>
 </main>

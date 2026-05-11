@@ -69,7 +69,7 @@
 
 ## 5. Rounds (REQ-ROUND-***)
 
-- **REQ-ROUND-001** A Round has status `SETUP → BETTING_OPEN → LIVE → RESOLVING → SETTLED`. Forward-only transitions; no skipping (except `SETUP → CANCELLED` via host).
+- **REQ-ROUND-001** A Round has status `SETUP → BETTING_OPEN → LIVE → RESOLVING → SETTLED`. Forward-only transitions. From any non-terminal state the GM can additionally transition to `CANCELLED`, which automatically voids all of the round's markets and refunds every stake.
 - **REQ-ROUND-002** Only the GM can transition a Round status.
 - **REQ-ROUND-003** New bets are accepted only in `BETTING_OPEN`. They are locked at `LIVE`.
 - **REQ-ROUND-004** During `LIVE`, players may propose RoundEvents and the GM confirms or cancels them. Confirmed events mutate the round counter state; cancelled events do not count.
@@ -100,9 +100,11 @@
 - **REQ-MARKET-001** A BetMarket belongs to one Round and has 2..N Outcomes; all Outcomes in a market share one stake pool.
 - **REQ-MARKET-002** GM/Host creates BetMarkets (players do not create offers directly in V1).
 - **REQ-MARKET-003** Single-market creation auto-generates a counter-outcome: `JA` predicate plus `NEIN` = logical NOT.
-- **REQ-MARKET-004** Bulk entity-market creation creates one shared market with one outcome per Entity plus one auto `keine davon` outcome.
+- **REQ-MARKET-004** Bulk entity-market creation creates one shared market with one outcome per Entity plus one auto `keine davon` outcome. _(Deferred to D5+; the engine already supports multi-outcome markets via `createMarket(outcomes[])`; UI form is binary-only in D3.)_
 - **REQ-MARKET-005** Bulk sibling outcomes share one market pool (multi-outcome market), not isolated mini-pools.
 - **REQ-MARKET-006** If multiple outcomes evaluate true at settle, the market pool is split equally across winning outcomes before bettor-level proportional payouts.
+- **REQ-MARKET-007** Market templates are defined at the **Mode** level (not per Round). Two template shapes: `binary_count` (counter `cmp` n, with `entityScope='global'` → one market or `'each'` → one market per session entity, supporting `{entity}` / `{n}` title placeholders) and `compare_entities` (one outcome per session entity = "strictly greatest counter", optional Gleichstand outcome). At round creation, all templates are auto-instantiated as concrete BetMarkets; ad-hoc market creation in the Round UI is hidden behind a HOST-only "Manueller Markt (Override)" disclosure.
+- **REQ-MARKET-008** Predicate engine supports `compare_counters` (counter A `cmp` counter B; with `gt|lt|gte|lte|eq`) in addition to `count` (counter `cmp` n) and `and`/`or`/`not` combinators.
 
 ---
 
@@ -163,6 +165,8 @@
 
 ## 14. Real-Time (REQ-RT-***)
 
+> Status: implemented in D4 via in-process SSE broadcaster.
+
 - **REQ-RT-001** Each Session has one SSE channel (`/s/:id/stream`). Authorized players subscribe; unauthorized requests close.
 - **REQ-RT-002** Event types broadcast:
   - `round_opened`, `round_live`, `round_settled`, `round_cancelled`
@@ -186,8 +190,7 @@
   - `/s/create` — Mode picker + session config overrides + initial entity edit
   - `/s/join` — invite code
   - `/s/:id` — session lobby (players, balances, drinks tab, history)
-  - `/s/:id/round` — current round (player view; market list, stake placement, live metrics)
-  - `/s/:id/round/host` — GM control panel (status transitions, event approvals, market creation, settle)
+  - `/s/:id/round` — unified round page (role-aware): players see markets + stake form; HOST also sees lifecycle controls, event approval queue, and market creation form.
   - `/s/:id/drinks` — drink dashboard (initiate self, force, confirm pending, history)
   - `/s/:id/stats` — leaderboard + my stats + round history
 - **REQ-UI-003** All player-facing copy is German. Numbers use `tabular` (Geist Mono ss01).

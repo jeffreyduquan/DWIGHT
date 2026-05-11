@@ -20,13 +20,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			terminology: mode.terminology,
 			defaultEntities: mode.defaultEntities,
 			trackables: mode.trackables,
+			marketTemplates: mode.marketTemplates,
 			defaultConfig: mode.defaultConfig
 		}
 	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals, params }) => {
+	save: async ({ request, locals, params, url }) => {
 		if (!locals.user) throw redirect(303, '/login');
 		const form = await request.formData();
 		const parsed = parseModeForm(form);
@@ -39,7 +40,11 @@ export const actions: Actions = {
 
 		const updated = await updateMode(params.id, locals.user.id, parsed.data);
 		if (!updated) return fail(404, { error: 'Mode nicht gefunden' });
-		return { ok: true, savedAt: new Date().toISOString() };
+		const next = url.searchParams.get('next');
+		if (next && next.startsWith('/') && !next.startsWith('//')) {
+			throw redirect(303, next);
+		}
+		throw redirect(303, '/modes');
 	},
 	delete: async ({ locals, params }) => {
 		if (!locals.user) throw redirect(303, '/login');

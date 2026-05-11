@@ -17,13 +17,14 @@ export const load: PageServerLoad = ({ locals }) => {
 			terminology: { round: 'Runde', entity: 'Entität', startedVerb: 'läuft' },
 			defaultEntities: [],
 			trackables: [],
+			marketTemplates: [],
 			defaultConfig: freshModeDefaultConfig()
 		}
 	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals }) => {
+	default: async ({ request, locals, url }) => {
 		if (!locals.user) throw redirect(303, '/login');
 		const form = await request.formData();
 		const parsed = parseModeForm(form);
@@ -33,6 +34,11 @@ export const actions: Actions = {
 		if (conflict) return fail(409, { error: `Slug "${parsed.data.slug}" ist schon vergeben` });
 
 		const created = await createMode({ ownerUserId: locals.user.id, ...parsed.data });
+		const next = url.searchParams.get('next');
+		// Only allow internal redirects
+		if (next && next.startsWith('/') && !next.startsWith('//')) {
+			throw redirect(303, next);
+		}
 		throw redirect(303, `/modes/${created.id}`);
 	}
 };

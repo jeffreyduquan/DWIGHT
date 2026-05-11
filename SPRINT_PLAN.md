@@ -11,7 +11,7 @@
 
 ---
 
-## D0 — Workspace Scaffold ☐
+## D0 — Workspace Scaffold ☑
 **Goal:** empty SvelteKit project that compiles and renders the DWIGHT brand shell.
 
 - Init SvelteKit 2 + Svelte 5 (`pnpm create svelte`) — minimal template, no demo content
@@ -32,7 +32,7 @@
 
 ---
 
-## D1 — Auth ☐
+## D1 — Auth ☑
 **Goal:** users can register, log in, and stay logged in.
 
 - Schema: `users` table only (id, username, password_hash, created_at, total_stats jsonb default zeroed)
@@ -52,8 +52,10 @@
 
 ---
 
-## D2 — Schema + Seed + Mode Picker ☐
-**Goal:** the full DWIGHT data model is in place; one built-in Mode exists; a host can create a Session bound to it.
+## D2 — Schema + Seed + Mode Picker ☑
+**Goal:** the full DWIGHT data model is in place; user-authored Modes can be created; a host can create a Session bound to one.
+
+Note: the original D2 plan called for a built-in `murmelrennen-standard` Mode with `allowedBetTemplates` + `houseEdgePct` + `baseMultipliersX100`. D3 removed bet templates and house edge entirely (REQ-MODE-004); Modes are now user-authored only and Trackables replace bet templates. The bullets below are kept for historic context.
 
 - Full schema (modes, sessions, session_players, entities, rounds, round_outcomes, bet_offers, bets, drinks, drink_confirmations + all enums)
 - Drizzle migration generated and applied
@@ -73,81 +75,121 @@
 
 ---
 
-## D3 — Rounds + Bet Templates + Live Odds ☐
-**Goal:** GM opens a Round, declares BetOffers, players bet, GM declares outcome, payouts settle.
+## D3 — Predicate Engine: Trackables + RoundEvents + Markets ☑
+**Goal:** GM opens a Round, players propose count-events (trackables), GM confirms, GM creates predicate-based markets, players bet on outcomes, GM settles → parimutuel payout from the pool, no house edge.
 
-- Repos: `rounds.ts` (createRound, transitionStatus, declareOutcome), `betOffers.ts` (createBatch, listForRound), `bets.ts` (placeBet, listForRound, listForUser)
-- BetTemplate registry `src/lib/server/bets/templates/` — one module per template:
-  - `winner.ts`, `loser.ts`, `topN.ts`, `h2h.ts`, `exactRank.ts`, `podiumExact.ts`, `boolean.ts`
-  - Each exports `{ id, label, outcomeKind, validateSelection, resolve }`
-  - `index.ts` exports the registry map
-- Live-odds module `src/lib/server/economy/quotes.ts`:
-  - `computeQuotes(betOfferId)` — pure function: input = open bets on offer + mode config; output = per-outcome multiplier
-  - Floor multiplier 1.10x, fallback to base when below `minStakeForLiveOdds`
-- `src/lib/server/economy/placeBet.ts` — atomic transaction: validate selection → compute current quote → lock multiplier → debit balance → insert bet → recompute broke-lock → return new bet + updated quotes
-- `src/lib/server/economy/resolveRound.ts` — atomic: read outcome → for each open bet on round, dispatch to template's `resolve()` → update status + payout → credit winnings → update user `total_stats`
-- SSE broadcaster `src/lib/server/sse/broadcaster.ts` — in-memory channels keyed by sessionId; `emit(sessionId, event)`
-- Route `/s/:id/round` — list BetOffers, current quotes, bet form, my open bets
-- Route `/s/:id/round/host` — GM panel: pick BetTemplates from Mode allow-list, configure each (e.g. h2h pair), open betting, go LIVE, declare outcome, settle
-- **Done when:** Vitest covers each template's resolve() + the quote formula + placeBet atomicity; browser run: alice bets on a winner offer, bob bets on a different one, GM declares outcome, balances update correctly, multiplier visible to both before placement is what gets locked
+**Replaces** the original D3 plan (bet templates + live odds + house edge) with the generic Predicate Engine (REQ-TRACK / REQ-EVENT / REQ-MARKET / REQ-BET).
 
----
+Done:
+- ☑ Schema D3 + migration `0003_d3_predicate_engine.sql` applied
+- ☑ `src/lib/server/bets/predicate.ts` — Predicate-AST evaluator (count/and/or/not), `CounterSnapshot`, `negate`, `validatePredicate` — 14 tests
+- ☑ `src/lib/server/bets/payout.ts` — parimutuel pool distribution, multi-winner equal split, void refund, residual rules — 9 tests
+- ☑ Mode editor with Trackables section (label/scope/color/emoji)
+- ☑ Session snapshots Trackables at creation
+- ☑ Repos: `rounds.ts` (lifecycle), `events.ts` (propose/confirm/cancel + `getCounterSnapshot`), `markets.ts` (createMarket / createBinaryMarket / lockMarket / `settleRoundMarkets`), `bets.ts` (atomic `placeBet`)
+- ☑ Lifecycle orchestrator `src/lib/server/round/lifecycle.ts` — `settleRound` and `cancelRoundWithRefund` (Cancel → auto VOID + refund)
+- ☑ Route `/s/:id/round` — unified role-aware page with form actions: createRound, openBetting, goLive (locks markets), settle, cancel, proposeEvent, confirmEvent, cancelEvent, createMarket (binary YES/NO auto-negate), placeBet
+- ☑ UI: HOST controls + event-buttons per Trackable × per Entity + pending-queue + market creation form + market list with pool/share, counter recap
+- ☑ Lobby → Runde link
+- ☑ `vitest`: 30/30, `pnpm check`: 0 errors
 
-## D4 — Drinks ☐
-**Goal:** the dual economy is real — players can self-cash-out by drinking, force-drink each other, and confirmation rules work.
-
-- Repos: `drinks.ts` (initiateSelf, initiateForce, addConfirmation, cancel)
-- `src/lib/server/economy/drinks.ts`:
-  - `initiateSelfDrink(userId, sessionId, drinkType)` — atomic: insert PENDING SELF drink with priceSnapshot
-  - `initiateForceDrink(attackerId, targetId, sessionId, drinkType)` — atomic: validate type allowed, debit attacker, insert PENDING FORCE drink
-  - `confirmDrink(drinkId, confirmerUserId)` — atomic: check role (GM vs PEER), enforce target≠confirmer, count confirmations against `confirmationMode` rule, on threshold met → set CONFIRMED, credit target if SELF, clear `bet_locked` if SELF, emit SSE
-  - `cancelDrink(drinkId, gmUserId)` — atomic: check GM, set CANCELLED, refund attacker if FORCE
-- Route `/s/:id/drinks`:
-  - Cash-out tab: pick tier → "Ich trinke einen X" → goes PENDING in own queue
-  - Force tab: pick target + tier → "X für Y bezahlen" → debits me, queues for target
-  - Pending tab: list of my pending drinks (incoming forces + my own self) with "Confirm" buttons that send confirmations to OTHER users' drinks (peer signoff UI)
-  - History tab: confirmed/cancelled drinks chronological
-- Broke-lock UX in bet placement form: if `bet_locked`, show inline CTA "Du bist pleite. Trink einen, um wieder mitzuspielen." with link to `/s/:id/drinks`
-- SSE events wired: `drink_initiated`, `drink_confirmed`, `drink_cancelled`, `balance_updated`, `bet_lock_changed`
-- **Done when:** Vitest covers all three confirmation modes (`GM`/`PEERS`/`EITHER`) including peer-self-confirm rejection; browser: alice goes broke, locks, drinks BIER_EXEN, bob confirms, alice unlocks and bets again
+Deferred to later sprints (out of D3 done bar):
+- ☐ SSE live updates (delivered in D4 alongside drinks SSE)
+- ☐ DnD predicate builder UI (D5+ polish)
+- ☐ Bulk-per-entity market UI (engine supports multi-outcome `createMarket(outcomes[])` already)
+- ☐ Composite predicate UI (AND/OR/NOT — engine supports them via API)
+- ☐ Browser smoke E2E (Playwright) — manual smoke after D3, automated in D5+
 
 ---
 
-## D5 — Stats + Polish ☐
+## D4 — Drinks + SSE ☑
+**Goal:** the dual economy is real — players can self-cash-out by drinking, force-drink each other, and confirmation rules work. Plus in-process SSE live updates.
+
+Done:
+- ☑ `src/lib/server/repos/drinks.ts` — `initiateSelfDrink`, `initiateForceDrink`, `confirmDrink` (GM/PEERS/EITHER), `cancelDrink` (refunds FORCE)
+- ☑ `src/lib/server/sse/broadcaster.ts` — in-process channel map + `emit(sessionId, type, payload)`
+- ☑ `/s/[id]/stream/+server.ts` — SSE endpoint with heartbeat
+- ☑ `/s/[id]/drinks/+page.{server,svelte}` — 4 tabs: Offen / Cashout / Force / Verlauf, role-aware confirm (GM vs PEER)
+- ☑ Rebuy flow: SELF drink with `rebuyAmount` credits target on CONFIRMED
+- ☑ SSE wired into round actions + drink actions (drink_initiated, drink_confirmed, drink_cancelled, balance_updated, round_*, market_*, bet_placed)
+- ☑ Round + Drinks pages auto-invalidate on SSE events
+- ☑ Vitest `drinks.confirmation.test.ts` covers GM / PEERS / EITHER thresholds (33/33 green)
+- ☑ Lobby → Drinks link enabled
+
+Deferred:
+- ☐ Playwright E2E (D5+)
+- ☐ Broke-lock auto-clear on SELF-drink confirm (current impl credits balance which lifts the broke condition implicitly; explicit `bet_locked` flag manipulation deferred until we adopt the explicit lock from REQ-ECON-002)
+- ☐ GM balance-adjust UI (REQ-GM-004 part 2)
+
+---
+
+## D5 — Stats + Polish ◐
 **Goal:** the night-after experience.
 
-- Repo `stats.ts` — `getSessionLeaderboard(sessionId)`, `getMySessionStats(sessionId, userId)`, `getRoundHistory(sessionId)`
-- Route `/s/:id/stats` — leaderboard with medal podium + my-summary cards (Bilanz, ROI%, Drinks self/forced, Trefferquote) + round history accordion
-- Animations on round transitions, win/loss flash, drink-confirm pulse
-- Settled-round live recap: who won how much, who drank what
-- Empty-state polish across all routes
-- **Done when:** stats route shows correct numbers across two test sessions; visuals feel finished on mobile
+Done:
+- ☑ `src/lib/server/repos/stats.ts` — `getSessionLeaderboard`, `getMySessionStats`, `getRoundHistory`
+- ☑ `/s/[id]/stats` route — podium top-3 + remaining leaderboard + my-stats grid (P/L, ROI, Trefferquote, Drinks self/force) + round history
+- ☑ Lobby → Stats link
+
+Deferred:
+- ☐ Round-transition animations (win/loss flash, drink-confirm pulse) — D6 polish pass
+- ☐ Settled-round live recap modal — D6
+- ☐ Empty-state polish across all routes — D6
 
 ---
 
-## D6 — PWA + Sound ☐
+## D6 — PWA + Sound ☑
 **Goal:** install-to-home-screen and audio cues.
 
-- Self-hosted fonts via `@fontsource` (Space Grotesk + Inter + Geist Mono)
-- Service worker with offline shell + cached static assets
-- Manifest `display: standalone`, theme-color, full icon set
-- Optional sound effects (toggleable via session config): bet placed, round live, you won, you lost, drink confirmed
-- Lighthouse PWA audit ≥ 90
-- **Done when:** Chrome shows "Install DWIGHT" prompt; offline reload of `/` shows cached shell
+Done:
+- ☑ Self-hosted fonts via `@fontsource/{space-grotesk,inter,geist-mono}` — Google Fonts links removed from `app.html`
+- ☑ `src/service-worker.ts` — precache app shell + built assets at install, cache-first for assets, network-first navigation with offline fallback to `/`, never intercept `/stream` SSE
+- ☑ Manifest enhanced: `scope`, `categories`, `lang: de`
+- ☑ `src/lib/client/sounds.svelte.ts` — WebAudio synth (bet/live/win/lose/drink), localStorage toggle
+- ☑ Sound cues wired in round (`round_live`/`bet_placed`/`round_settled`) + drinks (`drink_confirmed`)
+- ☑ Sound toggle button in lobby
+
+Deferred:
+- ☐ Lighthouse PWA audit (manual when on https)
+- ☐ Round-transition visual animations (win/loss flash) — minor polish
 
 ---
 
-## D7 — Deploy ☐
+## D7 — Deploy ☑
 **Goal:** DWIGHT runs on the netcup server (or equivalent).
 
-- `@sveltejs/adapter-node` build
-- `Dockerfile` for the app
-- `docker-compose.prod.yml` with app + db + redis + reverse proxy (caddy or nginx) + Let's Encrypt
-- GitHub Actions: build → push image → ssh deploy
-- Production secrets via env (`AUTH_SECRET`, `DATABASE_URL`)
-- `/healthz` endpoint
-- Smoke test in CI hits `/healthz` after deploy
-- **Done when:** https://dwight.example.tld serves login page
+Done:
+- ☑ `@sveltejs/adapter-node` (was already configured)
+- ☑ `Dockerfile` multi-stage (deps → build → runtime) on `node:22-alpine` w/ pnpm, healthcheck via `/healthz`
+- ☑ `docker-compose.prod.yml` with app + postgres-16-alpine + Caddy reverse proxy + Let's Encrypt
+- ☑ `Caddyfile` with SSE-aware `flush_interval -1` for `/s/:id/stream`
+- ☑ `.env.prod.example` template
+- ☑ `/healthz` endpoint (DB readiness probe)
+- ☑ `.github/workflows/deploy.yml` — build/test → push GHCR → SSH deploy → curl smoke
+- ☑ `DEPLOY.md` instructions
+
+Notes:
+- Final hostname/server still to provision (`PUBLIC_HOST` placeholder in `.env.prod.example`)
+- DB migration strategy on first deploy: run `pnpm db:push` from local with `DATABASE_URL` tunneled via SSH
+
+---
+
+## D8 — Market Templates in Mode (Architektur-Korrektur) ☑
+**Goal:** Wetten werden im **Mode** definiert, nicht ad-hoc pro Runde.
+
+Done:
+- ☑ Phase A: Predicate-Engine erweitert um `compare_counters` (counter A cmp counter B) + neue `cmp` Werte `gt`/`lt`; 22 vitest-Tests (`predicate.test.ts`)
+- ☑ Phase B: Schema — `modes.market_templates` + `sessions.market_templates` (Snapshot wie `trackables`); Migration `0004_market_templates.sql`; `MarketTemplate` type (varianten `binary_count` + `compare_entities`)
+- ☑ Phase B: `parseModeForm` + `ModeForm.svelte` Section „Wetten-Templates" (Binär & Vergleich, Trackable-Picker, scope/cmp/n + Gleichstand-Verhalten)
+- ☑ Phase C: `markets.ts:instantiateMarketTemplates({roundId, sessionId, createdByUserId})` aufgerufen aus `?/createRound`; idempotent; `{entity}`/`{n}` Title-Placeholder; Compare-Markets bauen N (+ optional Tie) Outcomes mit strikten max-Predicates
+- ☑ Phase D: Manuelle Markt-Form hinter `<details>` „Manueller Markt (Override)" versteckt; `describePredicate` erweitert (compare_counters + gt/lt); my-stake Outcomes farbig hervorgehoben
+- ☑ Mode-Edit Save-Action: `default` → `save` umbenannt (SvelteKit verbietet `default`+benannte koexistent)
+- ☑ `/modes/new?next=…` Flow: nach Mode-Erstellung Redirect zum referrer (z.B. `/s/create`)
+
+Notes:
+- 41 vitest-Tests grün, 0 type errors
+- Komplexere Template-Predicates (AND/OR/NOT-Compounds) bleiben Override-only (manueller Markt)
+- Mode-Editor zeigt Trackables-Slug per `trackableIdFor(label)` clientseitig — muss mit `slugifyTrackableId` server-seitig synchron bleiben
 
 ---
 

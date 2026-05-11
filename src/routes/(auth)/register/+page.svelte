@@ -5,14 +5,20 @@
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { UserPlus, User, Lock, ArrowRight } from '@lucide/svelte';
+	import IconBubble from '$lib/components/IconBubble.svelte';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
 	let submitting = $state(false);
 </script>
 
-<header class="mb-7 text-center">
-	<h1 class="display text-3xl font-semibold">Komm zu <span class="text-gradient-primary">DWIGHT</span></h1>
+<header class="mb-7 flex flex-col items-center text-center">
+	<IconBubble tone="accent" size="lg"><UserPlus size={22} /></IconBubble>
+	<p class="eyebrow mt-3">Registrierung</p>
+	<h1 class="display text-3xl font-semibold mt-1">
+		Komm zu <span class="text-gradient-primary">DWIGHT</span>
+	</h1>
 	<p class="text-base-content/60 mt-2 text-sm">Username + Passwort. Kein Email-Quatsch.</p>
 </header>
 
@@ -24,7 +30,9 @@
 	};
 }} class="flex flex-col gap-4">
 	<label class="form-control">
-		<span class="label-text mb-1.5 text-xs font-medium uppercase tracking-wider text-base-content/70">Username</span>
+		<span class="label-text mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-base-content/70">
+			<User size={12} /> Username
+		</span>
 		<input
 			type="text"
 			name="username"
@@ -43,7 +51,9 @@
 	</label>
 
 	<label class="form-control">
-		<span class="label-text mb-1.5 text-xs font-medium uppercase tracking-wider text-base-content/70">Passwort</span>
+		<span class="label-text mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-base-content/70">
+			<Lock size={12} /> Passwort
+		</span>
 		<input
 			type="password"
 			name="password"
@@ -63,10 +73,11 @@
 
 	<button
 		type="submit"
-		class="bg-primary text-primary-content glow-primary mt-2 inline-flex h-12 items-center justify-center rounded-xl font-semibold disabled:opacity-50"
+		class="bg-primary text-primary-content glow-primary mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-xl font-semibold disabled:opacity-50"
 		disabled={submitting}
 	>
 		{submitting ? 'Erstelle …' : 'Konto erstellen'}
+		{#if !submitting}<ArrowRight size={16} />{/if}
 	</button>
 </form>
 

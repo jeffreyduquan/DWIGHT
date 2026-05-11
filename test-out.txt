@@ -1,0 +1,61 @@
+﻿node.exe : (node:19796) [DEP0169] DeprecationWarning: `url.parse()` behavior 
+is not standardized and prone to errors that have security implications. Use 
+the WHATWG URL API instead. CVEs are not issued for `url.parse()` 
+vulnerabilities.
+At C:\Users\jawra\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:19796) [D...ulnerabilities. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Progress: resolved 0, reused 1, downloaded 0, added 0
+ÔÇëWARNÔÇë 2 deprecated subdependencies found: @esbuild-kit/core-utils@3.3.2, @esbuild-kit/esm-loader@2.6.5
+Packages: +1
++
+Progress: resolved 387, reused 255, downloaded 0, added 0
+Progress: resolved 387, reused 255, downloaded 1, added 0
+Progress: resolved 387, reused 255, downloaded 1, added 1
+Progress: resolved 387, reused 255, downloaded 1, added 1, done
+
+dependencies:
++ @fontsource/geist-mono 5.2.7
++ @fontsource/inter 5.2.8
++ @fontsource/space-grotesk 5.2.10
++ argon2 0.44.0
++ jose 6.2.3
+
+devDependencies:
++ @eslint/compat 2.1.0
++ @eslint/js 10.0.1
++ @lucide/svelte 1.14.0
++ @playwright/test 1.59.1
++ @sveltejs/adapter-node 5.5.4
++ @sveltejs/kit 2.59.1
++ @sveltejs/vite-plugin-svelte 7.1.2
++ @tailwindcss/forms 0.5.11
++ @tailwindcss/vite 4.3.0
++ @types/node 24.12.3
++ daisyui 5.5.19
++ dotenv 17.4.2
++ drizzle-kit 0.31.10
++ drizzle-orm 0.45.2
++ eslint 10.3.0
++ eslint-config-prettier 10.1.8
++ eslint-plugin-svelte 3.17.1
++ globals 17.6.0
++ postgres 3.4.9
++ prettier 3.8.3
++ prettier-plugin-svelte 3.5.1
++ prettier-plugin-tailwindcss 0.7.4
++ svelte 5.55.5
++ svelte-check 4.4.8
++ tailwindcss 4.3.0
++ tsx 4.21.0
++ typescript 6.0.3
++ typescript-eslint 8.59.2
++ vite 8.0.11
++ vitest 4.1.5
+
+Done in 9.5s

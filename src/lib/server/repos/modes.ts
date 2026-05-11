@@ -6,6 +6,7 @@ import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../db';
 import {
 	modes,
+	type MarketTemplate,
 	type ModeDefaultConfig,
 	type ModeDefaultEntity,
 	type ModeTerminology,
@@ -45,6 +46,7 @@ export type CreateModeInput = {
 	terminology: ModeTerminology;
 	defaultEntities: ModeDefaultEntity[];
 	trackables: Trackable[];
+	marketTemplates: MarketTemplate[];
 	defaultConfig: ModeDefaultConfig;
 };
 
@@ -97,6 +99,7 @@ export async function duplicateMode(sourceId: string, userId: string): Promise<D
 		terminology: source.terminology,
 		defaultEntities: source.defaultEntities,
 		trackables: source.trackables,
+		marketTemplates: source.marketTemplates,
 		defaultConfig: source.defaultConfig
 	});
 }

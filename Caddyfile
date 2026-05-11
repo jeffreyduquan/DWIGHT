@@ -1,0 +1,14 @@
+{$PUBLIC_HOST} {
+	encode zstd gzip
+	@sse {
+		path_regexp /s/[^/]+/stream
+	}
+	reverse_proxy @sse app:3000 {
+		flush_interval -1
+		transport http {
+			read_buffer 4KB
+			write_buffer 4KB
+		}
+	}
+	reverse_proxy app:3000
+}

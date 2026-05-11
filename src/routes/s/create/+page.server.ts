@@ -10,6 +10,7 @@ import type { ConfirmationMode, DrinkType, SessionConfig } from '$lib/server/db/
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
+	if (!locals.isAdmin) throw error(403, 'Nur Admins dürfen Sessions erstellen');
 	const modes = await listAvailableForUser(locals.user.id);
 	return {
 		modes: modes.map((m) => ({
@@ -30,6 +31,7 @@ const DRINK_TYPES: DrinkType[] = ['SCHLUCK', 'KURZER', 'BIER_EXEN'];
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		if (!locals.user) throw redirect(303, '/login');
+		if (!locals.isAdmin) throw error(403, 'Nur Admins dürfen Sessions erstellen');
 
 		const form = await request.formData();
 		const modeId = String(form.get('modeId') ?? '').trim();
@@ -70,7 +72,10 @@ export const actions: Actions = {
 				enabled: rebuyEnabled,
 				drinkType: rebuyDrinkRaw as DrinkType,
 				amount: rebuyEnabled ? rebuyAmount : mode.defaultConfig.rebuy.amount
-			}
+			},
+			autoLockOnDrink:
+				form.get('autoLockOnDrink') === 'on' ||
+				(form.get('autoLockOnDrink') == null && mode.defaultConfig.autoLockOnDrink !== false)
 		};
 
 		const session = await createSession({
@@ -78,6 +83,8 @@ export const actions: Actions = {
 			modeId: mode.id,
 			name,
 			config,
+			trackables: mode.trackables,
+			marketTemplates: mode.marketTemplates,
 			defaultEntities: mode.defaultEntities
 		});
 

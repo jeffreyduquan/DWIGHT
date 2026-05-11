@@ -9,7 +9,9 @@ import {
 	sessionPlayers,
 	sessions,
 	type SessionConfig,
-	type ModeDefaultEntity
+	type MarketTemplate,
+	type ModeDefaultEntity,
+	type Trackable
 } from '../db/schema';
 
 export type DbSession = typeof sessions.$inferSelect;
@@ -69,6 +71,7 @@ export type CreateSessionInput = {
 	name: string;
 	config: SessionConfig;
 	trackables: Trackable[];
+	marketTemplates: MarketTemplate[];
 	defaultEntities: ModeDefaultEntity[];
 };
 
@@ -94,7 +97,8 @@ export async function createSession(input: CreateSessionInput): Promise<DbSessio
 				name: input.name,
 				inviteCode,
 				config: input.config,
-				trackables: input.trackables
+				trackables: input.trackables,
+				marketTemplates: input.marketTemplates
 			})
 			.returning();
 
@@ -153,4 +157,20 @@ export async function joinSession(input: {
 			.returning();
 		return row;
 	});
+}
+
+/** Mark a session as ENDED (host-only check at route level). */
+export async function endSession(sessionId: string): Promise<DbSession | null> {
+	const [updated] = await db
+		.update(sessions)
+		.set({ status: 'ENDED' })
+		.where(eq(sessions.id, sessionId))
+		.returning();
+	return updated ?? null;
+}
+
+/** Hard-delete a session and all dependent rows (cascades via FK). */
+export async function deleteSession(sessionId: string): Promise<boolean> {
+	const res = await db.delete(sessions).where(eq(sessions.id, sessionId)).returning({ id: sessions.id });
+	return res.length > 0;
 }

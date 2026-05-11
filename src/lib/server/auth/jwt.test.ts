@@ -26,9 +26,13 @@ describe('jwt', () => {
 
 	it('rejects a token signed with a different key (tamper)', async () => {
 		const token = await signSession({ sub: 'user-1', username: 'alice' });
-		// flip a char in the signature part
 		const parts = token.split('.');
-		const tampered = `${parts[0]}.${parts[1]}.${parts[2].slice(0, -1)}${parts[2].slice(-1) === 'a' ? 'b' : 'a'}`;
+		// Flip the first char of the signature (middle bytes of base64url decode
+		// fully without trailing-bit ambiguity, so any change here truly mutates
+		// the signature bytes).
+		const sig = parts[2];
+		const flipped = (sig[0] === 'A' ? 'B' : 'A') + sig.slice(1);
+		const tampered = `${parts[0]}.${parts[1]}.${flipped}`;
 		const claims = await verifySession(tampered);
 		expect(claims).toBeNull();
 	});

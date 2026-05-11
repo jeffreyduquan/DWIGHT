@@ -3,10 +3,13 @@
 	"short_name": "DWIGHT",
 	"description": "A real-time betting and drinking-game framework.",
 	"start_url": "/",
+	"scope": "/",
 	"display": "standalone",
 	"orientation": "portrait",
 	"background_color": "#050511",
 	"theme_color": "#050511",
+	"categories": ["games", "social", "entertainment"],
+	"lang": "de",
 	"icons": [
 		{
 			"src": "/favicon.svg",

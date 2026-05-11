@@ -28,3 +28,9 @@ export async function createUser(input: {
 		.returning();
 	return row;
 }
+
+/** Hard-delete a user. FK cascades remove session memberships; sessions owned by user cascade-delete. */
+export async function deleteUser(id: string): Promise<boolean> {
+	const res = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
+	return res.length > 0;
+}

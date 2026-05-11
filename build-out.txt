@@ -1,0 +1,623 @@
+﻿
+> dwight@0.2.0 build C:\Users\jawra\Documents\Projects\DWIGHT
+> vite build
+
+[36mvite v8.0.11 [32mbuilding ssr environment for production...[36m[39m
+[2K
+node.exe : 23:49:11 [vite-plugin-svelte] src/routes/s/join/+page.svelte:9:19 
+This reference only captures the initial value of `form`. Did you mean to 
+reference it inside a derived instead?
+At C:\Users\jawra\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (23:49:11 [vite-...erived instead? 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+https://svelte.dev/e/state_referenced_locally
+ 7: 
+ 8:   let { form } = $props();
+ 9:   let code = $state(form?.code ?? '');
+                            ^
+10: </script>
+11: 
+23:49:11 [vite-plugin-svelte] src/routes/s/create/+page.svelte:10:37 This 
+reference only captures the initial value of `data`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+ 8:   let { data, form } = $props();
+ 9: 
+10:   let selectedModeId = $state<string>(data.modes[0]?.id ?? '');
+                                              ^
+11:   const selectedMode = $derived(data.modes.find((m) => m.id === 
+selectedModeId) ?? null);
+12: 
+23:49:11 [vite-plugin-svelte] src/routes/s/create/+page.svelte:13:27 This 
+reference only captures the initial value of `selectedMode`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+11:   const selectedMode = $derived(data.modes.find((m) => m.id === 
+selectedModeId) ?? null);
+12: 
+13:   let rebuyEnabled = $state(selectedMode?.defaultConfig.rebuy.enabled ?? 
+true);
+                                            ^
+14:   $effect(() => {
+15:     if (selectedMode) rebuyEnabled = 
+selectedMode.defaultConfig.rebuy.enabled;
+23:49:11 [vite-plugin-svelte] src/routes/s/[id]/round/+page.svelte:324:6 
+Visible, non-interactive elements with a click event must be accompanied by a 
+keyboard event handler. Consider whether an interactive element such as 
+`<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+322:               <span class="font-medium">{group.name}</span>
+323:             </span>
+324:             <span class="flex items-center gap-1" onclick={(e) => 
+e.stopPropagation()} role="group">
+                        ^
+325:               <form method="POST" action="?/bulkDecideByProposer" 
+use:enhance>
+326:                 <input type="hidden" name="roundId" value={round.id} />
+23:49:11 [vite-plugin-svelte] src/routes/s/[id]/round/+page.svelte:324:6 
+Non-interactive element `<span>` should not be assigned mouse or keyboard 
+event listeners
+https://svelte.dev/e/a11y_no_noninteractive_element_interactions
+322:               <span class="font-medium">{group.name}</span>
+323:             </span>
+324:             <span class="flex items-center gap-1" onclick={(e) => 
+e.stopPropagation()} role="group">
+                        ^
+325:               <form method="POST" action="?/bulkDecideByProposer" 
+use:enhance>
+326:                 <input type="hidden" name="roundId" value={round.id} />
+23:49:11 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:29 This 
+reference only captures the initial value of `min`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                     ^
+30:   let mult = $state(1);
+31: 
+23:49:11 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:34 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                              ^
+30:   let mult = $state(1);
+31: 
+23:49:11 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:45 This 
+reference only captures the initial value of `min`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                                     ^
+30:   let mult = $state(1);
+31: 
+23:49:11 [vite-plugin-svelte] src/lib/components/DrinkPanel.svelte:92:27 This 
+reference only captures the initial value of `players`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+90:   const allowedForceTypes = 
+$derived(session.config.forceDrinkTypesAllowed);
+91: 
+92:   let force_target = $state(players.find((p) => p.userId !== 
+me.userId)?.userId ?? '');
+                                       ^
+93:   let force_type = $state<DrinkType>('SCHLUCK');
+94:   let self_type = $state<DrinkType>('SCHLUCK');
+23:49:11 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:86:3 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+84: 
+85:   let entities = $state<EntityRow[]>(
+86:     (initial.defaultEntities.length > 0
+                ^
+87:       ? initial.defaultEntities
+88:       : [{ kind: 'entity', name: '', attributes: { color: '#A78BFA', 
+emoji: '' } }]
+23:49:11 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:87:5 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+85:   let entities = $state<EntityRow[]>(
+86:     (initial.defaultEntities.length > 0
+87:       ? initial.defaultEntities
+                   ^
+88:       : [{ kind: 'entity', name: '', attributes: { color: '#A78BFA', 
+emoji: '' } }]
+89:     ).map((e) => ({
+23:49:11 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:98:2 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+ 96: 
+ 97:   let trackables = $state<TrackableRow[]>(
+ 98:     initial.trackables.map((t) => ({
+                ^
+ 99:       label: t.label,
+100:       scope: t.scope,
+23:49:11 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:191:2 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+189: 
+190:   let templates = $state<MarketTemplateRow[]>(
+191:     initial.marketTemplates.map((m) => {
+                ^
+192:       const base = defaultRow(m.kind);
+193:       if (m.kind === 'binary_count') {
+transforming.../*! ­ƒî╝ daisyUI 5.5.19 */
+Ô£ô 3895 modules transformed.
+rendering chunks...
+[36mvite v8.0.11 [32mbuilding client environment for production...[36m[39m
+[2K
+23:49:16 [vite-plugin-svelte] src/routes/s/[id]/round/+page.svelte:324:6 
+Visible, non-interactive elements with a click event must be accompanied by a 
+keyboard event handler. Consider whether an interactive element such as 
+`<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+322:               <span class="font-medium">{group.name}</span>
+323:             </span>
+324:             <span class="flex items-center gap-1" onclick={(e) => 
+e.stopPropagation()} role="group">
+                        ^
+325:               <form method="POST" action="?/bulkDecideByProposer" 
+use:enhance>
+326:                 <input type="hidden" name="roundId" value={round.id} />
+23:49:16 [vite-plugin-svelte] src/routes/s/[id]/round/+page.svelte:324:6 
+Non-interactive element `<span>` should not be assigned mouse or keyboard 
+event listeners
+https://svelte.dev/e/a11y_no_noninteractive_element_interactions
+322:               <span class="font-medium">{group.name}</span>
+323:             </span>
+324:             <span class="flex items-center gap-1" onclick={(e) => 
+e.stopPropagation()} role="group">
+                        ^
+325:               <form method="POST" action="?/bulkDecideByProposer" 
+use:enhance>
+326:                 <input type="hidden" name="roundId" value={round.id} />
+23:49:16 [vite-plugin-svelte] src/routes/s/join/+page.svelte:9:19 This 
+reference only captures the initial value of `form`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+ 7: 
+ 8:   let { form } = $props();
+ 9:   let code = $state(form?.code ?? '');
+                            ^
+10: </script>
+11: 
+23:49:16 [vite-plugin-svelte] src/routes/s/create/+page.svelte:10:37 This 
+reference only captures the initial value of `data`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+ 8:   let { data, form } = $props();
+ 9: 
+10:   let selectedModeId = $state<string>(data.modes[0]?.id ?? '');
+                                              ^
+11:   const selectedMode = $derived(data.modes.find((m) => m.id === 
+selectedModeId) ?? null);
+12: 
+23:49:16 [vite-plugin-svelte] src/routes/s/create/+page.svelte:13:27 This 
+reference only captures the initial value of `selectedMode`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+11:   const selectedMode = $derived(data.modes.find((m) => m.id === 
+selectedModeId) ?? null);
+12: 
+13:   let rebuyEnabled = $state(selectedMode?.defaultConfig.rebuy.enabled ?? 
+true);
+                                            ^
+14:   $effect(() => {
+15:     if (selectedMode) rebuyEnabled = 
+selectedMode.defaultConfig.rebuy.enabled;
+23:49:16 [vite-plugin-svelte] src/lib/components/DrinkPanel.svelte:92:27 This 
+reference only captures the initial value of `players`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+90:   const allowedForceTypes = 
+$derived(session.config.forceDrinkTypesAllowed);
+91: 
+92:   let force_target = $state(players.find((p) => p.userId !== 
+me.userId)?.userId ?? '');
+                                       ^
+93:   let force_type = $state<DrinkType>('SCHLUCK');
+94:   let self_type = $state<DrinkType>('SCHLUCK');
+23:49:16 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:29 This 
+reference only captures the initial value of `min`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                     ^
+30:   let mult = $state(1);
+31: 
+23:49:16 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:34 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                              ^
+30:   let mult = $state(1);
+31: 
+23:49:16 [vite-plugin-svelte] src/lib/components/StakePicker.svelte:29:45 This 
+reference only captures the initial value of `min`. Did you mean to reference 
+it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+27:   }: Props = $props();
+28: 
+29:   let stake = $state(Math.max(min, initial ?? min));
+                                                     ^
+30:   let mult = $state(1);
+31: 
+23:49:16 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:86:3 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+84: 
+85:   let entities = $state<EntityRow[]>(
+86:     (initial.defaultEntities.length > 0
+                ^
+87:       ? initial.defaultEntities
+88:       : [{ kind: 'entity', name: '', attributes: { color: '#A78BFA', 
+emoji: '' } }]
+23:49:16 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:87:5 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+85:   let entities = $state<EntityRow[]>(
+86:     (initial.defaultEntities.length > 0
+87:       ? initial.defaultEntities
+                   ^
+88:       : [{ kind: 'entity', name: '', attributes: { color: '#A78BFA', 
+emoji: '' } }]
+89:     ).map((e) => ({
+23:49:16 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:98:2 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+ 96: 
+ 97:   let trackables = $state<TrackableRow[]>(
+ 98:     initial.trackables.map((t) => ({
+                ^
+ 99:       label: t.label,
+100:       scope: t.scope,
+23:49:16 [vite-plugin-svelte] src/lib/components/ModeForm.svelte:191:2 This 
+reference only captures the initial value of `initial`. Did you mean to 
+reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally
+189: 
+190:   let templates = $state<MarketTemplateRow[]>(
+191:     initial.marketTemplates.map((m) => {
+                ^
+192:       const base = defaultRow(m.kind);
+193:       if (m.kind === 'binary_count') {
+transforming...Ô£ô 3865 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/client/_app/version.json                                                           0.02 kB Ôöé gzip:  0.04 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-700-normal.DMty7AZE.woff2    4.20 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-600-normal.DUi7WF5p.woff2    4.31 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-500-normal.BmEvtly_.woff2    4.32 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-400-normal.DMkecbls.woff2            4.97 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-600-normal.Cc8MFFhd.woff2            5.10 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-700-normal.DlLaEgI2.woff2            5.10 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-500-normal.DOriooB6.woff2            5.11 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-400-normal.DGGRlc-M.woff2             5.26 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-500-normal.C4iEst2y.woff2             5.42 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-600-normal.DRtmH8MT.woff2             5.43 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-700-normal.qfdV9bQt.woff2             5.44 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-700-normal.Duxec5Rn.woff     5.58 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-cyrillic-500-normal.CJBLNVQT.woff2         5.66 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-cyrillic-600-normal.CGND36d7.woff2         5.68 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-600-normal.D6zpsUhD.woff     5.70 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-vietnamese-500-normal.BTqKIpxg.woff     5.71 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-ext-600-normal.CJwYYto2.woff2        6.49 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-ext-500-normal.CQcGuCNt.woff2        6.50 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-400-normal.Bbgyi5SW.woff             6.50 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-500-normal.mJboJaSs.woff             6.59 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-700-normal.BZaoP0fm.woff             6.63 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-vietnamese-600-normal.BuLX-rYi.woff             6.64 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-400-normal.KugGGMne.woff              7.06 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-500-normal.2j5mBUwD.woff              7.19 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-600-normal.B8X0CLgF.woff              7.21 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-ext-700-normal.BoQ6DsYi.woff              7.21 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-cyrillic-500-normal.mNhfPmgl.woff          7.35 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-cyrillic-600-normal.DrylrLu6.woff          7.35 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-400-normal.obahsSVq.woff2              7.71 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-400-normal.B4URO6DV.woff2                 7.77 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-500-normal.BasfLYem.woff2              7.90 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-700-normal.CjBOestx.woff2              7.90 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-500-normal.BIZE56-Y.woff2                 7.92 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-700-normal.C3JjAnD8.woff2                 7.92 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-600-normal.plRanbMR.woff2                 7.94 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-600-normal.CWCymEST.woff2              7.97 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-ext-500-normal.diTenJ8L.woff         8.85 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-ext-600-normal.EvIRCXgu.woff         8.86 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-400-normal.HOLc17fK.woff               9.78 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-700-normal.DrXBdSj3.woff               9.91 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-400-normal.q2sYcFCs.woff                  9.92 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-600-normal.4D_pXhcN.woff               9.93 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-500-normal.CxZf_p3X.woff               9.94 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-500-normal.Xzm54t5V.woff                  9.98 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-700-normal.BUv2fZ6O.woff                  9.98 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-greek-600-normal.BZpKdvQh.woff                 10.03 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-400-normal.BQZuk6qB.woff2         10.23 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-500-normal.B0yAr1jD.woff2         10.43 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-600-normal.Dfes3d0z.woff2         10.48 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-700-normal.BjwYoWNd.woff2         10.49 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-700-normal.BQnZhY3m.woff2    11.99 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-500-normal.DUe3BAxM.woff2    12.27 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-600-normal.DxxdqCpr.woff2    12.28 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-700-normal.RjhwGPKo.woff2        12.84 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-600-normal.DjKNqYRj.woff2        13.28 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-500-normal.lFbtlQH6.woff2        13.31 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-400-normal.DQukG94-.woff          13.33 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-700-normal.LO58E6JB.woff          13.40 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-500-normal.BmqWE9Dz.woff          13.45 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-cyrillic-ext-600-normal.Bcila6Z-.woff          13.46 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-600-normal.DQQBcVN0.woff2           15.26 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-500-normal.D3o2eNa9.woff2           15.30 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-700-normal.CwsQ-cCU.woff         16.41 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-700-normal.HVCqSBdx.woff     16.46 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-600-normal.VcznFIpX.woff     16.72 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-ext-500-normal.3dgZTiw9.woff     16.78 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-600-normal.BflQw4A9.woff         16.88 kB
+.svelte-kit/output/client/_app/immutable/assets/space-grotesk-latin-500-normal.CNSSEhBt.woff         16.98 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-600-normal.DsVeri3b.woff            19.60 kB
+.svelte-kit/output/client/_app/immutable/assets/geist-mono-latin-500-normal.DOxI7kZ4.woff            19.64 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-400-normal.C38fXH4l.woff2                23.66 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-500-normal.Cerq10X2.woff2                24.27 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-700-normal.Yt3aPRUw.woff2                24.35 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-600-normal.LgqL8muc.woff2                24.45 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-400-normal.CyCys3Eg.woff                 30.69 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-600-normal.CiBQ2DWP.woff                 31.26 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-500-normal.BL9OpVg8.woff                 31.28 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-700-normal.BLAVimhd.woff                 31.32 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-400-normal.C1nco2VV.woff2            35.00 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-500-normal.CV4jyFjo.woff2            36.02 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-700-normal.Ca8adRJv.woff2            36.24 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-600-normal.D2bJ5OIk.woff2            36.26 kB
+.svelte-kit/output/client/.vite/manifest.json                                                        44.78 kB Ôöé gzip:  3.41 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-400-normal.77YHD8bZ.woff             47.56 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-500-normal.BxGbmqWO.woff             48.49 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-700-normal.TidjK2hL.woff             48.63 kB
+.svelte-kit/output/client/_app/immutable/assets/inter-latin-ext-600-normal.CIVaiw4L.woff             48.66 kB
+.svelte-kit/output/client/_app/immutable/assets/0.BOfMSVCG.css                                      111.27 kB Ôöé gzip: 19.19 kB
+.svelte-kit/output/client/_app/immutable/chunks/BVEOzTpX.js                                           0.06 kB Ôöé gzip:  0.08 kB
+.svelte-kit/output/client/_app/immutable/entry/start.BBoDfJEE.js                                      0.08 kB Ôöé gzip:  0.09 kB
+.svelte-kit/output/client/_app/immutable/nodes/3.CAiKB-HZ.js                                          0.42 kB Ôöé gzip:  0.29 kB
+.svelte-kit/output/client/_app/immutable/nodes/2.DBPQX2LQ.js                                          0.55 kB Ôöé gzip:  0.37 kB
+.svelte-kit/output/client/_app/immutable/chunks/BZBQHN0g.js                                           1.04 kB Ôöé gzip:  0.59 kB
+.svelte-kit/output/client/_app/immutable/nodes/1.BrIMPG6P.js                                          1.06 kB Ôöé gzip:  0.50 kB
+.svelte-kit/output/client/_app/immutable/nodes/9.DB0ngkqh.js                                          1.09 kB Ôöé gzip:  0.65 kB
+.svelte-kit/output/client/_app/immutable/chunks/B64WrFVF.js                                           1.20 kB Ôöé gzip:  0.68 kB
+.svelte-kit/output/client/_app/immutable/nodes/12.B3r50M2J.js                                         1.45 kB Ôöé gzip:  0.88 kB
+.svelte-kit/output/client/_app/immutable/nodes/10.CJ9SwykP.js                                         1.64 kB Ôöé gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/chunks/WbYtKv1R.js                                           1.72 kB Ôöé gzip:  0.84 kB
+.svelte-kit/output/client/_app/immutable/nodes/14.DIy7w5ta.js                                         1.76 kB Ôöé gzip:  0.93 kB
+.svelte-kit/output/client/_app/immutable/chunks/CqTfIPe8.js                                           2.04 kB Ôöé gzip:  0.96 kB
+.svelte-kit/output/client/_app/immutable/nodes/5.Cpghc4SM.js                                          2.12 kB Ôöé gzip:  1.06 kB
+.svelte-kit/output/client/_app/immutable/nodes/0.CnxAR2Pj.js                                          2.40 kB Ôöé gzip:  0.99 kB
+.svelte-kit/output/client/_app/immutable/nodes/6.RLAB0PIZ.js                                          2.54 kB Ôöé gzip:  1.17 kB
+.svelte-kit/output/client/_app/immutable/nodes/8.OpvVgqZe.js                                          2.86 kB Ôöé gzip:  1.31 kB
+.svelte-kit/output/client/_app/immutable/nodes/7.otFcZs6T.js                                          2.99 kB Ôöé gzip:  1.35 kB
+.svelte-kit/output/client/_app/immutable/entry/app.CBU7CfuZ.js                                        5.31 kB Ôöé gzip:  1.80 kB
+.svelte-kit/output/client/_app/immutable/nodes/16.Du5jG6bb.js                                         5.66 kB Ôöé gzip:  2.03 kB
+.svelte-kit/output/client/_app/immutable/nodes/4.DIHp6yBU.js                                          6.40 kB Ôöé gzip:  2.76 kB
+.svelte-kit/output/client/_app/immutable/chunks/D86nTUNU.js                                           6.68 kB Ôöé gzip:  1.90 kB
+.svelte-kit/output/client/_app/immutable/nodes/13.B26qOs7A.js                                         6.86 kB Ôöé gzip:  2.77 kB
+.svelte-kit/output/client/_app/immutable/nodes/11.7rqcVWuc.js                                         8.89 kB Ôöé gzip:  3.10 kB
+.svelte-kit/output/client/_app/immutable/chunks/D_emdGkR.js                                           9.46 kB Ôöé gzip:  3.10 kB
+.svelte-kit/output/client/_app/immutable/nodes/15.XYRv4aku.js                                        31.62 kB Ôöé gzip: 10.23 kB
+.svelte-kit/output/client/_app/immutable/chunks/DjmwMCqa.js                                          32.55 kB Ôöé gzip: 12.33 kB
+.svelte-kit/output/client/_app/immutable/chunks/sFnkDDqx.js                                          39.32 kB Ôöé gzip:  8.50 kB
+.svelte-kit/output/client/_app/immutable/chunks/Pz06xE3I.js                                          54.87 kB Ôöé gzip: 20.83 kB
+
+[33m[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in 
+plugins. Here is a breakdown:
+  - vite-plugin-sveltekit-guard (75%)
+  - vite-plugin-sveltekit-virtual-modules (8%)
+  - vite-plugin-svelte:compile (6%)
+  - vite-plugin-svelte:preprocess (6%)
+See https://rolldown.rs/options/checks#plugintimings for more details.
+[39m
+[32mÔ£ô built in 3.35s[39m
+[36mvite v8.0.11 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...Ô£ô 3 modules transformed.
+rendering chunks...
+computing gzip size...
+.svelte-kit/output/client/service-worker.js  8.11 kB Ôöé gzip: 1.87 kB
+
+[32mÔ£ô built in 14ms[39m
+computing gzip size...
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-700-normal.DMty7AZE.woff2    4.20 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-600-normal.DUi7WF5p.woff2    4.31 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-500-normal.BmEvtly_.woff2    4.32 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-400-normal.DMkecbls.woff2            4.97 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-600-normal.Cc8MFFhd.woff2            5.10 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-700-normal.DlLaEgI2.woff2            5.10 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-500-normal.DOriooB6.woff2            5.11 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-400-normal.DGGRlc-M.woff2             5.26 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-500-normal.C4iEst2y.woff2             5.42 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-600-normal.DRtmH8MT.woff2             5.43 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-700-normal.qfdV9bQt.woff2             5.44 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-700-normal.Duxec5Rn.woff     5.58 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-cyrillic-500-normal.CJBLNVQT.woff2         5.66 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-cyrillic-600-normal.CGND36d7.woff2         5.68 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-600-normal.D6zpsUhD.woff     5.70 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-vietnamese-500-normal.BTqKIpxg.woff     5.71 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-ext-600-normal.CJwYYto2.woff2        6.49 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-ext-500-normal.CQcGuCNt.woff2        6.50 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-400-normal.Bbgyi5SW.woff             6.50 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-500-normal.mJboJaSs.woff             6.59 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-700-normal.BZaoP0fm.woff             6.63 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-vietnamese-600-normal.BuLX-rYi.woff             6.64 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-400-normal.KugGGMne.woff              7.06 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-500-normal.2j5mBUwD.woff              7.19 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-600-normal.B8X0CLgF.woff              7.21 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-ext-700-normal.BoQ6DsYi.woff              7.21 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-cyrillic-500-normal.mNhfPmgl.woff          7.35 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-cyrillic-600-normal.DrylrLu6.woff          7.35 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-400-normal.obahsSVq.woff2              7.71 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-400-normal.B4URO6DV.woff2                 7.77 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-500-normal.BasfLYem.woff2              7.90 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-700-normal.CjBOestx.woff2              7.90 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-500-normal.BIZE56-Y.woff2                 7.92 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-700-normal.C3JjAnD8.woff2                 7.92 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-600-normal.plRanbMR.woff2                 7.94 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-600-normal.CWCymEST.woff2              7.97 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-ext-500-normal.diTenJ8L.woff         8.85 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-ext-600-normal.EvIRCXgu.woff         8.86 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-400-normal.HOLc17fK.woff               9.78 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-700-normal.DrXBdSj3.woff               9.91 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-400-normal.q2sYcFCs.woff                  9.92 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-600-normal.4D_pXhcN.woff               9.93 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-500-normal.CxZf_p3X.woff               9.94 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-500-normal.Xzm54t5V.woff                  9.98 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-700-normal.BUv2fZ6O.woff                  9.98 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-greek-600-normal.BZpKdvQh.woff                 10.03 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-400-normal.BQZuk6qB.woff2         10.23 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-500-normal.B0yAr1jD.woff2         10.43 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-600-normal.Dfes3d0z.woff2         10.48 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-700-normal.BjwYoWNd.woff2         10.49 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-700-normal.BQnZhY3m.woff2    11.99 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-500-normal.DUe3BAxM.woff2    12.27 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-600-normal.DxxdqCpr.woff2    12.28 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-700-normal.RjhwGPKo.woff2        12.84 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-600-normal.DjKNqYRj.woff2        13.28 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-500-normal.lFbtlQH6.woff2        13.31 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-400-normal.DQukG94-.woff          13.33 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-700-normal.LO58E6JB.woff          13.40 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-500-normal.BmqWE9Dz.woff          13.45 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-cyrillic-ext-600-normal.Bcila6Z-.woff          13.46 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-600-normal.DQQBcVN0.woff2           15.26 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-500-normal.D3o2eNa9.woff2           15.30 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-700-normal.CwsQ-cCU.woff         16.41 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-700-normal.HVCqSBdx.woff     16.46 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-600-normal.VcznFIpX.woff     16.72 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-ext-500-normal.3dgZTiw9.woff     16.78 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-600-normal.BflQw4A9.woff         16.88 kB
+.svelte-kit/output/server/_app/immutable/assets/space-grotesk-latin-500-normal.CNSSEhBt.woff         16.98 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-600-normal.DsVeri3b.woff            19.60 kB
+.svelte-kit/output/server/_app/immutable/assets/geist-mono-latin-500-normal.DOxI7kZ4.woff            19.64 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-400-normal.C38fXH4l.woff2                23.66 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-500-normal.Cerq10X2.woff2                24.27 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-700-normal.Yt3aPRUw.woff2                24.35 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-600-normal.LgqL8muc.woff2                24.45 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-400-normal.CyCys3Eg.woff                 30.69 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-600-normal.CiBQ2DWP.woff                 31.26 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-500-normal.BL9OpVg8.woff                 31.28 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-700-normal.BLAVimhd.woff                 31.32 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-400-normal.C1nco2VV.woff2            35.00 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-500-normal.CV4jyFjo.woff2            36.02 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-700-normal.Ca8adRJv.woff2            36.24 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-600-normal.D2bJ5OIk.woff2            36.26 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-400-normal.77YHD8bZ.woff             47.56 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-500-normal.BxGbmqWO.woff             48.49 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-700-normal.TidjK2hL.woff             48.63 kB
+.svelte-kit/output/server/_app/immutable/assets/inter-latin-ext-600-normal.CIVaiw4L.woff             48.66 kB
+.svelte-kit/output/server/.vite/manifest.json                                                        52.37 kB Ôöé gzip:  4.10 kB
+.svelte-kit/output/server/_app/immutable/assets/_layout.0_sEx33p.css                                109.71 kB Ôöé gzip: 19.01 kB
+.svelte-kit/output/server/chunks/forms.js                                                             0.03 kB Ôöé gzip:  0.05 kB
+.svelte-kit/output/server/entries/pages/s/_layout.server.ts.js                                        0.13 kB Ôöé gzip:  0.12 kB
+.svelte-kit/output/server/chunks/app.js                                                               0.13 kB Ôöé gzip:  0.13 kB
+.svelte-kit/output/server/entries/pages/_layout.server.ts.js                                          0.16 kB Ôöé gzip:  0.14 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/demote/_server.ts.js                            0.36 kB Ôöé gzip:  0.24 kB
+.svelte-kit/output/server/chunks/entities.js                                                          0.39 kB Ôöé gzip:  0.26 kB
+.svelte-kit/output/server/entries/pages/_page.server.ts.js                                            0.43 kB Ôöé gzip:  0.27 kB
+.svelte-kit/output/server/internal.js                                                                 0.45 kB Ôöé gzip:  0.21 kB
+.svelte-kit/output/server/entries/pages/s/_layout.svelte.js                                           0.46 kB Ôöé gzip:  0.28 kB
+.svelte-kit/output/server/entries/endpoints/logout/_server.ts.js                                      0.48 kB Ôöé gzip:  0.28 kB
+.svelte-kit/output/server/chunks/chunk.js                                                             0.49 kB Ôöé gzip:  0.31 kB
+.svelte-kit/output/server/entries/endpoints/healthz/_server.ts.js                                     0.54 kB Ôöé gzip:  0.33 kB
+.svelte-kit/output/server/entries/pages/(auth)/_layout.svelte.js                                      0.64 kB Ôöé gzip:  0.38 kB
+.svelte-kit/output/server/chunks/password.js                                                          0.73 kB Ôöé gzip:  0.41 kB
+.svelte-kit/output/server/chunks/broadcaster.js                                                       0.83 kB Ôöé gzip:  0.44 kB
+.svelte-kit/output/server/chunks/shared-server.js                                                     0.83 kB Ôöé gzip:  0.38 kB
+.svelte-kit/output/server/chunks/users.js                                                             0.86 kB Ôöé gzip:  0.48 kB
+.svelte-kit/output/server/entries/pages/s/join/_page.server.ts.js                                     1.12 kB Ôöé gzip:  0.58 kB
+.svelte-kit/output/server/entries/pages/modes/new/_page.svelte.js                                     1.19 kB Ôöé gzip:  0.63 kB
+.svelte-kit/output/server/entries/pages/s/_id_/stats/_page.server.ts.js                               1.22 kB Ôöé gzip:  0.57 kB
+.svelte-kit/output/server/entries/endpoints/s/_id_/stream/_server.ts.js                               1.26 kB Ôöé gzip:  0.68 kB
+.svelte-kit/output/server/entries/pages/modes/new/_page.server.ts.js                                  1.34 kB Ôöé gzip:  0.68 kB
+.svelte-kit/output/server/entries/pages/modes/_page.server.ts.js                                      1.41 kB Ôöé gzip:  0.59 kB
+.svelte-kit/output/server/entries/endpoints/api/admin/promote/_server.ts.js                           1.42 kB Ôöé gzip:  0.79 kB
+.svelte-kit/output/server/chunks/sounds.svelte.js                                                     1.45 kB Ôöé gzip:  0.68 kB
+.svelte-kit/output/server/entries/pages/s/join/_page.svelte.js                                        1.50 kB Ôöé gzip:  0.80 kB
+.svelte-kit/output/server/entries/pages/modes/_id_/_page.svelte.js                                    1.66 kB Ôöé gzip:  0.80 kB
+.svelte-kit/output/server/entries/pages/s/_id_/drinks/_page.svelte.js                                 1.73 kB Ôöé gzip:  0.77 kB
+.svelte-kit/output/server/chunks/cookie.js                                                            1.77 kB Ôöé gzip:  0.86 kB
+.svelte-kit/output/server/entries/pages/admin/_page.server.ts.js                                      1.82 kB Ôöé gzip:  0.70 kB
+.svelte-kit/output/server/entries/pages/modes/_id_/_page.server.ts.js                                 1.83 kB Ôöé gzip:  0.76 kB
+.svelte-kit/output/server/entries/hooks.server.js                                                     1.90 kB Ôöé gzip:  0.78 kB
+.svelte-kit/output/server/entries/pages/(auth)/login/_page.svelte.js                                  2.06 kB Ôöé gzip:  0.92 kB
+.svelte-kit/output/server/chunks/modes.js                                                             2.10 kB Ôöé gzip:  0.82 kB
+.svelte-kit/output/server/chunks/Logo.js                                                              2.20 kB Ôöé gzip:  0.97 kB
+.svelte-kit/output/server/entries/pages/(auth)/register/_page.server.ts.js                            2.24 kB Ôöé gzip:  0.91 kB
+.svelte-kit/output/server/chunks/admin.js                                                             2.46 kB Ôöé gzip:  1.19 kB
+.svelte-kit/output/server/entries/pages/(auth)/register/_page.svelte.js                               2.53 kB Ôöé gzip:  0.99 kB
+.svelte-kit/output/server/entries/pages/_layout.svelte.js                                             2.58 kB Ôöé gzip:  1.05 kB
+.svelte-kit/output/server/entries/pages/(auth)/login/_page.server.ts.js                               2.66 kB Ôöé gzip:  1.18 kB
+.svelte-kit/output/server/entries/pages/admin/_page.svelte.js                                         2.76 kB Ôöé gzip:  1.11 kB
+.svelte-kit/output/server/entries/pages/modes/_page.svelte.js                                         2.97 kB Ôöé gzip:  1.12 kB
+.svelte-kit/output/server/entries/pages/s/create/_page.server.ts.js                                   3.45 kB Ôöé gzip:  1.29 kB
+.svelte-kit/output/server/entries/pages/s/_id_/_page.server.ts.js                                     3.66 kB Ôöé gzip:  1.21 kB
+.svelte-kit/output/server/chunks/sessions.js                                                          3.78 kB Ôöé gzip:  1.32 kB
+.svelte-kit/output/server/entries/fallbacks/error.svelte.js                                           3.90 kB Ôöé gzip:  1.41 kB
+.svelte-kit/output/server/chunks/stats.js                                                             4.72 kB Ôöé gzip:  1.59 kB
+.svelte-kit/output/server/entries/pages/_page.svelte.js                                               5.23 kB Ôöé gzip:  1.72 kB
+.svelte-kit/output/server/chunks/environment.js                                                       5.44 kB Ôöé gzip:  1.96 kB
+.svelte-kit/output/server/entries/pages/s/_id_/stats/_page.svelte.js                                  6.06 kB Ôöé gzip:  1.67 kB
+.svelte-kit/output/server/entries/pages/s/_id_/_page.svelte.js                                        7.29 kB Ôöé gzip:  2.22 kB
+.svelte-kit/output/server/entries/pages/s/_id_/drinks/_page.server.ts.js                              7.30 kB Ôöé gzip:  2.18 kB
+.svelte-kit/output/server/chunks/drinks.js                                                            7.98 kB Ôöé gzip:  1.94 kB
+.svelte-kit/output/server/chunks/predicate-describe.js                                                9.17 kB Ôöé gzip:  2.30 kB
+.svelte-kit/output/server/entries/pages/s/create/_page.svelte.js                                      9.69 kB Ôöé gzip:  2.64 kB
+.svelte-kit/output/server/chunks/db.js                                                               11.16 kB Ôöé gzip:  2.92 kB
+.svelte-kit/output/server/chunks/parseForm.js                                                        11.37 kB Ôöé gzip:  2.84 kB
+.svelte-kit/output/server/chunks/DrinkPanel.js                                                       11.79 kB Ôöé gzip:  2.63 kB
+.svelte-kit/output/server/chunks/exports.js                                                          12.22 kB Ôöé gzip:  3.61 kB
+.svelte-kit/output/server/chunks/internal.js                                                         22.28 kB Ôöé gzip:  6.71 kB
+.svelte-kit/output/server/chunks/shared.js                                                           24.99 kB Ôöé gzip:  6.68 kB
+.svelte-kit/output/server/chunks/utils.js                                                            30.36 kB Ôöé gzip:  8.66 kB
+.svelte-kit/output/server/entries/pages/s/_id_/round/_page.svelte.js                                 40.21 kB Ôöé gzip:  8.87 kB
+.svelte-kit/output/server/chunks/ModeForm.js                                                         42.86 kB Ôöé gzip:  6.91 kB
+.svelte-kit/output/server/chunks/client.js                                                           46.35 kB Ôöé gzip: 13.46 kB
+.svelte-kit/output/server/remote-entry.js                                                            46.83 kB Ôöé gzip:  9.58 kB
+.svelte-kit/output/server/entries/pages/s/_id_/round/_page.server.ts.js                              52.59 kB Ôöé gzip: 11.89 kB
+.svelte-kit/output/server/index.js                                                                  135.91 kB Ôöé gzip: 34.31 kB
+.svelte-kit/output/server/chunks/dev.js                                                             143.76 kB Ôöé gzip: 36.87 kB
+
+[33m[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in 
+plugins. Here is a breakdown:
+  - vite-plugin-sveltekit-guard (77%)
+  - vite-plugin-sveltekit-virtual-modules (8%)
+  - vite-plugin-svelte:compile (7%)
+  - vite-plugin-svelte:preprocess (7%)
+See https://rolldown.rs/options/checks#plugintimings for more details.
+[39m
+[32mÔ£ô built in 8.61s[39m
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-node
+Circular dependency: node_modules/.pnpm/drizzle-orm@0.45.2_postgres@3.4.9/node_
+modules/drizzle-orm/pg-core/utils.js -> node_modules/.pnpm/drizzle-orm@0.45.2_p
+ostgres@3.4.9/node_modules/drizzle-orm/pg-core/view.js -> node_modules/.pnpm/dr
+izzle-orm@0.45.2_postgres@3.4.9/node_modules/drizzle-orm/pg-core/query-builders
+/query-builder.js -> node_modules/.pnpm/drizzle-orm@0.45.2_postgres@3.4.9/node_
+modules/drizzle-orm/pg-core/query-builders/select.js -> node_modules/.pnpm/driz
+zle-orm@0.45.2_postgres@3.4.9/node_modules/drizzle-orm/pg-core/utils.js
+  Ô£ö done

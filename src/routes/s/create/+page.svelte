@@ -4,6 +4,21 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import Logo from '$lib/components/Logo.svelte';
+	import IconBubble from '$lib/components/IconBubble.svelte';
+	import {
+		ArrowLeft,
+		ArrowRight,
+		AlertCircle,
+		Sparkles,
+		Play,
+		Coins,
+		Beer,
+		CircleCheck,
+		RefreshCcw,
+		Lock,
+		Layers,
+		Plus
+	} from '@lucide/svelte';
 
 	let { data, form } = $props();
 
@@ -19,36 +34,47 @@
 </script>
 
 <header class="mb-6 flex items-center justify-between">
-	<a href="/" class="text-base-content/60 hover:text-base-content text-sm">← zurück</a>
+	<a href="/" class="text-base-content/60 hover:text-base-content inline-flex items-center gap-1.5 text-sm transition">
+		<ArrowLeft size={16} /> zurück
+	</a>
 	<Logo size={32} />
 </header>
 
-<h1 class="display mb-1 text-3xl">
-	<span class="text-gradient-primary">Session</span> erstellen
-</h1>
-<p class="text-base-content/60 mb-6 text-sm">Wähle einen Mode und starte den Abend.</p>
+<div class="mb-6 space-y-2">
+	<IconBubble tone="primary" size="lg"><Sparkles size={22} /></IconBubble>
+	<p class="eyebrow mt-3">Neue Session</p>
+	<h1 class="display text-3xl">
+		<span class="text-gradient-primary">Session</span> erstellen
+	</h1>
+	<p class="text-base-content/60 text-sm">Wähle einen Mode und starte den Abend.</p>
+</div>
 
 {#if formError}
-	<div class="alert alert-error mb-4 text-sm">{formError}</div>
+	<div class="alert alert-error mb-4 inline-flex items-center gap-2 text-sm">
+		<AlertCircle size={16} /> {formError}
+	</div>
 {/if}
 
 {#if data.modes.length === 0}
 	<!-- Empty state: user has no Modes yet -->
-	<div class="glass rounded-2xl px-6 py-10 text-center">
+	<div class="glass-xl px-6 py-10 text-center">
+		<div class="mx-auto mb-3 flex justify-center">
+			<IconBubble tone="warning" size="lg"><Sparkles size={22} /></IconBubble>
+		</div>
 		<p class="text-base-content/70 mb-2 text-sm">Du hast noch keinen Mode.</p>
 		<p class="text-base-content/50 mb-6 text-xs">
 			Ein Mode definiert Spielregeln, Entitäten, Drink-Preise und Wett-Templates.
 		</p>
-		<a href="/modes/new" class="btn btn-primary glow-primary rounded-xl">
-			Ersten Mode erstellen
+		<a href="/modes/new?next=/s/create" class="btn btn-primary glow-primary inline-flex items-center gap-2 rounded-xl">
+			<Plus size={16} /> Ersten Mode erstellen
 		</a>
 	</div>
 {:else}
 	<form method="POST" use:enhance class="space-y-6">
 		<!-- Mode picker (custom radio cards) -->
 		<fieldset class="space-y-2">
-			<legend class="text-base-content/70 mb-2 text-sm font-medium uppercase tracking-wider">
-				Mode
+			<legend class="eyebrow mb-2 inline-flex items-center gap-1.5">
+				<Layers size={12} /> Mode
 			</legend>
 			<div class="space-y-2">
 				{#each data.modes as m (m.id)}
@@ -77,7 +103,9 @@
 					</label>
 				{/each}
 			</div>
-			<a href="/modes" class="text-primary text-xs hover:underline">Modes verwalten →</a>
+			<a href="/modes" class="text-primary inline-flex items-center gap-1 text-xs hover:underline">
+				Modes verwalten <ArrowRight size={11} />
+			</a>
 		</fieldset>
 
 		<!-- Name -->
@@ -97,8 +125,8 @@
 		{#if selectedMode}
 			<!-- Money -->
 			<label class="block space-y-1">
-				<span class="text-base-content/70 text-sm font-medium uppercase tracking-wider">
-					Startgeld
+				<span class="eyebrow inline-flex items-center gap-1.5">
+					<Coins size={12} /> Startgeld
 				</span>
 				<input
 					type="number"
@@ -113,8 +141,8 @@
 
 			<!-- Drink prices -->
 			<fieldset class="space-y-2">
-				<legend class="text-base-content/70 text-sm font-medium uppercase tracking-wider">
-					Drink-Preise
+				<legend class="eyebrow inline-flex items-center gap-1.5">
+					<Beer size={12} /> Drink-Preise
 				</legend>
 				<div class="grid grid-cols-3 gap-2">
 					<label class="glass flex flex-col gap-1 rounded-xl p-3">
@@ -152,8 +180,8 @@
 
 			<!-- Confirmation mode -->
 			<label class="block space-y-1">
-				<span class="text-base-content/70 text-sm font-medium uppercase tracking-wider">
-					Bestätigungs-Modus
+				<span class="eyebrow inline-flex items-center gap-1.5">
+					<CircleCheck size={12} /> Bestätigungs-Modus
 				</span>
 				<select
 					name="confirmationMode"
@@ -173,8 +201,8 @@
 
 			<!-- Rebuy -->
 			<fieldset class="space-y-3">
-				<legend class="text-base-content/70 text-sm font-medium uppercase tracking-wider">
-					Rebuy
+				<legend class="eyebrow inline-flex items-center gap-1.5">
+					<RefreshCcw size={12} /> Rebuy
 				</legend>
 				<label class="glass flex items-center justify-between rounded-xl p-3">
 					<span class="space-y-1">
@@ -191,13 +219,13 @@
 					/>
 				</label>
 				<div class="grid grid-cols-2 gap-2" class:opacity-40={!rebuyEnabled}>
-					<label class="glass space-y-1 rounded-xl p-3">
+					<label class="space-y-1">
 						<span class="text-base-content/50 text-xs">Rebuy-Drink</span>
 						<select
 							name="rebuyDrinkType"
 							value={selectedMode.defaultConfig.rebuy.drinkType}
 							disabled={!rebuyEnabled}
-							class="w-full bg-transparent text-sm outline-none"
+							class="select select-bordered select-sm w-full"
 						>
 							<option value="SCHLUCK">Schluck</option>
 							<option value="KURZER">Kurzer</option>
@@ -216,13 +244,27 @@
 						/>
 					</label>
 				</div>
+				<label class="glass flex items-center justify-between rounded-xl p-3">
+					<span class="space-y-1">
+						<span class="block text-sm font-medium">Auto-Sperre bei Drink</span>
+						<span class="text-base-content/40 block text-xs">
+							Spieler werden automatisch vom Wetten gesperrt, solange ein Drink offen ist.
+						</span>
+					</span>
+					<input
+						type="checkbox"
+						name="autoLockOnDrink"
+						checked={selectedMode.defaultConfig.autoLockOnDrink !== false}
+						class="toggle toggle-primary"
+					/>
+				</label>
 			</fieldset>
 
 			<!-- Entity preview -->
 			{#if selectedMode.defaultEntities.length > 0}
 				<section class="space-y-2">
-					<span class="text-base-content/70 text-sm font-medium uppercase tracking-wider">
-						{selectedMode.terminology.entity}n
+					<span class="eyebrow inline-flex items-center gap-1.5">
+						<Sparkles size={12} /> {selectedMode.terminology.entity}n
 					</span>
 					<ul class="glass space-y-2 rounded-xl p-3 text-sm">
 						{#each selectedMode.defaultEntities as e (e.name)}
@@ -248,8 +290,8 @@
 			{/if}
 		{/if}
 
-		<button type="submit" class="btn btn-primary glow-primary h-14 w-full rounded-xl text-base">
-			Session starten
+		<button type="submit" class="btn btn-primary glow-primary h-14 w-full gap-2 rounded-xl text-base">
+			<Play size={18} /> Session starten
 		</button>
 	</form>
 {/if}
