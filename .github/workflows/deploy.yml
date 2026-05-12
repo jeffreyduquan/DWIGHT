@@ -56,8 +56,13 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: ADMIN_SECRET
           script: |
             cd /opt/dwight
+            # Inject ADMIN_SECRET into .env.prod (add or update the line)
+            grep -q '^ADMIN_SECRET=' .env.prod \
+              && sed -i "s|^ADMIN_SECRET=.*|ADMIN_SECRET=${ADMIN_SECRET}|" .env.prod \
+              || echo "ADMIN_SECRET=${ADMIN_SECRET}" >> .env.prod
             docker compose -f docker-compose.prod.yml --env-file .env.prod pull
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
             # Smoke test
