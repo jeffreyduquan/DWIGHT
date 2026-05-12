@@ -60,12 +60,14 @@ jobs:
           envs: ADMIN_SECRET
           script: |
             cd /opt/dwight
+            # Pull latest code (docker-compose, Dockerfile, etc.)
+            git pull
             # Inject ADMIN_SECRET into .env.prod (add or update the line)
             grep -q '^ADMIN_SECRET=' .env.prod \
               && sed -i "s|^ADMIN_SECRET=.*|ADMIN_SECRET=${ADMIN_SECRET}|" .env.prod \
               || echo "ADMIN_SECRET=${ADMIN_SECRET}" >> .env.prod
-            docker compose -f docker-compose.prod.yml --env-file .env.prod pull
-            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+            # Rebuild app image from latest code and restart
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
             # Smoke test
             sleep 5
             curl -fsS http://127.0.0.1/healthz || exit 1
