@@ -240,6 +240,20 @@ export type MarketTemplate =
 			entityNameB: string;
 			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
 			n: number;
+	  }
+	| {
+			/**
+			 * Reihenfolge: Wer wurde als N-ter für dieses Trackable eingetragen?
+			 * position=1 → Erster, position=0 → Letzter (wird bei Instantiierung
+			 * auf ents.length aufgelöst). Settlement basiert auf der Log-Reihenfolge
+			 * (erster CONFIRMED Event pro Entity; Duplikate ignoriert).
+			 */
+			kind: 'ordered_finish';
+			id: string;
+			title: string;
+			trackableId: string;
+			/** 1 = Erster, 2 = Zweiter, …, 0 = Letzter */
+			position: number;
 	  };
 
 export type SessionConfig = ModeDefaultConfig;
@@ -317,6 +331,18 @@ export type Predicate =
 			child: Predicate;
 			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
 			n: number;
+	  }
+	| {
+			/**
+			 * True when entity `entityId` was logged (first CONFIRMED event for this
+			 * trackable) at rank `position` (1-indexed) relative to all other entities.
+			 * Populated via `rank:<trackableId>:<entityId>` entries in the counter
+			 * snapshot computed by `getCounterSnapshot`.
+			 */
+			kind: 'log_rank';
+			trackableId: string;
+			entityId: string;
+			position: number;
 	  };
 
 export type EntityAttributes = {

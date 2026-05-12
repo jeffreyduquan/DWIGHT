@@ -14,6 +14,7 @@
 		Target,
 		Users,
 		ArrowLeftRight,
+		ListOrdered,
 		X
 	} from '@lucide/svelte';
 	import type {
@@ -33,7 +34,8 @@
 		top_k: Medal,
 		count_matching: Target,
 		team_total: Users,
-		spread: ArrowLeftRight
+		spread: ArrowLeftRight,
+		ordered_finish: ListOrdered
 	};
 	const kindLabel: Record<string, string> = {
 		binary_count: 'Menge',
@@ -43,7 +45,8 @@
 		top_k: 'Top-K',
 		count_matching: 'Mind. K',
 		team_total: 'Team-Total',
-		spread: 'Spread'
+		spread: 'Spread',
+		ordered_finish: 'Reihenfolge'
 	};
 
 	type EntityRow = {
@@ -69,7 +72,8 @@
 			| 'top_k'
 			| 'count_matching'
 			| 'team_total'
-			| 'spread';
+			| 'spread'
+			| 'ordered_finish';
 		title: string;
 		trackableId: string;
 		// binary_count
@@ -196,7 +200,7 @@
 			trackableId: '',
 			entityScope: kind === 'binary_count' || kind === 'range_count' ? 'global' : 'each',
 			cmp: 'gte',
-			n: 1,
+			n: kind === 'ordered_finish' ? 1 : 1,
 			tieBehavior: 'tie_outcome',
 			direction: 'max',
 			nMin: kind === 'range_count' ? 1 : 0,
@@ -292,14 +296,23 @@
 				};
 			}
 			// spread
+			if (m.kind === 'spread') {
+				return {
+					...base,
+					title: m.title,
+					trackableId: m.trackableId,
+					cmp: m.cmp,
+					n: m.n,
+					entityNameA: m.entityNameA,
+					entityNameB: m.entityNameB
+				};
+			}
+			// ordered_finish
 			return {
 				...base,
 				title: m.title,
 				trackableId: m.trackableId,
-				cmp: m.cmp,
-				n: m.n,
-				entityNameA: m.entityNameA,
-				entityNameB: m.entityNameB
+				n: m.position
 			};
 		})
 	);
@@ -327,6 +340,9 @@
 	}
 	function addSpreadTemplate() {
 		templates = [...templates, defaultRow('spread')];
+	}
+	function addOrderedFinishTemplate() {
+		templates = [...templates, defaultRow('ordered_finish')];
 	}
 	function removeTemplate(i: number) {
 		templates = templates.filter((_, idx) => idx !== i);
@@ -562,6 +578,9 @@
 				<button type="button" onclick={addSpreadTemplate} class="btn btn-ghost btn-xs"
 					>+ Spread</button
 				>
+				<button type="button" onclick={addOrderedFinishTemplate} class="btn btn-ghost btn-xs"
+					>+ Reihenfolge</button
+				>
 			</div>
 		</div>
 		<p class="text-base-content/40 -mt-1 text-xs">
@@ -600,6 +619,10 @@
 			<li class="flex items-start gap-2">
 				<ArrowLeftRight size={14} class="text-error mt-[0.1rem] shrink-0" />
 				<span><strong>Spread:</strong> Differenz zwischen zwei Entities (z.B. „A hat ≥3 mehr Tore als B?")</span>
+			</li>
+			<li class="flex items-start gap-2">
+				<ListOrdered size={14} class="text-primary mt-[0.1rem] shrink-0" />
+				<span><strong>Reihenfolge:</strong> Wer wurde als 1./Letzter/N-ter eingetragen? (Duplikate ignoriert — erste Nennung zählt)</span>
 			</li>
 		</ul>
 		{#if templates.length === 0}
@@ -1143,6 +1166,38 @@
 						<input type="hidden" name="mtPerEntityCmp" value="gte" />
 						<input type="hidden" name="mtPerEntityN" value="1" />
 						<input type="hidden" name="mtTeamNames" value="" />
+					{:else if t.kind === 'ordered_finish'}
+						<label class="block space-y-1">
+							<span class="text-base-content/50 text-xs uppercase tracking-wider">Position</span>
+							<select
+								name="mtN"
+								bind:value={t.n}
+								class="select select-bordered select-sm w-full"
+							>
+								<option value={1}>1. (Erster)</option>
+								<option value={2}>2. (Zweiter)</option>
+								<option value={3}>3. (Dritter)</option>
+								<option value={4}>4.</option>
+								<option value={5}>5.</option>
+								<option value={0}>0 = Letzter (wird bei Rundenstart aufgelöst)</option>
+							</select>
+						</label>
+						<p class="text-base-content/40 text-[0.65rem]">
+							Settlement: Die Reihenfolge ergibt sich aus dem ersten bestätigten Event pro Entity für dieses Trackable.
+							Wird eine Entity mehrfach eingetragen, zählt nur die erste Nennung.
+						</p>
+						<input type="hidden" name="mtScope" value="each" />
+						<input type="hidden" name="mtCmp" value="eq" />
+						<input type="hidden" name="mtNMin" value="0" />
+						<input type="hidden" name="mtNMax" value="0" />
+						<input type="hidden" name="mtDirection" value="max" />
+						<input type="hidden" name="mtTieBehavior" value="tie_outcome" />
+						<input type="hidden" name="mtEntityA" value="" />
+						<input type="hidden" name="mtEntityB" value="" />
+						<input type="hidden" name="mtK" value="0" />
+						<input type="hidden" name="mtPerEntityCmp" value="gte" />
+						<input type="hidden" name="mtPerEntityN" value="1" />
+						<input type="hidden" name="mtTeamNames" value="" />
 					{/if}
 
 					<!-- Live preview -->
@@ -1154,6 +1209,7 @@
 								entityScope: t.entityScope,
 								cmp: t.cmp,
 								n: t.n,
+								position: t.n,
 								tieBehavior: t.tieBehavior,
 								direction: t.direction,
 								nMin: t.nMin,

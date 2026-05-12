@@ -87,6 +87,10 @@ export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
 			}
 			return cmpInt(matches, pred.cmp, pred.n);
 		}
+		case 'log_rank': {
+			const rank = snap[`rank:${pred.trackableId}:${pred.entityId}`] ?? 0;
+			return rank === pred.position;
+		}
 	}
 }
 
@@ -113,6 +117,8 @@ export function bindSelf(pred: Predicate, eid: string): Predicate {
 		case 'count_entities_where':
 			// Nested count_entities_where keeps its own $self scope — do not rewrite.
 			return pred;
+		case 'log_rank':
+			return pred.entityId === '$self' ? { ...pred, entityId: eid } : pred;
 	}
 }
 
@@ -212,6 +218,17 @@ export function validatePredicate(
 			if (!VALID_CMP.includes(pred.cmp)) return `Invalid cmp: ${pred.cmp}`;
 			// Inside child: '$self' is permitted as entity placeholder.
 			return validatePredicate(pred.child, validTrackables, validEntities, true);
+		}
+		case 'log_rank': {
+			if (!validTrackables.has(pred.trackableId))
+				return `Unknown trackable: ${pred.trackableId}`;
+			if (validTrackables.get(pred.trackableId) !== 'entity')
+				return `log_rank requires entity-scoped trackable`;
+			if (!allowSelf && !validEntities.has(pred.entityId))
+				return `Unknown entity: ${pred.entityId}`;
+			if (!Number.isInteger(pred.position) || pred.position < 1)
+				return `log_rank position must be an integer >= 1`;
+			return null;
 		}
 	}
 }

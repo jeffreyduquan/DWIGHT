@@ -377,6 +377,21 @@ export function parseModeForm(form: FormData): ParseResult {
 				cmp,
 				n
 			});
+		} else if (kind === 'ordered_finish') {
+			if (trackableScopeMap.get(trackableId) !== 'entity') {
+				return {
+					ok: false,
+					error: `Reihenfolge-Template "${title}" braucht ein Entity-Trackable`
+				};
+			}
+			const position = toInt(mtNs[i] ?? null, 1);
+			marketTemplates.push({
+				kind: 'ordered_finish',
+				id,
+				title,
+				trackableId,
+				position
+			});
 		}
 	}
 

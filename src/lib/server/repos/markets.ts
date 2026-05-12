@@ -437,6 +437,38 @@ export async function instantiateMarketTemplates(args: {
 				predicate
 			});
 			created++;
+		} else if (tpl.kind === 'ordered_finish') {
+			validateTrackable(tpl, 'entity');
+			if (ents.length < 2) continue;
+			// position=0 means last place
+			const resolvedPos = tpl.position === 0 ? ents.length : tpl.position;
+			if (resolvedPos < 1 || resolvedPos > ents.length) continue;
+			const posLabel =
+				resolvedPos === 1
+					? '1.'
+					: resolvedPos === ents.length
+						? 'Letzter'
+						: `${resolvedPos}.`;
+			const outcomes: OutcomeDraft[] = ents.map((e) => ({
+				label: e.name,
+				predicate: {
+					kind: 'log_rank' as const,
+					trackableId: tpl.trackableId,
+					entityId: e.id,
+					position: resolvedPos
+				}
+			}));
+			const title = (tpl.title || `Wer war als ${posLabel} {trackable} eingetragen?`).replace(
+				'{trackable}',
+				tpl.trackableId
+			);
+			await createMarket({
+				roundId: args.roundId,
+				title,
+				createdByUserId: args.createdByUserId,
+				outcomes
+			});
+			created++;
 		}
 	}
 	return created;

@@ -103,7 +103,9 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 		.select({
 			trackableId: roundEvents.trackableId,
 			entityId: roundEvents.entityId,
-			delta: roundEvents.delta
+			delta: roundEvents.delta,
+			decidedAt: roundEvents.decidedAt,
+			id: roundEvents.id
 		})
 		.from(roundEvents)
 		.where(and(eq(roundEvents.roundId, roundId), eq(roundEvents.status, 'CONFIRMED')));
@@ -113,6 +115,33 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 		const key = counterKey(row.trackableId, row.entityId);
 		snap[key] = (snap[key] ?? 0) + row.delta;
 	}
+
+	// Compute log_rank: for each entity-scoped trackable, rank entities by their
+	// first CONFIRMED event (decidedAt asc, then id asc for tiebreak).
+	// Stored as `rank:<trackableId>:<entityId>` = 1-indexed position.
+	type FirstSeen = { entityId: string; at: number; id: string };
+	const firstByTrackable = new Map<string, Map<string, FirstSeen>>();
+	for (const row of rows) {
+		if (!row.entityId) continue;
+		if (!firstByTrackable.has(row.trackableId)) {
+			firstByTrackable.set(row.trackableId, new Map());
+		}
+		const byEntity = firstByTrackable.get(row.trackableId)!;
+		const at = row.decidedAt ? row.decidedAt.getTime() : 0;
+		const existing = byEntity.get(row.entityId);
+		if (!existing || at < existing.at || (at === existing.at && row.id < existing.id)) {
+			byEntity.set(row.entityId, { entityId: row.entityId, at, id: row.id });
+		}
+	}
+	for (const [trackableId, byEntity] of firstByTrackable) {
+		const sorted = Array.from(byEntity.values()).sort(
+			(a, b) => a.at - b.at || (a.id < b.id ? -1 : 1)
+		);
+		sorted.forEach((item, idx) => {
+			snap[`rank:${trackableId}:${item.entityId}`] = idx + 1;
+		});
+	}
+
 	return snap;
 }
 

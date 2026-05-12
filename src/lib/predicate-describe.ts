@@ -152,6 +152,12 @@ export function describePredicate(p: any, labels: LabelMaps): string {
 		const eLabel = p.entityId ? ` von ${labels.entityLabel(p.entityId)}` : '';
 		return `${tLabel}${eLabel} ${cmpSymbol(p.cmp)} ${p.n}`;
 	}
+	if (p?.kind === 'log_rank') {
+		const tLabel = labels.trackableLabel(p.trackableId);
+		const eLabel = labels.entityLabel(p.entityId);
+		const pos = p.position === 1 ? '1.' : `${p.position}.`;
+		return `${eLabel} war als ${pos} "${tLabel}" eingetragen`;
+	}
 	if (p?.kind === 'compare_counters') {
 		return `${describeExpr(p.left, labels)} ${cmpSymbol(p.cmp)} ${describeExpr(p.right, labels)}`;
 	}
@@ -326,6 +332,16 @@ export function describeTemplate(
 		return [
 			`Ja/Nein: Ist (${t.entityNameA || '?'}.${tLabel} − ${t.entityNameB || '?'}.${tLabel}) ${word}?`
 		];
+	}
+	if (tpl.kind === 'ordered_finish') {
+		const t = tpl as Extract<MarketTemplate, { kind: 'ordered_finish' }>;
+		const pos = t.position === 0 ? 'Letzter' : t.position === 1 ? '1.' : `${t.position}.`;
+		const lines = [`Reihenfolge: Wer war als ${pos} "${tLabel}" eingetragen?`];
+		if (opts.entityNames.length >= 2) {
+			lines.push(`Outcomes: ${opts.entityNames.join(' / ')}`);
+		}
+		lines.push(`Settlement: Reihenfolge der ersten bestätigten Events (Duplikate ignoriert)`);
+		return lines;
 	}
 	return ['(unvollständiges Template)'];
 }
