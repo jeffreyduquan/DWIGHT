@@ -127,10 +127,10 @@
 			<p class="text-base-content/60 text-xs">{data.players.length} dabei</p>
 		</div>
 	</div>
-	<ul class="glass glass-xl space-y-1.5 p-3">
+	<ul class="space-y-2">
 		{#each data.players as p (p.userId)}
 			<li
-				class="hover:bg-base-content/5 flex items-center justify-between gap-2 rounded-xl px-3 py-2 transition"
+				class="glass flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5"
 			>
 				<span class="flex min-w-0 items-center gap-2">
 					<span class="truncate font-medium">{p.username}</span>
