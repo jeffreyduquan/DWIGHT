@@ -40,6 +40,7 @@
 | REQ-MODE-004 | D3 | `modes/new` no longer seeds a battle-test mode | manual | ☑ |
 | REQ-MODE-005 | D2 | `routes/s/create/+page.svelte` Mode picker | manual | ☑ |
 | REQ-MODE-006 | D2 / D5 | terminology helper | unit pending | ◐ |
+| REQ-MODE-007 | Phase 6 | `drizzle/0005_bet_graphs.sql`, `src/lib/server/db/schema.ts` (`betGraphs`, `sessions.betGraphsSnapshot`), `src/lib/graph/{catalog,validate,preview,compile}.ts`, `src/lib/server/repos/betGraphs.ts`, `src/lib/server/repos/sessions.ts`, `src/lib/server/repos/markets.ts` (`instantiateBetGraphs`), `src/routes/s/create/+page.server.ts`, `src/routes/s/[id]/round/+page.server.ts` | `src/lib/graph/graph.test.ts` (11) | ◑ |
 
 ## REQ-ENT — Entities
 
@@ -176,6 +177,8 @@
 | REQ-UI-016 | D9 / Phase 5c | `src/lib/components/DrinkPanel.svelte` (`confirmProgress` helper, `.confirm-chip` / `.confirm-host-required` Styles) | manual `/s/:id` Drink-Panel mit allen drei confirmationModes | ☑ |
 | REQ-UI-017 | D9 / Phase 5c | `src/routes/+page.svelte` (`<details>` für Beendet-Sektion) | manual `/` mit ENDED-Sessions | ☑ |
 | REQ-UI-018 | D9 / Phase 5c | `src/routes/s/[id]/+page.svelte` (kombinierter Beenden-&-Löschen-Button mit confirm()), `src/routes/s/[id]/+page.server.ts` (deleteSession Action bleibt) | manual Host Session löschen | ☑ |
+| REQ-UI-019 | Phase 6 | `src/routes/modes/[id]/graphs/+page.{server.ts,svelte}`, `src/routes/modes/[id]/+page.svelte` (Discovery-Link) | manual | ◑ |
+| REQ-UI-020 | Phase 6 | `src/lib/graph/{validate,preview,compile}.ts`, `src/lib/server/repos/markets.ts` (`instantiateBetGraphs` log-and-skip) | `src/lib/graph/graph.test.ts` | ◑ |
 
 ## REQ-GM — Game Master Tools
 

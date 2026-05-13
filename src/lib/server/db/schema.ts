@@ -354,6 +354,76 @@ export type EntityAttributes = {
 	[k: string]: unknown;
 };
 
+// ---------- BetGraph (visual market builder, Phase 6) ----------
+
+/**
+ * Kinds of nodes available in the visual bet-graph editor.
+ * See `src/lib/graph/catalog.ts` for the full pin spec per node.
+ *
+ * Families:
+ *  - Source: produce values, no inputs
+ *  - Compute: aggregate / reduce
+ *  - Logic: comparisons + boolean combinators
+ *  - Outcome: terminal node (exactly one per graph)
+ */
+export type GraphNodeKind =
+	// Sources
+	| 'entity'
+	| 'all_entities'
+	| 'trackable'
+	| 'constant'
+	// Compute
+	| 'count'
+	| 'sum'
+	| 'arg_max'
+	| 'arg_min'
+	| 'rank'
+	| 'first_occurrence'
+	| 'delta'
+	| 'race_to_threshold'
+	// Logic
+	| 'compare'
+	| 'between'
+	| 'entity_equals'
+	| 'time_compare'
+	| 'and'
+	| 'or'
+	| 'not'
+	| 'if_then'
+	| 'sequence_match'
+	// Outcome
+	| 'entity_outcome'
+	| 'boolean_outcome'
+	| 'ranking_outcome';
+
+/** One node in a bet-graph. `props` carries kind-specific configuration. */
+export type GraphNode = {
+	id: string;
+	kind: GraphNodeKind;
+	props?: Record<string, unknown>;
+};
+
+/** Directed pin-to-pin edge between two nodes. */
+export type GraphEdge = {
+	from: { nodeId: string; pin: string };
+	to: { nodeId: string; pin: string };
+};
+
+/** Serializable bet-graph. Stored in `bet_graphs.graph_json`. */
+export type BetGraph = {
+	version: 1;
+	nodes: GraphNode[];
+	edges: GraphEdge[];
+};
+
+/** Session-snapshot mirror of a Mode's bet-graphs at session-create time. */
+export type SessionBetGraph = {
+	id: string;
+	name: string;
+	description?: string | null;
+	graph: BetGraph;
+};
+
 // ---------- Tables ----------
 
 export const users = pgTable(
@@ -386,6 +456,30 @@ export const modes = pgTable(
 	(t) => [uniqueIndex('modes_slug_uniq').on(t.slug)]
 );
 
+/**
+ * Bet-graphs: mode-level visual market definitions.
+ * Compiled at round-start into concrete bet_markets + bet_outcomes whose
+ * outcomes carry Predicate ASTs (existing evaluator stays untouched).
+ *
+ * Side-by-side with legacy `modes.marketTemplates` during Phase 6 rollout.
+ */
+export const betGraphs = pgTable(
+	'bet_graphs',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		modeId: uuid('mode_id')
+			.references(() => modes.id, { onDelete: 'cascade' })
+			.notNull(),
+		name: text('name').notNull(),
+		description: text('description'),
+		graphJson: jsonb('graph_json').$type<BetGraph>().notNull(),
+		orderIndex: integer('order_index').default(0).notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+	},
+	(t) => [index('bet_graphs_mode_idx').on(t.modeId)]
+);
+
 export const sessions = pgTable(
 	'sessions',
 	{
@@ -404,6 +498,10 @@ export const sessions = pgTable(
 		// the underlying Mode don't retro-affect an active session.
 		trackables: jsonb('trackables').$type<Trackable[]>().default([]).notNull(),
 		marketTemplates: jsonb('market_templates').$type<MarketTemplate[]>().default([]).notNull(),
+		betGraphsSnapshot: jsonb('bet_graphs_snapshot')
+			.$type<SessionBetGraph[]>()
+			.default([])
+			.notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 		endedAt: timestamp('ended_at', { withTimezone: true })
 	},

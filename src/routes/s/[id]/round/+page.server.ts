@@ -41,6 +41,7 @@ import { getRoundHistory } from '$lib/server/repos/stats';
 import {
 	createBinaryMarket,
 	instantiateMarketTemplates,
+	instantiateBetGraphs,
 	lockMarket,
 	listMarketsByRound,
 	listOutcomesByMarket
@@ -309,6 +310,17 @@ export const actions: Actions = {
 					return fail(400, { error: friendlyError(msg) });
 				}
 				console.error('instantiateMarketTemplates failed', e);
+			}
+			// Also instantiate markets from bet-graphs (Phase 6, side-by-side).
+			try {
+				const n = await instantiateBetGraphs({
+					roundId: r.id,
+					sessionId: params.id,
+					createdByUserId: user.id
+				});
+				if (n > 0) emit(params.id, 'market_created', { roundId: r.id, count: n });
+			} catch (e) {
+				console.error('instantiateBetGraphs failed', e);
 			}
 			// Skip SETUP: open betting immediately so players can place bets.
 			await transitionStatus(r.id, 'BETTING_OPEN');

@@ -6,6 +6,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { listAvailableForUser, findById as findModeById } from '$lib/server/repos/modes';
 import { createSession } from '$lib/server/repos/sessions';
+import { snapshotForMode } from '$lib/server/repos/betGraphs';
 import type { ConfirmationMode, DrinkType, SessionConfig } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -85,6 +86,7 @@ export const actions: Actions = {
 			config,
 			trackables: mode.trackables,
 			marketTemplates: mode.marketTemplates,
+			betGraphsSnapshot: await snapshotForMode(mode.id),
 			defaultEntities: mode.defaultEntities
 		});
 

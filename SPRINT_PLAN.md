@@ -268,6 +268,32 @@ Notes:
 
 ---
 
+## Phase 6 — Bet-Graph Foundation (Side-by-Side) ◐
+**Goal:** Visueller, modularer Wett-Builder als Alternative zu `market_templates` -- additiv und legacy-kompatibel.
+
+Done:
+- ☑ Migration `0005_bet_graphs.sql`: `bet_graphs` Tabelle (mode-FK, `graph_json jsonb`) + `sessions.bet_graphs_snapshot jsonb`.
+- ☑ Drizzle Schema: `GraphNodeKind` (22 Kinds), `GraphNode`/`GraphEdge`/`BetGraph`/`SessionBetGraph` Types; `betGraphs` Tabelle; `sessions.betGraphsSnapshot`.
+- ☑ `src/lib/graph/catalog.ts` -- 22-Node-Spec + 6 Pin-Typen (Entity/EntityList/Trackable/Number/Boolean/Timestamp) + 4 Families (source/compute/logic/outcome).
+- ☑ `src/lib/graph/validate.ts` -- TYPE_MISMATCH, MISSING_INPUT, MULTI_EDGE, NO/MULTI_OUTCOME, CYCLE-Detection.
+- ☑ `src/lib/graph/preview.ts` -- generiert deutschen Satz aus Graph (Live-Preview).
+- ☑ `src/lib/graph/compile.ts` -- Compiler zu `Predicate`-AST: deckt Wett-Familien A (race N=1 via `log_rank`), B (arg_max), C (sum+compare), D (count+compare). Unsupported Shapes: `{ok:false}` und werden geskippt.
+- ☑ `src/lib/graph/graph.test.ts` -- 11 Tests (Validator + Compiler + Preview).
+- ☑ `repos/betGraphs.ts` -- CRUD + `snapshotForMode`.
+- ☑ `repos/sessions.ts` -- akzeptiert `betGraphsSnapshot` bei create.
+- ☑ `/s/create` -- ruft `snapshotForMode` und persistiert Snapshot in Session.
+- ☑ `repos/markets.ts:instantiateBetGraphs` -- am Round-Betting-Open neben `instantiateMarketTemplates` (side-by-side, nicht ersetzend).
+- ☑ `/s/[id]/round/+page.server.ts` -- wired mit SSE-Emit.
+- ☑ `/modes/[id]/graphs` MVP UI -- JSON-Editor mit live Preview-Satz + Validierungs-Badge + Help-Details. Discovery-Link auf `/modes/[id]`.
+- ☑ `pnpm check` 0 errors / 13 warnings, vitest 60/60 grün.
+
+Deferred → Phase 7:
+- ☐ Visueller Blueprints-Style Editor (Tap-to-Connect, Mobile-First, vertikales Auto-Layout).
+- ☐ Compiler-Erweiterung: Familien E (delta), F (time-compare), G (if-then), H (sequence), I (time-threshold), J (ranking) + Predicate-Engine-Primitive falls fehlend.
+- ☐ Cutover-Entscheidung: `market_templates` löschen oder dauerhaft co-existieren.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

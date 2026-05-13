@@ -43,6 +43,13 @@
 			error={form && 'error' in form ? form.error : null}
 		/>
 
+		<a
+			href="/modes/{data.mode.id}/graphs"
+			class="btn btn-outline mt-6 w-full justify-start gap-2 rounded-xl text-sm"
+		>
+			<span aria-hidden="true">📐</span> Bet-Graphs (visueller Wett-Builder, Phase 6)
+		</a>
+
 		<form
 			method="POST"
 			action="?/delete"

@@ -11,6 +11,7 @@ import {
 	type SessionConfig,
 	type MarketTemplate,
 	type ModeDefaultEntity,
+	type SessionBetGraph,
 	type Trackable
 } from '../db/schema';
 
@@ -72,6 +73,7 @@ export type CreateSessionInput = {
 	config: SessionConfig;
 	trackables: Trackable[];
 	marketTemplates: MarketTemplate[];
+	betGraphsSnapshot?: SessionBetGraph[];
 	defaultEntities: ModeDefaultEntity[];
 };
 
@@ -98,7 +100,8 @@ export async function createSession(input: CreateSessionInput): Promise<DbSessio
 				inviteCode,
 				config: input.config,
 				trackables: input.trackables,
-				marketTemplates: input.marketTemplates
+				marketTemplates: input.marketTemplates,
+				betGraphsSnapshot: input.betGraphsSnapshot ?? []
 			})
 			.returning();
 

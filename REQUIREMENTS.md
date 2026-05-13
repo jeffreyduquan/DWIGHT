@@ -56,6 +56,7 @@
 - **REQ-MODE-004** Modes are user-authored by default; no mandatory built-in battle-test mode in V1.
 - **REQ-MODE-005** Session-create UI shows a Mode picker over the user's available Modes.
 - **REQ-MODE-006** A Mode's terminology is consulted by the UI helper `useTerminology(modeId)` which returns `{ round, entity, startedVerb }` with sensible defaults (`Runde` / `Entität` / `läuft`).
+- **REQ-MODE-007** A Mode owns zero or more **Bet-Graphs** (table `bet_graphs`): visual node-graph definitions (`{version:1, nodes:[], edges:[]}`) that compile to runtime markets. At session-create the snapshot is copied to `sessions.bet_graphs_snapshot`; at round-betting-open the compiler emits one market per supported outcome via `compileSessionGraphs` and spawns them alongside legacy `market_templates` (side-by-side). Unsupported shapes are skipped (no hard fail). Supported in Phase 6: Wett-Familien A (race, N=1 via `log_rank`), B (arg_max), C (sum+compare), D (count+compare). Other families return `ok:false` and are skipped.
 
 ---
 
@@ -209,6 +210,8 @@
 - **REQ-UI-016** Drink confirmation progress is shown as **explicit `x/y` chips** per drink: a `Host 0/1` chip and (for `PEERS` / `EITHER` modes) a `Spieler n/N` chip, each turning sage-green when satisfied. When the active mode requires a host signature that is still missing, an additional `Host muss bestätigen` pill is rendered. No more raw "n Bestätigung(en) — warte auf MODE" copy.
 - **REQ-UI-017** Closed sessions on the landing page collapse into a `<details>` block ("Beendet ({n})") that is closed by default. Active sessions render expanded above it.
 - **REQ-UI-018** The Host's only session-lifecycle button in the lobby is a single **"Session beenden & löschen"** action that opens a native confirmation modal and, on confirm, hard-deletes the session and all dependent rows (rounds, bets, drinks, events) via the existing `?/deleteSession` action, then redirects to `/`. The separate "Session beenden" (mark ENDED) button has been removed from the UI.
+- **REQ-UI-019** Bet-Graphs per Mode are managed at `/modes/[id]/graphs`. Phase 6 ships an MVP JSON-textarea editor: list rows show name + description + live-derived German preview sentence + a `✓ Valid` or `⚠ N Validierungsfehler` badge. Create/Save/Delete via SvelteKit form actions; `confirm()` gates delete. A discovery link `Bet-Graphs (visueller Wett-Builder, Phase 6)` lives on `/modes/[id]`. The visual Blueprints-style editor lands in a follow-up phase.
+- **REQ-UI-020** The graph validator (`validateGraph`) and preview (`previewSentence`) run on every load; the compiler (`compileGraph` / `compileSessionGraphs`) returns a discriminated union (`{ok:true, market}` | `{ok:false, error}`) and only valid + supported graphs spawn markets — unsupported shapes log-and-skip so legacy `market_templates` keep working unaffected.
 
 ---
 

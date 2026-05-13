@@ -20,6 +20,7 @@ import {
 import { evalPredicate, negate, type CounterSnapshot } from '../bets/predicate';
 import { computeMarketPayouts, type OutcomeForPayout } from '../bets/payout';
 import { getCounterSnapshot } from './events';
+import { compileSessionGraphs } from '$lib/graph/compile';
 
 export type DbBetMarket = typeof betMarkets.$inferSelect;
 export type DbBetOutcome = typeof betOutcomes.$inferSelect;
@@ -470,6 +471,52 @@ export async function instantiateMarketTemplates(args: {
 			});
 			created++;
 		}
+	}
+	return created;
+}
+
+/**
+ * Auto-instantiate markets from the session's bet-graphs snapshot.
+ * Side-by-side companion to `instantiateMarketTemplates` during Phase 6.
+ *
+ * Returns the number of markets created. Unsupported graph shapes (compiler
+ * returns `ok:false`) are skipped silently so that bad graphs don't block the
+ * round from opening.
+ */
+export async function instantiateBetGraphs(args: {
+	roundId: string;
+	sessionId: string;
+	createdByUserId: string;
+}): Promise<number> {
+	const [s] = await db
+		.select({
+			betGraphsSnapshot: sessions.betGraphsSnapshot,
+			trackables: sessions.trackables
+		})
+		.from(sessions)
+		.where(eq(sessions.id, args.sessionId));
+	if (!s) throw new Error('SESSION_NOT_FOUND');
+	const graphs = s.betGraphsSnapshot ?? [];
+	if (graphs.length === 0) return 0;
+	const ents = await db
+		.select({ id: entities.id, name: entities.name })
+		.from(entities)
+		.where(eq(entities.sessionId, args.sessionId));
+
+	const compiled = compileSessionGraphs(graphs, {
+		entities: ents,
+		trackables: s.trackables ?? []
+	});
+	let created = 0;
+	for (const m of compiled) {
+		await createMarket({
+			roundId: args.roundId,
+			title: m.title,
+			description: m.description ?? undefined,
+			createdByUserId: args.createdByUserId,
+			outcomes: m.outcomes.map((o) => ({ label: o.label, predicate: o.predicate }))
+		});
+		created++;
 	}
 	return created;
 }
