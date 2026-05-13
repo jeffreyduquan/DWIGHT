@@ -206,6 +206,9 @@
 - **REQ-UI-013** `SessionTopBar` is minimal: back link, optional Host/Gesperrt pills, and a prominent `tabular text-2xl` balance chip with neumorphic raised shadow. Session name and subtitle are intentionally omitted from chrome to maximise content density on phones.
 - **REQ-UI-014** **Ended sessions are read-only recaps.** When `session.status === 'ENDED'`, the `/s/:id/*` layout redirects every non-stats route to `/s/:id/stats`, hides the `BottomDock`, and renders only a `Beendet` pill in the top bar with a back-to-home link. Host's `?/endSession` action returns the user to the landing page. Closed sessions appear on the landing page under a separate "Beendet" group; clicking a closed session opens its stats recap directly.
 - **REQ-UI-015** Mode-template editing follows a **save-and-close** pattern: both `/modes/new` and `/modes/:id` `?/save` actions redirect to `/modes` on success, so the user always returns to the templates list after saving (no half-open edit views).
+- **REQ-UI-016** Drink confirmation progress is shown as **explicit `x/y` chips** per drink: a `Host 0/1` chip and (for `PEERS` / `EITHER` modes) a `Spieler n/N` chip, each turning sage-green when satisfied. When the active mode requires a host signature that is still missing, an additional `Host muss bestätigen` pill is rendered. No more raw "n Bestätigung(en) — warte auf MODE" copy.
+- **REQ-UI-017** Closed sessions on the landing page collapse into a `<details>` block ("Beendet ({n})") that is closed by default. Active sessions render expanded above it.
+- **REQ-UI-018** The Host's only session-lifecycle button in the lobby is a single **"Session beenden & löschen"** action that opens a native confirmation modal and, on confirm, hard-deletes the session and all dependent rows (rounds, bets, drinks, events) via the existing `?/deleteSession` action, then redirects to `/`. The separate "Session beenden" (mark ENDED) button has been removed from the UI.
 
 ---
 

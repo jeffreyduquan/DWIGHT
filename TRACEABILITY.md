@@ -173,6 +173,9 @@
 | REQ-UI-013 | D9 / Phase 5 | `src/lib/components/SessionTopBar.svelte` (minimal: back + pills + prominenter Balance-Chip), `src/routes/s/[id]/+layout.svelte` | manual mobile viewport | ☑ |
 | REQ-UI-014 | D9 / Phase 5 | `src/routes/s/[id]/+layout.server.ts` (ENDED-redirect zu /stats), `src/routes/s/[id]/+layout.svelte` (kein BottomDock wenn isEnded), `src/lib/components/SessionTopBar.svelte` (Beendet-Pill), `src/routes/s/[id]/+page.server.ts` (endSession → redirect '/'), `src/routes/+page.svelte` (Aktiv vs. Beendet Listen) | manual `/s/:id` nach endSession, `/` mit gemischten Sessions | ☑ |
 | REQ-UI-015 | D9 / Phase 5 | `src/routes/modes/new/+page.server.ts` (redirect '/modes'), `src/routes/modes/[id]/+page.server.ts` (redirect '/modes' bereits vorhanden) | manual `/modes/new` + `/modes/[id]` save | ☑ |
+| REQ-UI-016 | D9 / Phase 5c | `src/lib/components/DrinkPanel.svelte` (`confirmProgress` helper, `.confirm-chip` / `.confirm-host-required` Styles) | manual `/s/:id` Drink-Panel mit allen drei confirmationModes | ☑ |
+| REQ-UI-017 | D9 / Phase 5c | `src/routes/+page.svelte` (`<details>` für Beendet-Sektion) | manual `/` mit ENDED-Sessions | ☑ |
+| REQ-UI-018 | D9 / Phase 5c | `src/routes/s/[id]/+page.svelte` (kombinierter Beenden-&-Löschen-Button mit confirm()), `src/routes/s/[id]/+page.server.ts` (deleteSession Action bleibt) | manual Host Session löschen | ☑ |
 
 ## REQ-GM — Game Master Tools
 

@@ -36,6 +36,7 @@
 			id: string;
 			config: {
 				confirmationMode: 'GM' | 'PEERS' | 'EITHER';
+				peerConfirmationsRequired?: number;
 				drinkPrices: Record<DrinkType, number>;
 				rebuy: { enabled: boolean; drinkType: DrinkType; amount: number };
 				forceDrinkTypesAllowed: readonly DrinkType[] | DrinkType[];
@@ -89,6 +90,32 @@
 	);
 	const rebuyAvailable = $derived(session.config.rebuy.enabled && me.moneyBalance <= 0);
 	const allowedForceTypes = $derived(session.config.forceDrinkTypesAllowed);
+
+	// Confirmation progress descriptor for a drink. Returns the readable
+	// x/y label, the chips to render, whether the host is still required,
+	// and a finished flag.
+	function confirmProgress(d: DrinkDto) {
+		const gmCount = d.confirmations.filter((c) => c.role === 'GM').length;
+		const peerCount = d.confirmations.filter((c) => c.role === 'PEER').length;
+		const peerReq = session.config.peerConfirmationsRequired ?? 1;
+		const mode = session.config.confirmationMode;
+		let finished = false;
+		let hostNeeded = false;
+		let primary = '';
+		if (mode === 'GM') {
+			finished = gmCount >= 1;
+			hostNeeded = !finished;
+			primary = `Host ${Math.min(gmCount, 1)}/1`;
+		} else if (mode === 'PEERS') {
+			finished = peerCount >= peerReq;
+			primary = `Spieler ${Math.min(peerCount, peerReq)}/${peerReq}`;
+		} else {
+			finished = gmCount >= 1 || peerCount >= peerReq;
+			hostNeeded = !finished && gmCount < 1 && peerCount < peerReq;
+			primary = `Host ${Math.min(gmCount, 1)}/1  ·  Spieler ${Math.min(peerCount, peerReq)}/${peerReq}`;
+		}
+		return { gmCount, peerCount, peerReq, mode, finished, hostNeeded, primary };
+	}
 
 	let force_target = $state(players.find((p) => p.userId !== me.userId)?.userId ?? '');
 	let force_type = $state<DrinkType>('SCHLUCK');
@@ -157,6 +184,7 @@
 				Du musst trinken ({myPending.length})
 			</h4>
 			{#each myPending as d (d.id)}
+				{@const p = confirmProgress(d)}
 				<div class="glass rounded-xl p-3">
 					<div class="flex items-baseline justify-between">
 						<span class="text-sm">
@@ -169,18 +197,28 @@
 						</span>
 						<span class="tabular text-xs">{d.priceSnapshot}</span>
 					</div>
-					<p class="text-base-content/40 text-xs">
-						{d.confirmations.length} Bestätigung(en) — warte auf {session.config.confirmationMode}
-					</p>
+					<div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+						<span class="confirm-chip {p.gmCount >= 1 ? 'confirm-chip-done' : ''}">
+							Host {Math.min(p.gmCount, 1)}/1
+						</span>
+						{#if p.mode !== 'GM'}
+							<span class="confirm-chip {p.peerCount >= p.peerReq ? 'confirm-chip-done' : ''}">
+								Spieler {Math.min(p.peerCount, p.peerReq)}/{p.peerReq}
+							</span>
+						{/if}
+						{#if p.hostNeeded}
+							<span class="confirm-host-required">Host muss bestätigen</span>
+						{/if}
+					</div>
 					{#if canConfirmSelf}
 						<div class="mt-2 flex gap-2">
 							<form method="POST" action={aname('confirm')} use:enhance>
 								<input type="hidden" name="drinkId" value={d.id} />
-								<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen (GM)</button>
+								<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen (Host)</button>
 							</form>
 							<form method="POST" action={aname('cancel')} use:enhance>
 								<input type="hidden" name="drinkId" value={d.id} />
-								<button class="btn btn-xs btn-error btn-outline">Cancel</button>
+								<button class="btn btn-xs btn-error btn-outline">Abbrechen</button>
 							</form>
 						</div>
 					{/if}
@@ -192,6 +230,7 @@
 				Andere → bestätigen ({peersPending.length})
 			</h4>
 			{#each peersPending as d (d.id)}
+				{@const p = confirmProgress(d)}
 				<div class="glass rounded-xl p-3">
 					<div class="flex items-baseline justify-between">
 						<span class="text-sm">
@@ -204,22 +243,30 @@
 						</span>
 						<span class="tabular text-xs">{d.priceSnapshot}</span>
 					</div>
-					<p class="text-base-content/40 text-xs">
-						{d.confirmations.map((c) => `${c.username} (${c.role})`).join(', ') || 'noch keine'}
-					</p>
+					<div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+						<span class="confirm-chip {p.gmCount >= 1 ? 'confirm-chip-done' : ''}">
+							Host {Math.min(p.gmCount, 1)}/1
+						</span>
+						{#if p.mode !== 'GM'}
+							<span class="confirm-chip {p.peerCount >= p.peerReq ? 'confirm-chip-done' : ''}">
+								Spieler {Math.min(p.peerCount, p.peerReq)}/{p.peerReq}
+							</span>
+						{/if}
+						{#if p.hostNeeded}
+							<span class="confirm-host-required">Host muss bestätigen</span>
+						{/if}
+					</div>
 					<div class="mt-2 flex gap-2">
 						{#if canConfirmOthers}
 							<form method="POST" action={aname('confirm')} use:enhance>
 								<input type="hidden" name="drinkId" value={d.id} />
 								<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen</button>
 							</form>
-						{:else}
-							<span class="text-base-content/40 text-[0.65rem]">Nur der Host bestätigt (Modus: GM)</span>
 						{/if}
 						{#if me.role === 'HOST'}
 							<form method="POST" action={aname('cancel')} use:enhance>
 								<input type="hidden" name="drinkId" value={d.id} />
-								<button class="btn btn-xs btn-error btn-outline">Cancel (GM)</button>
+								<button class="btn btn-xs btn-error btn-outline">Abbrechen (Host)</button>
 							</form>
 						{/if}
 					</div>
@@ -248,3 +295,36 @@
 		{/if}
 	</section>
 {/if}
+
+<style>
+	.confirm-chip {
+		display: inline-flex;
+		align-items: center;
+		font-size: 0.65rem;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		padding: 0.2rem 0.55rem;
+		border-radius: 9999px;
+		background-color: oklch(95% 0.006 90);
+		color: oklch(40% 0.006 90);
+		border: 1px solid oklch(88% 0.004 90 / 0.6);
+	}
+	.confirm-chip-done {
+		background-color: oklch(93% 0.05 148);
+		color: oklch(36% 0.05 148);
+		border-color: oklch(75% 0.05 148 / 0.6);
+	}
+	.confirm-host-required {
+		display: inline-flex;
+		align-items: center;
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 0.22rem 0.55rem;
+		border-radius: 9999px;
+		background-color: oklch(94% 0.05 70);
+		color: oklch(45% 0.10 70);
+		border: 1px solid oklch(80% 0.06 70 / 0.6);
+	}
+</style>

@@ -98,8 +98,10 @@
 						</ul>
 					{/if}
 					{#if endedSessions.length > 0}
-						<div class="mt-6">
-							<p class="text-base-content/45 mb-2 text-[0.65rem] uppercase tracking-wider">Beendet</p>
+						<details class="mt-6">
+							<summary class="text-base-content/45 mb-2 flex cursor-pointer items-center gap-2 text-[0.65rem] uppercase tracking-wider">
+								<span>Beendet ({endedSessions.length})</span>
+							</summary>
 							<ul class="space-y-2">
 								{#each endedSessions as s (s.id)}
 									<li>
@@ -114,7 +116,7 @@
 									</li>
 								{/each}
 							</ul>
-						</div>
+						</details>
 					{/if}
 				{/if}
 			</section>

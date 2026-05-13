@@ -17,7 +17,6 @@
 		VolumeX,
 		Settings,
 		Trash2,
-		StopCircle,
 		Lock,
 		Unlock
 	} from '@lucide/svelte';
@@ -143,24 +142,13 @@
 			<p class="eyebrow">Session verwalten</p>
 		</div>
 		<div class="glass glass-xl space-y-2 p-4">
-			{#if data.session.status !== 'ENDED'}
-				<form method="POST" action="?/endSession" use:enhance>
-					<button class="btn btn-sm btn-warning btn-outline w-full gap-2">
-						<StopCircle size={14} /> Session beenden
-					</button>
-				</form>
-			{:else}
-				<p class="alert alert-warning text-xs">
-					Session bereits beendet (Status: {data.session.status}).
-				</p>
-			{/if}
 			<form
 				method="POST"
 				action="?/deleteSession"
 				use:enhance={({ cancel }) => {
 					if (
 						!confirm(
-							'Wirklich KOMPLETT löschen? Alle Runden, Wetten, Drinks, Events gehen unwiderruflich verloren.'
+							'Session jetzt beenden und KOMPLETT löschen?\n\nAlle Runden, Wetten, Drinks und Events gehen unwiderruflich verloren.'
 						)
 					) {
 						cancel();
@@ -168,9 +156,12 @@
 				}}
 			>
 				<button class="btn btn-sm btn-error btn-outline w-full gap-2">
-					<Trash2 size={14} /> Session komplett löschen
+					<Trash2 size={14} /> Session beenden &amp; löschen
 				</button>
 			</form>
+			<p class="text-base-content/45 text-center text-[0.65rem]">
+				Hard-Delete — keine Statistik bleibt erhalten.
+			</p>
 		</div>
 	</section>
 {/if}

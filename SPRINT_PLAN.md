@@ -251,6 +251,11 @@ Done — Phase 5b (Lifecycle-Fixes, REQ-UI-014/015):
 - ☑ **Ended-Session-Recap (REQ-UI-014):** `s/[id]/+layout.server.ts` erkennt `status === 'ENDED'` und redirected jede Non-Stats-Route auf `/s/:id/stats`. `+layout.svelte` rendert kein BottomDock mehr wenn `isEnded`. `SessionTopBar` zeigt `Beendet`-Pill statt Host/Gesperrt. `endSession` Action redirected nach `/` (vorher `return ok` → User blieb auf "Session bereits beendet"-Screen). Landing-Page (`/+page.svelte`) listet Sessions getrennt: Aktiv (Link auf `/s/:id`) und Beendet (Link auf `/s/:id/stats` mit dezenter Opacity).
 - ☑ **Save-and-Close (REQ-UI-015):** `modes/new/+page.server.ts` redirected nach `'/modes'` (vorher `/modes/{id}`), damit User nach Create direkt zur Templates-Liste zurückkehrt. `modes/[id]` save war bereits korrekt.
 
+Done — Phase 5c (Drink-Confirmation Rework + Host-Action Cleanup, REQ-UI-016/017/018):
+- ☑ **Drink Confirmation Progress (REQ-UI-016):** `DrinkPanel.confirmProgress()` Helper berechnet `gmCount`/`peerCount`/`peerReq`/`finished`/`hostNeeded` aus `confirmations[]` + `session.config.confirmationMode/peerConfirmationsRequired`. Pro Drink jetzt zwei explizite Chips: `Host 0/1` und (bei PEERS/EITHER) `Spieler n/N` — werden sage-grün wenn erfüllt. Zusätzlich `Host muss bestätigen` Pill wenn ein Host-Sign noch fehlt. Ersetzt das frühere kryptische "N Bestätigung(en) — warte auf MODE". Buttons: "Bestätigen (Host)" / "Abbrechen". Styles inline: `.confirm-chip`, `.confirm-chip-done`, `.confirm-host-required`.
+- ☑ **Beendet-Sektion collapsed (REQ-UI-017):** Landing-Page nutzt jetzt `<details>` für die "Beendet"-Liste — collapsed by default, Header zeigt Anzahl.
+- ☑ **End-&-Delete-Button (REQ-UI-018):** Die zwei separaten Buttons "Session beenden" + "Session löschen" zu einem einzigen `btn-error` Button "Session beenden & löschen" zusammengeführt, mit `confirm()` Dialog. Nutzt die bestehende `?/deleteSession` Action → hard-delete + redirect '/'. `StopCircle` Import entfernt.
+
 Notes:
 - `StakePicker.svelte` weiterhin unused; kann später entfernt werden.
 - Drinks-Server-Action `?/initiate` ist weiterhin im `s/[id]/+layout.server.ts` registriert und wird aus der Lobby genutzt — Pfad `/s/:id?/initiate` funktioniert wie zuvor.
