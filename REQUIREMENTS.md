@@ -197,6 +197,9 @@
 - **REQ-UI-004** Mobile viewports are first-class. Desktop is a side-effect of fluid layout.
 - **REQ-UI-005** All `/s/:id/*` routes share one chrome: a compact `SessionTopBar` (back, session name, badges, live balance) and a sticky `BottomDock` (Lobby · Runde · Drinks · Stats). Both are rendered once in `s/[id]/+layout.svelte`; child pages render only domain content. Min 48px touch targets, drink-pending badge on Dock.
 - **REQ-UI-006** Mode template builder uses a **Lego-style gallery**: collapsed by default, opens a 2-column visual card grid (icon + label + one-line example) for each of the 9 market-template kinds. Adding a kind appends a single per-template detail form below. No 9-button toolbar.
+- **REQ-UI-007** Entity & Trackable rows in `ModeForm` show only **one visible input** (the name). Color is auto-derived from a deterministic palette (stable hash of the name); the avatar chip displays the first character (or stored emoji). Trackable scope is a 2-button chip toggle (`pro` / `global`), not a dropdown. `kind`/`color`/`emoji` form fields are submitted as hidden inputs to keep the parseForm contract.
+- **REQ-UI-008** Mode has an optional `defaultConfig.showOdds` boolean (default `true`). When `false`, market UIs in the round page hide the parimutuel multiplier (`1.82×`) and percentage column entirely. Players still see their own placed stake.
+- **REQ-UI-009** Bet placement uses **one-tap quick-stake chips** (Min · ~25% · ~50% · All-in, deduped & clamped to ≥`minStake` and ≤`balance`). Each chip is a submit button with `name="stake" value={amount}` inside the `?/placeBet` form — no separate stake input, no expand/collapse details. Players with insufficient balance see a short hint instead of chips.
 
 ---
 

@@ -15,7 +15,9 @@ export function freshModeDefaultConfig(): ModeDefaultConfig {
 			enabled: true,
 			drinkType: 'BIER_EXEN',
 			amount: 500
-		}
+		},
+		autoLockOnDrink: true,
+		showOdds: true
 	};
 }
 

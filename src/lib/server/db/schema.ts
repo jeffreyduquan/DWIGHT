@@ -118,6 +118,8 @@ export type ModeDefaultConfig = {
 	rebuy: RebuyConfig;
 	/** Auto-lock a player from betting while they have a PENDING drink. Default true. */
 	autoLockOnDrink?: boolean;
+	/** Show parimutuel odds + percentage in market UI. Default true. */
+	showOdds?: boolean;
 };
 
 /**

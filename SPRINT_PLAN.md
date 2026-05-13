@@ -211,9 +211,18 @@ Done — Phase 2 (Mode-Builder + Mobile-Grids):
 - ☑ DrinkPanel Tabs: `btn-sm` → `btn-xs sm:btn-sm` mit `px-1 sm:px-3` für 360px-Geräte
 - ☑ Layout-CSS: Aurora-Opacity 0.45 → 0.22, Noise-Opacity 0.05 → 0.03, Blur 90 → 110 px (Linear/Vercel-Feel)
 
+Done — Phase 3 (Radikal-Simplifizierung Player-Inputs, REQ-UI-007/008/009):
+- ☑ ModeForm Entity-Row radikal entschlackt: nur Name-Input + Auto-Avatar-Chip (deterministisches Palette via Name-Hash, Initial als Buchstabe oder gespeichertes Emoji). `entityKind` fix `"entity"`, `entityColor` aus Palette, `entityEmoji` aus optionalem alten Wert — alle via hidden inputs.
+- ☑ ModeForm Trackable-Row radikal entschlackt: Name-Input + Avatar-Chip + 2-Button-Chip-Toggle (`pro` / `global`). Color/Emoji-Picker komplett raus, Auto-Color via gleichem Hash.
+- ☑ Schema/parseForm/defaults: `ModeDefaultConfig.showOdds?: boolean` (default `true`); `freshModeDefaultConfig` setzt `showOdds: true` + `autoLockOnDrink: true`.
+- ☑ ModeForm „Erweitert" enthält jetzt einen Toggle „Quoten anzeigen".
+- ☑ Round-Page Bet-UI radikal vereinfacht: `StakePicker` entfernt, ersetzt durch **One-Tap Quick-Stake-Chips** (`Min`/`~25%`/`~50%`/`All-in`, dedupliziert & geclamped). Jeder Chip ist ein Submit-Button mit `name="stake" value={amount}` — kein Stake-Input, kein Expand/Collapse mehr.
+- ☑ Quoten (Multiplikator + Prozent) werden conditional gerendert basierend auf `data.session.config.showOdds`.
+
 Notes:
 - Schema unverändert (Lego-Refactor + Section-Restructure verändern nur UI; alle 9 `kind` Werte, parseForm-Verträge und `?/` Action-Contracts bleiben)
 - BottomDock-Badge nutzt Layout-Loader für Pending-Drink-Zähler (live via SSE)
+- `StakePicker.svelte` bleibt im Repo (unused) — kann später entfernt werden, falls niemand reaktivieren will
 - Carry-over: `+page.svelte.new` Workaround beibehalten falls erneut nötig (PowerShell `Move-Item -Force`)
 
 ---

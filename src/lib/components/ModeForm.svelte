@@ -150,6 +150,31 @@
 		if (entities.length === 0) addEntity();
 	}
 
+	// Deterministic palette — picks a stable color per entity/trackable name.
+	const PALETTE = [
+		'#A78BFA',
+		'#7DD3FC',
+		'#FBBF24',
+		'#FB7185',
+		'#34D399',
+		'#F472B6',
+		'#60A5FA',
+		'#FCD34D',
+		'#C084FC',
+		'#4ADE80'
+	];
+	function colorFor(label: string, idx: number, fallback?: string): string {
+		if (fallback && fallback !== '#A78BFA' && fallback !== '#7DD3FC' && fallback !== '#7c7c7c') return fallback;
+		if (!label) return PALETTE[idx % PALETTE.length];
+		let h = 0;
+		for (let k = 0; k < label.length; k++) h = (h * 31 + label.charCodeAt(k)) >>> 0;
+		return PALETTE[h % PALETTE.length];
+	}
+	function initialFor(label: string, emoji: string): string {
+		if (emoji && emoji.trim()) return emoji.trim();
+		return (label || '?').trim().charAt(0).toUpperCase() || '?';
+	}
+
 	function addTrackable() {
 		trackables = [...trackables, { label: '', scope: 'entity', emoji: '', color: '#7DD3FC' }];
 	}
@@ -437,45 +462,33 @@
 		</p>
 		<ul class="space-y-2">
 			{#each entities as e, i (i)}
-				<li class="glass flex flex-wrap items-center gap-2 rounded-xl p-2 sm:grid sm:grid-cols-[1fr_5rem_3rem_2.5rem]">
+				{@const eColor = colorFor(e.name, i, e.color)}
+				<li class="glass flex items-center gap-2 rounded-xl p-2">
+					<span
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold uppercase"
+						style="background-color: {eColor}33; border-color: {eColor}99; color: {eColor};"
+					>
+						{initialFor(e.name, e.emoji)}
+					</span>
 					<input
 						type="text"
-						name="entityName"
 						bind:value={e.name}
-						placeholder="Name"
-						class="input input-bordered input-sm w-full sm:flex-1"
-					/>
-					<input
-						type="text"
-						name="entityKind"
-						bind:value={e.kind}
-						placeholder="kind"
-						class="input input-bordered input-sm tabular w-24 sm:w-full"
-					/>
-					<input
-						type="color"
-						name="entityColor"
-						bind:value={e.color}
-						class="h-9 w-12 cursor-pointer rounded-md border-0 bg-transparent sm:w-full"
-					/>
-					<input
-						type="text"
-						name="entityEmoji"
-						bind:value={e.emoji}
-						maxlength="2"
-						placeholder="A"
-						aria-label="Initial / Symbol"
-						style="background-color: {e.color}33; border-color: {e.color}99;"
-						class="input input-bordered input-sm h-10 w-10 rounded-full text-center text-base font-bold uppercase"
+						placeholder="Name (z.B. Anna)"
+						class="input input-bordered input-sm flex-1"
 					/>
 					<button
 						type="button"
 						onclick={() => removeEntity(i)}
-						class="text-base-content/40 hover:text-error ml-auto inline-flex items-center gap-1 text-xs sm:col-span-4 sm:self-end sm:justify-self-end"
+						class="text-base-content/40 hover:text-error inline-flex h-9 w-9 items-center justify-center rounded-lg"
 						aria-label="Entfernen"
 					>
-						<X size={11} /> entfernen
+						<X size={14} />
 					</button>
+					<!-- Hidden form fields preserve parseForm contract -->
+					<input type="hidden" name="entityName" value={e.name} />
+					<input type="hidden" name="entityKind" value="entity" />
+					<input type="hidden" name="entityColor" value={eColor} />
+					<input type="hidden" name="entityEmoji" value={e.emoji} />
 				</li>
 			{/each}
 		</ul>
@@ -501,48 +514,51 @@
 		{/if}
 		<ul class="space-y-2">
 			{#each trackables as t, i (i)}
-				<li
-					class="glass flex flex-wrap items-center gap-2 rounded-xl p-2 sm:grid sm:grid-cols-[1fr_7rem_5rem_2.5rem]"
-				>
-					<input
-						type="text"
-						name="trackableLabel"
-						bind:value={t.label}
-						placeholder="z.B. Foul"
-						class="input input-bordered input-sm w-full sm:flex-1"
-					/>
-					<select
-						name="trackableScope"
-						bind:value={t.scope}
-						class="select select-bordered select-sm w-32 sm:w-full"
+				{@const tColor = colorFor(t.label, i, t.color)}
+				<li class="glass flex items-center gap-2 rounded-xl p-2">
+					<span
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold uppercase"
+						style="background-color: {tColor}33; border-color: {tColor}99; color: {tColor};"
 					>
-						<option value="global">global</option>
-						<option value="entity">pro Entität</option>
-					</select>
-					<input
-						type="color"
-						name="trackableColor"
-						bind:value={t.color}
-						class="h-9 w-12 cursor-pointer rounded-md border-0 bg-transparent sm:w-full"
-					/>
+						{initialFor(t.label, t.emoji)}
+					</span>
 					<input
 						type="text"
-						name="trackableEmoji"
-						bind:value={t.emoji}
-						maxlength="2"
-						placeholder="X"
-						aria-label="Initial / Symbol"
-						style="background-color: {t.color}33; border-color: {t.color}99;"
-						class="input input-bordered input-sm h-10 w-10 rounded-full text-center text-base font-bold uppercase"
+						bind:value={t.label}
+						placeholder="z.B. Foul, Tor, Schluck"
+						class="input input-bordered input-sm flex-1"
 					/>
+					<div class="join">
+						<button
+							type="button"
+							class="btn btn-xs join-item {t.scope === 'entity' ? 'btn-primary' : 'btn-ghost'}"
+							onclick={() => (t.scope = 'entity')}
+							title="Zähler pro Entität (z.B. jeder Spieler eigene Tore)"
+						>
+							pro
+						</button>
+						<button
+							type="button"
+							class="btn btn-xs join-item {t.scope === 'global' ? 'btn-primary' : 'btn-ghost'}"
+							onclick={() => (t.scope = 'global')}
+							title="Ein Zähler insgesamt"
+						>
+							global
+						</button>
+					</div>
 					<button
 						type="button"
 						onclick={() => removeTrackable(i)}
-						class="text-base-content/40 hover:text-error ml-auto inline-flex items-center gap-1 text-xs sm:col-span-4 sm:self-end sm:justify-self-end"
+						class="text-base-content/40 hover:text-error inline-flex h-9 w-9 items-center justify-center rounded-lg"
 						aria-label="Entfernen"
 					>
-						<X size={11} /> entfernen
+						<X size={14} />
 					</button>
+					<!-- Hidden form fields preserve parseForm contract -->
+					<input type="hidden" name="trackableLabel" value={t.label} />
+					<input type="hidden" name="trackableScope" value={t.scope} />
+					<input type="hidden" name="trackableColor" value={tColor} />
+					<input type="hidden" name="trackableEmoji" value={t.emoji} />
 				</li>
 			{/each}
 		</ul>
@@ -1224,7 +1240,7 @@
 	<details class="glass glass-xl rounded-2xl">
 		<summary class="flex cursor-pointer items-center gap-2 p-4 text-sm font-medium">
 			<span class="bg-base-content/10 inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">5</span>
-			<span class="flex-1">Erweitert <span class="text-base-content/45 text-[0.7rem]">— Geld, Drinks, Bestätigung, Rebuy</span></span>
+			<span class="flex-1">Erweitert <span class="text-base-content/45 text-[0.7rem]">— Geld, Quoten, Drinks, Bestätigung, Rebuy</span></span>
 			<span class="text-base-content/40 text-xs">▾</span>
 		</summary>
 		<div class="space-y-4 p-4 pt-0">
@@ -1255,6 +1271,20 @@
 				/>
 			</label>
 		</div>
+		<label class="glass flex items-center justify-between rounded-xl p-3">
+			<span class="space-y-1">
+				<span class="block text-sm font-medium">Quoten anzeigen</span>
+				<span class="text-base-content/40 block text-xs">
+					Multiplikator (1.82×) + Prozent neben jedem Outcome. Aus = nur Outcome &amp; eigener Einsatz.
+				</span>
+			</span>
+			<input
+				type="checkbox"
+				name="showOdds"
+				class="toggle toggle-primary"
+				checked={initial.defaultConfig.showOdds !== false}
+			/>
+		</label>
 	</section>
 
 	<!-- Drinks -->

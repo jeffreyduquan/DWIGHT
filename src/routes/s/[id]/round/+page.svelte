@@ -12,7 +12,6 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
 	import { playSound } from '$lib/client/sounds.svelte';
-	import StakePicker from '$lib/components/StakePicker.svelte';
 	import {
 		ArrowRight,
 		Lock,
@@ -271,6 +270,7 @@
 								? (m.poolTotal + refStake) / (o.stakeTotal + refStake)
 								: odds}
 						{@const pct = m.poolTotal > 0 ? Math.round((o.stakeTotal / m.poolTotal) * 100) : 0}
+						{@const showOdds = data.session.config.showOdds !== false}
 						<li
 							class="rounded-xl border p-2.5 transition {o.isWinner
 								? 'border-success bg-success/10'
@@ -295,12 +295,12 @@
 									</p>
 								</div>
 								<div class="shrink-0 text-right">
-									{#if projectedOdds != null}
+									{#if showOdds && projectedOdds != null}
 										<p class="text-gradient-primary tabular text-lg font-bold leading-none">
 											{projectedOdds.toFixed(2)}<span class="text-xs">×</span>
 										</p>
 										<p class="text-base-content/40 text-[0.6rem]">{pct}%</p>
-									{:else}
+									{:else if showOdds}
 										<p class="text-base-content/40 text-xs italic">—</p>
 									{/if}
 								</div>
@@ -313,29 +313,36 @@
 									</p>
 								{/if}
 								{#if !isBetLocked}
-									<details class="group mt-2">
-										<summary
-											class="btn btn-sm w-full list-none {o.myStake > 0
-												? 'btn-outline btn-primary'
-												: 'btn-primary'}"
+									{@const minS = data.session.config.minStake}
+									{@const bal = data.me.moneyBalance}
+									{@const roundDown = (v: number) => Math.max(minS, Math.floor(v / minS) * minS)}
+									{@const chips = bal >= minS
+										? [...new Set([minS, roundDown(bal * 0.25), roundDown(bal * 0.5), bal])]
+												.filter((v) => v >= minS && v <= bal)
+												.sort((a, b) => a - b)
+										: []}
+									{#if chips.length === 0}
+										<p class="text-warning mt-2 text-[0.7rem]">Zu wenig Geld für Mindesteinsatz.</p>
+									{:else}
+										<form
+											method="POST"
+											action="?/placeBet"
+											use:enhance
+											class="mt-2 flex gap-1"
 										>
-											<span class="group-open:hidden"
-												>{o.myStake > 0 ? 'Mehr setzen' : 'Wetten'} ▾</span
-											>
-											<span class="hidden group-open:inline">Zuklappen ▴</span>
-										</summary>
-										<form method="POST" action="?/placeBet" use:enhance class="mt-2">
 											<input type="hidden" name="outcomeId" value={o.id} />
-											<StakePicker
-												min={data.session.config.minStake}
-												max={data.me.moneyBalance}
-												potentialProfit={projectedOdds
-													? Math.floor(data.session.config.minStake * projectedOdds) -
-														data.session.config.minStake
-													: null}
-											/>
+											{#each chips as s (s)}
+												<button
+													type="submit"
+													name="stake"
+													value={s}
+													class="btn btn-sm btn-primary tabular flex-1 px-1 font-semibold"
+												>
+													{s === bal ? 'All-in' : `+${s}`}
+												</button>
+											{/each}
 										</form>
-									</details>
+									{/if}
 								{/if}
 							{:else if m.status === 'SETTLED' && o.myStake > 0}
 								{@const profit = o.myPayout - o.myStake}

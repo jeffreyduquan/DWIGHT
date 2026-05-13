@@ -164,6 +164,9 @@
 | REQ-UI-004 | D0+ | Tailwind responsive utilities | manual mobile viewport | ☑ |
 | REQ-UI-005 | D9 | `src/lib/components/SessionTopBar.svelte`, `src/lib/components/BottomDock.svelte`, `src/routes/s/[id]/+layout.svelte`, `src/routes/s/[id]/+layout.server.ts` | manual mobile viewport (lobby/round/drinks/stats) | ☑ |
 | REQ-UI-006 | D9 | `src/lib/components/ModeForm.svelte` (kindGallery + addTemplate) | manual `/modes/new` | ☑ |
+| REQ-UI-007 | D9 | `src/lib/components/ModeForm.svelte` (entity row, trackable row, PALETTE, colorFor, initialFor, scope chip toggle, hidden inputs) | manual `/modes/new` + `/modes/[id]` | ☑ |
+| REQ-UI-008 | D9 | `src/lib/server/db/schema.ts` (`ModeDefaultConfig.showOdds`), `src/lib/server/modes/parseForm.ts`, `src/lib/server/modes/defaults.ts`, `src/lib/components/ModeForm.svelte` (Quoten-Toggle), `src/routes/s/[id]/round/+page.svelte` (conditional render) | manual | ☑ |
+| REQ-UI-009 | D9 | `src/routes/s/[id]/round/+page.svelte` (Quick-Stake-Chips Form) | manual `/s/:id/round` | ☑ |
 
 ## REQ-GM — Game Master Tools
 

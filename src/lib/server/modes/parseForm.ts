@@ -132,7 +132,8 @@ export function parseModeForm(form: FormData): ParseResult {
 			drinkType: rebuyDrinkType,
 			amount: toInt(form.get('rebuyAmount'), 500)
 		},
-		autoLockOnDrink: form.get('autoLockOnDrink') === 'on'
+		autoLockOnDrink: form.get('autoLockOnDrink') === 'on',
+		showOdds: form.get('showOdds') === 'on'
 	};
 
 	if (defaultConfig.startingMoney <= 0) {
