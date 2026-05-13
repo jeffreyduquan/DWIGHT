@@ -1,9 +1,9 @@
 <!--
-	@file Logo.svelte — DWIGHT minimal mark + wordmark
+	@file Logo.svelte — DWIGHT neumorphic mark + wordmark
 	@implements REQ-BRAND-001, REQ-BRAND-005
 
-	Mark: a single sage rounded square containing a clean dot — calm, geometric,
-	scales from 16px to hero. Wordmark uses Inter semibold, near-zero tracking.
+	Mark: a raised neumorphic pill with a recessed dot — matches the
+	"Soft Linen" design system (pressed-in highlights, soft drop shadow).
 -->
 <script lang="ts">
 	type Props = {
@@ -23,8 +23,24 @@
 		role="img"
 		aria-label="DWIGHT"
 	>
-		<rect x="2" y="2" width="28" height="28" rx="8" fill="oklch(60% 0.055 148)" />
-		<circle cx="16" cy="16" r="5" fill="oklch(97% 0.014 92)" />
+		<defs>
+			<filter id="raised" x="-25%" y="-25%" width="150%" height="150%">
+				<feDropShadow dx="-1" dy="-1" stdDeviation="1" flood-color="white" flood-opacity="0.8" />
+				<feDropShadow dx="1.5" dy="1.5" stdDeviation="1.5" flood-color="#7a7060" flood-opacity="0.18" />
+			</filter>
+		</defs>
+		<rect
+			x="3"
+			y="3"
+			width="26"
+			height="26"
+			rx="13"
+			fill="oklch(94% 0.004 90)"
+			stroke="oklch(88% 0.004 90)"
+			stroke-width="0.6"
+			filter="url(#raised)"
+		/>
+		<circle cx="16" cy="16" r="4.5" fill="oklch(58% 0.05 148)" />
 	</svg>
 
 	{#if showWordmark}

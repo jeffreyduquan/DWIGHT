@@ -28,10 +28,10 @@
 
 - **REQ-BRAND-001** Product name is `DWIGHT`. Always set in caps in copy and frontend titles.
 - **REQ-BRAND-002** No tagline shipped in V1. Tagline slot reserved for future use.
-- **REQ-BRAND-003** Theme: light, organic, calm — "Sage Cream". Single accent: muted sage. Surfaces: warm cream `#FAF7F0` base → off-white card surface. No gradients, no glassmorphism, no aurora blobs, no glow. Defined in `layout.css` as DaisyUI theme `dwight` (light, prefersdark=false).
-- **REQ-BRAND-004** Type stack: Inter (display + body), Geist Mono (tabular numerics). Display weight 600, near-zero tracking. Wordmark Inter 700.
-- **REQ-BRAND-005** Logo mark: 28×28 sage rounded square (radius 8) with a cream dot center — calm, geometric, scales from 16px favicon to hero. Wordmark in Inter 700, no tracking gimmicks.
-- **REQ-BRAND-006** Mobile-first PWA: viewport-fit cover, manifest, favicon, theme-color `#FAF7F0`, install prompt later.
+- **REQ-BRAND-003** Theme: light, monochrome, soft-neumorphic — "Soft Linen". Paper background `#F2EFE9` with subtle SVG grain. All controls are pill-shaped with a top-left highlight + bottom-right warm drop shadow (raised) or inset shadows (pressed/inputs). Sage `oklch(58% 0.05 148)` reserved for focus rings, active indicators, primary text accent — never used as a full color fill. Defined in `layout.css` as DaisyUI theme `dwight` (light, prefersdark=false).
+- **REQ-BRAND-004** Type stack: Inter (display + body, 600/700 with -0.02em tracking on display, no uppercase gimmicks except `.eyebrow` micro-labels). Geist Mono for tabular numerics.
+- **REQ-BRAND-005** Logo mark: 32×32 raised neumorphic pill (rounded-full, soft drop shadow) with a recessed sage dot center. Wordmark in Inter 700.
+- **REQ-BRAND-006** Mobile-first PWA: viewport-fit cover, manifest, favicon, theme-color `#F2EFE9`, install prompt later.
 - **REQ-BRAND-007** UI language: German (de-DE) for all player-facing copy. Code, comments, docs in English.
 
 ---

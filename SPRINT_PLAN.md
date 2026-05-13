@@ -228,6 +228,15 @@ Done — Phase 4 (Sage-Cream Theme-Reset, REQ-BRAND-003/004/005/006):
 - ☑ Hardcoded `border-white/*` / `bg-white/*` in 4 Stellen (ModeForm, modes/[id], s/create) durch `border-base-300` / `bg-base-100` ersetzt (Light-Theme legibility).
 - ☑ REQUIREMENTS REQ-BRAND-003/004/005/006 entsprechend aktualisiert.
 
+Done — Phase 4b ("Soft Linen" Neumorphic Light, REQ-BRAND-003/005 Überarbeitung):
+- ☑ `layout.css` komplett neu: monochromer Paper-Look mit dezenter SVG-Grain-Textur, pill-shaped Controls, raised/inset Neumorphic-Shadows (top-left weißes Highlight + bottom-right warmer Drop), `--radius-field: 9999px`. Sage nur noch für Focus-Ring + Active-Dot.
+- ☑ Alle `.btn`/`.btn-primary`/`.btn-accent`/`.btn-ghost`/`.btn-sm`/`.btn-circle` neumorphisch redefiniert. Pressed-State = inset Shadow.
+- ☑ Alle `.input`/`.select`/`.textarea` pressed-in (Shadow-Inset). Pill-shaped.
+- ☑ `input[type=range]`, `.checkbox`, `.radio`, `.toggle`: raised Thumb über pressed Track — matched exakt mit Referenzbild (`clean-gui-elements-preview.jpg`).
+- ☑ `Logo.svelte` und Favicons als raised Pill mit recessed sage Dot.
+- ☑ `app.html` `theme-color` `#FAF7F0` → `#F2EFE9`.
+- ☑ REQ-BRAND-003/004/005/006 auf "Soft Linen" aktualisiert.
+
 Notes:
 - Schema unverändert (Lego-Refactor + Section-Restructure verändern nur UI; alle 9 `kind` Werte, parseForm-Verträge und `?/` Action-Contracts bleiben)
 - BottomDock-Badge nutzt Layout-Loader für Pending-Drink-Zähler (live via SSE)

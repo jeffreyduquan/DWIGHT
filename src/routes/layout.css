@@ -5,9 +5,10 @@
 }
 
 /* ===========================================================================
-   DWIGHT — "Sage Cream" theme (light, organic, minimal)
-   Single accent: sage. Surfaces: warm cream → off-white.
-   Designed for calm, professional PWA — no gradients, no glow, no glass.
+   DWIGHT — "Soft Linen" neumorphic-light theme
+   Reference: clean-gui-elements-preview.jpg — light monochrome paper surface,
+   pressed-in inputs/sliders, soft-raised pill buttons, very subtle warm tint.
+   No color noise, no gradients. Sage reserved for focus/active feedback only.
    ========================================================================= */
 @plugin 'daisyui/theme' {
 	name: 'dwight';
@@ -15,54 +16,83 @@
 	prefersdark: false;
 	color-scheme: light;
 
-	/* surfaces */
-	--color-base-100: oklch(97% 0.014 92);          /* #FAF7F0 cream */
-	--color-base-200: oklch(94% 0.018 92);          /* #F1ECDF subtle warmth */
-	--color-base-300: oklch(89% 0.022 90);          /* #E5DECD divider */
-	--color-base-content: oklch(22% 0.012 70);      /* warm near-black text */
-	--color-neutral: oklch(46% 0.012 70);
-	--color-neutral-content: oklch(97% 0.014 92);
+	/* surfaces — very light, near-neutral with a tiny warm hint */
+	--color-base-100: oklch(95% 0.004 90);          /* paper */
+	--color-base-200: oklch(92% 0.004 90);          /* card */
+	--color-base-300: oklch(86% 0.005 90);          /* divider / pressed bg */
+	--color-base-content: oklch(36% 0.006 90);      /* soft graphite text */
+	--color-neutral: oklch(50% 0.006 90);
+	--color-neutral-content: oklch(96% 0.004 90);
 
-	/* brand: sage */
-	--color-primary: oklch(60% 0.055 148);          /* #7B9C84 sage */
-	--color-primary-content: oklch(98% 0.005 92);
-	--color-secondary: oklch(46% 0.012 70);         /* warm neutral, used sparingly */
-	--color-secondary-content: oklch(97% 0.014 92);
-	--color-accent: oklch(60% 0.085 32);            /* muted coral for danger/drinks */
-	--color-accent-content: oklch(98% 0.005 92);
+	/* primary kept as muted sage but used sparingly (focus rings, active dot) */
+	--color-primary: oklch(58% 0.05 148);
+	--color-primary-content: oklch(98% 0.004 90);
+	--color-secondary: oklch(50% 0.006 90);
+	--color-secondary-content: oklch(96% 0.004 90);
+	--color-accent: oklch(56% 0.09 28);             /* muted brick for danger/drink */
+	--color-accent-content: oklch(98% 0.004 90);
 
 	/* semantic */
-	--color-info: oklch(60% 0.04 230);              /* soft slate-blue */
-	--color-info-content: oklch(98% 0.005 92);
-	--color-success: oklch(60% 0.055 148);          /* sage */
-	--color-success-content: oklch(98% 0.005 92);
-	--color-warning: oklch(72% 0.085 78);           /* warm amber */
-	--color-warning-content: oklch(22% 0.012 70);
-	--color-error: oklch(56% 0.10 28);              /* muted brick */
-	--color-error-content: oklch(98% 0.005 92);
+	--color-info: oklch(55% 0.04 230);
+	--color-info-content: oklch(98% 0.004 90);
+	--color-success: oklch(58% 0.06 148);
+	--color-success-content: oklch(98% 0.004 90);
+	--color-warning: oklch(68% 0.09 78);
+	--color-warning-content: oklch(24% 0.01 80);
+	--color-error: oklch(54% 0.10 28);
+	--color-error-content: oklch(98% 0.004 90);
 
-	--radius-selector: 0.5rem;
-	--radius-field: 0.625rem;
-	--radius-box: 0.875rem;
+	--radius-selector: 9999px;
+	--radius-field: 9999px;
+	--radius-box: 1rem;
 
 	--depth: 0;
 	--noise: 0;
 }
 
-/* ---------- Typography ---------- */
+/* ---------- Neumorphic shadow tokens ---------- */
 :root {
 	--font-display: 'Inter', system-ui, -apple-system, sans-serif;
 	--font-body: 'Inter', system-ui, -apple-system, sans-serif;
 	--font-mono: 'Geist Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+	/* Light source: top-left. Highlight = white, shadow = warm graphite. */
+	--neu-hi: oklch(100% 0 0 / 0.78);
+	--neu-lo: oklch(40% 0.01 80 / 0.13);
+	--neu-lo-strong: oklch(40% 0.01 80 / 0.22);
+
+	/* Raised surface: bright on top-left edge + soft drop on bottom-right */
+	--shadow-raised:
+		-2px -2px 5px var(--neu-hi),
+		3px 3px 8px var(--neu-lo);
+	--shadow-raised-sm:
+		-1px -1px 3px var(--neu-hi),
+		2px 2px 5px var(--neu-lo);
+	--shadow-raised-lg:
+		-4px -4px 12px var(--neu-hi),
+		6px 6px 16px var(--neu-lo);
+
+	/* Pressed-in / inset surface (sliders, inputs, pressed buttons) */
+	--shadow-inset:
+		inset 2px 2px 5px var(--neu-lo),
+		inset -2px -2px 5px var(--neu-hi);
+	--shadow-inset-sm:
+		inset 1px 1px 3px var(--neu-lo),
+		inset -1px -1px 3px var(--neu-hi);
 }
+
 html {
 	font-family: var(--font-body);
-	color: oklch(22% 0.012 70);
-	background-color: oklch(97% 0.014 92);
+	color: oklch(36% 0.006 90);
+	background-color: oklch(95% 0.004 90);
 }
-body { background-color: oklch(97% 0.014 92); }
+body {
+	background-color: oklch(95% 0.004 90);
+	/* subtle paper grain — matches reference image */
+	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.15  0 0 0 0 0.13  0 0 0 0 0.10  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+	background-size: 160px 160px;
+}
 
-/* Tabular numerals on balance/stake displays */
 .tabular {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
@@ -70,91 +100,83 @@ body { background-color: oklch(97% 0.014 92); }
 }
 
 /* ===========================================================================
-   Surface system — clean cards on cream, subtle warm border, no glass blur.
-   .glass / .glass-xl / .glass-2xl kept for compat with existing markup.
+   Surface system — raised neumorphic cards. Class names kept for compat.
    ========================================================================= */
 .glass,
 .glass-xl,
 .glass-2xl {
-	background-color: oklch(99% 0.008 92);
-	border: 1px solid oklch(89% 0.022 90);
-	box-shadow: 0 1px 2px oklch(70% 0.02 80 / 0.05);
+	background-color: oklch(95% 0.004 90);
+	border: 1px solid oklch(89% 0.004 90 / 0.6);
+	box-shadow: var(--shadow-raised);
 }
-.glass { border-radius: 0.875rem; }
-.glass-xl { border-radius: 1.25rem; }
-.glass-2xl { border-radius: 1.5rem; }
+.glass     { border-radius: 1rem; }
+.glass-xl  { border-radius: 1.25rem; box-shadow: var(--shadow-raised-lg); }
+.glass-2xl { border-radius: 1.5rem;  box-shadow: var(--shadow-raised-lg); }
 
-/* Interactive card: gentle hover-shift */
 .glass-interactive {
-	transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+	transition: transform 160ms ease, box-shadow 160ms ease;
 	cursor: pointer;
 }
-.glass-interactive:hover {
-	border-color: oklch(60% 0.055 148 / 0.4);
-	box-shadow: 0 3px 8px oklch(40% 0.03 80 / 0.06);
+.glass-interactive:hover  { box-shadow: var(--shadow-raised-lg); }
+.glass-interactive:active {
+	box-shadow: var(--shadow-inset);
+	transform: translateY(0);
 }
-.glass-interactive:active { transform: translateY(1px); }
 
-/* Aurora / noise: kept as no-ops so existing wrapper divs don't add visual weight */
+/* Aurora / noise wrappers — page already has paper grain, kept as no-op */
 .aurora, .noise { position: relative; isolation: isolate; }
 .aurora::before, .aurora::after, .noise::after { content: none !important; }
 
-/* Floating dock: clean off-white pill, subtle border, soft drop shadow */
+/* Floating dock — raised pill */
 .dock-float {
-	background-color: oklch(99% 0.008 92);
-	border: 1px solid oklch(89% 0.022 90);
-	box-shadow: 0 4px 14px oklch(40% 0.03 80 / 0.08);
+	background-color: oklch(95% 0.004 90);
+	border: 1px solid oklch(89% 0.004 90 / 0.6);
+	box-shadow: var(--shadow-raised-lg);
+	border-radius: 9999px;
 }
 
-/* Glow utilities — neutralized to clean primary button style; no halo */
+/* Glow utilities — neumorphic press feedback, no halo */
 .glow-primary, .glow-accent {
-	box-shadow: none;
-	transition: filter 160ms ease, transform 160ms ease;
+	box-shadow: var(--shadow-raised);
+	transition: box-shadow 140ms ease, transform 80ms ease;
 }
-.glow-primary:hover, .glow-accent:hover { filter: brightness(0.95); }
-.glow-primary:active, .glow-accent:active { transform: translateY(1px); }
+.glow-primary:hover, .glow-accent:hover { box-shadow: var(--shadow-raised-lg); }
+.glow-primary:active, .glow-accent:active {
+	box-shadow: var(--shadow-inset);
+	transform: translateY(0);
+}
 
-/* Typography accents — flat solid color, no gradient */
+/* Flat solid color (no gradient) accents */
 .text-gradient-primary {
-	color: oklch(50% 0.06 148); /* sage, slightly darker for legibility */
-	background: none;
-	-webkit-background-clip: initial;
-	background-clip: initial;
+	color: oklch(46% 0.05 148);
+	background: none; -webkit-background-clip: initial; background-clip: initial;
 }
-.text-gradient-danger {
-	color: oklch(50% 0.10 28);
-}
+.text-gradient-danger { color: oklch(48% 0.10 28); }
 
-/* Display headings */
 .display {
 	font-family: var(--font-display);
 	font-weight: 600;
 	letter-spacing: -0.02em;
 	line-height: 1.1;
+	color: oklch(28% 0.006 90);
 }
 .wordmark {
 	font-family: var(--font-display);
 	font-weight: 700;
 	letter-spacing: -0.01em;
-	text-transform: none;
+	color: oklch(28% 0.006 90);
 }
 
-/* Section eyebrow — small uppercase label */
 .eyebrow {
 	font-size: 0.65rem;
-	letter-spacing: 0.1em;
+	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: oklch(46% 0.012 70);
+	color: oklch(54% 0.006 90);
 	font-weight: 600;
 }
 
-/* Hairline divider */
-.divider-soft {
-	height: 1px;
-	background-color: oklch(89% 0.022 90);
-}
+.divider-soft { height: 1px; background-color: oklch(86% 0.005 90); }
 
-/* Large tabular numeric for hero stats */
 .stat-hero {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
@@ -162,50 +184,124 @@ body { background-color: oklch(97% 0.014 92); }
 	font-weight: 600;
 	letter-spacing: -0.02em;
 	line-height: 1;
+	color: oklch(28% 0.006 90);
 }
 
 /* ==========================================================================
- * Icon-bubble system — soft tinted circles, NO inner shadows / glow.
- * Kept color variants for component compat.
+ * Icon bubbles — pressed-in tiles (matches checkbox grid in reference)
  * ========================================================================== */
 .icon-bubble {
-	color: oklch(46% 0.012 70);
-	background-color: oklch(94% 0.018 92);
-	border: 1px solid oklch(89% 0.022 90);
+	color: oklch(40% 0.006 90);
+	background-color: oklch(94% 0.004 90);
+	border: 1px solid oklch(88% 0.004 90 / 0.6);
+	box-shadow: var(--shadow-raised-sm);
+	border-radius: 0.875rem;
 }
 .icon-bubble svg { display: block; }
-.icon-bubble-primary {
-	color: oklch(50% 0.06 148);
-	background-color: oklch(92% 0.04 148);
-	border-color: oklch(85% 0.05 148);
-}
-.icon-bubble-accent {
-	color: oklch(50% 0.10 28);
-	background-color: oklch(93% 0.04 28);
-	border-color: oklch(86% 0.07 28);
-}
-.icon-bubble-warning {
-	color: oklch(48% 0.10 78);
-	background-color: oklch(94% 0.05 80);
-	border-color: oklch(86% 0.08 78);
-}
-.icon-bubble-info {
-	color: oklch(45% 0.05 230);
-	background-color: oklch(94% 0.025 230);
-	border-color: oklch(86% 0.04 230);
-}
-.icon-bubble-neutral { /* default */ }
+.icon-bubble-primary { color: oklch(46% 0.05 148); }
+.icon-bubble-accent  { color: oklch(48% 0.10 28); }
+.icon-bubble-warning { color: oklch(46% 0.10 78); }
+.icon-bubble-info    { color: oklch(44% 0.05 230); }
+.icon-bubble-neutral { color: oklch(40% 0.006 90); }
 
-/* Stat card kept as glass-xl alias */
 .card-stat {
-	background-color: oklch(99% 0.008 92);
-	border: 1px solid oklch(89% 0.022 90);
+	background-color: oklch(95% 0.004 90);
+	border: 1px solid oklch(89% 0.004 90 / 0.6);
 	border-radius: 1.25rem;
-	box-shadow: 0 1px 2px oklch(70% 0.02 80 / 0.05);
+	box-shadow: var(--shadow-raised);
 }
 
 /* ==========================================================================
- * Form controls — clean light inputs, sage focus ring.
+ * DaisyUI buttons — soft-raised neumorphic pills
+ * ========================================================================== */
+.btn {
+	background-color: oklch(94% 0.004 90);
+	color: oklch(28% 0.006 90);
+	border: 1px solid oklch(88% 0.004 90 / 0.8);
+	border-radius: 9999px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	box-shadow: var(--shadow-raised);
+	transition: box-shadow 140ms ease, transform 80ms ease, background-color 140ms ease;
+	text-transform: none;
+}
+.btn:hover {
+	background-color: oklch(96% 0.004 90);
+	box-shadow: var(--shadow-raised-lg);
+}
+.btn:active,
+.btn.btn-active {
+	box-shadow: var(--shadow-inset);
+	background-color: oklch(93% 0.004 90);
+	transform: translateY(0);
+}
+.btn:focus-visible {
+	outline: none;
+	box-shadow:
+		var(--shadow-raised),
+		0 0 0 3px oklch(58% 0.05 148 / 0.30);
+}
+.btn:disabled,
+.btn[disabled] {
+	opacity: 0.55;
+	box-shadow: var(--shadow-inset-sm);
+	cursor: not-allowed;
+}
+
+/* Primary/accent stay monochrome-ish but slightly darker so hierarchy reads.
+   Sage is hinted via subtle text + focus ring, never as full color fill. */
+.btn-primary {
+	background-color: oklch(92% 0.012 148);
+	color: oklch(38% 0.06 148);
+}
+.btn-primary:hover  { background-color: oklch(94% 0.012 148); }
+.btn-primary:active { background-color: oklch(90% 0.012 148); }
+
+.btn-accent,
+.btn-error {
+	background-color: oklch(92% 0.02 28);
+	color: oklch(42% 0.10 28);
+}
+.btn-accent:hover, .btn-error:hover  { background-color: oklch(94% 0.02 28); }
+.btn-accent:active, .btn-error:active { background-color: oklch(90% 0.02 28); }
+
+.btn-ghost {
+	background-color: transparent;
+	border-color: transparent;
+	box-shadow: none;
+}
+.btn-ghost:hover {
+	background-color: oklch(92% 0.004 90);
+	box-shadow: var(--shadow-raised-sm);
+}
+.btn-ghost:active {
+	box-shadow: var(--shadow-inset-sm);
+	background-color: oklch(91% 0.004 90);
+}
+
+.btn-link {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	color: oklch(46% 0.05 148);
+	text-decoration: underline;
+	padding-inline: 0;
+}
+
+.btn-sm  { font-size: 0.8rem; box-shadow: var(--shadow-raised-sm); }
+.btn-xs  { font-size: 0.72rem; box-shadow: var(--shadow-raised-sm); }
+.btn-lg  { font-size: 1rem; box-shadow: var(--shadow-raised-lg); }
+
+/* Circle / square icon buttons — round neumorphic chips (reference: nav arrows) */
+.btn-circle, .btn-square {
+	border-radius: 9999px;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+}
+
+/* ==========================================================================
+ * Form controls — pressed-in inputs with soft inner shadow
  * ========================================================================== */
 .input,
 .select,
@@ -213,20 +309,19 @@ body { background-color: oklch(97% 0.014 92); }
 input.input-bordered,
 select.select-bordered,
 textarea.textarea-bordered {
-	background-color: oklch(99% 0.008 92);
-	border: 1px solid oklch(85% 0.022 90);
-	color: oklch(22% 0.012 70);
-	transition: border-color 140ms ease, box-shadow 140ms ease;
+	background-color: oklch(93% 0.004 90);
+	border: 1px solid oklch(88% 0.004 90 / 0.5);
+	border-radius: 9999px;
+	color: oklch(28% 0.006 90);
+	box-shadow: var(--shadow-inset);
+	transition: box-shadow 140ms ease, background-color 140ms ease;
 }
+.textarea { border-radius: 1.25rem; }
 .input::placeholder,
-.textarea::placeholder {
-	color: oklch(58% 0.014 70);
-}
+.textarea::placeholder { color: oklch(58% 0.006 90); }
 .input:hover,
 .select:hover,
-.textarea:hover {
-	border-color: oklch(74% 0.025 90);
-}
+.textarea:hover { background-color: oklch(94% 0.004 90); }
 .input:focus,
 .input:focus-visible,
 .select:focus,
@@ -234,22 +329,92 @@ textarea.textarea-bordered {
 .textarea:focus,
 .textarea:focus-visible {
 	outline: none;
-	border-color: oklch(60% 0.055 148 / 0.7);
-	box-shadow: 0 0 0 3px oklch(60% 0.055 148 / 0.18);
+	box-shadow:
+		var(--shadow-inset),
+		0 0 0 3px oklch(58% 0.05 148 / 0.22);
 }
 
-/* Toggle/Checkbox/Buttons inherit DaisyUI semantic vars (set above). */
+/* Range slider — pressed-in track, raised thumb (matches reference) */
+input[type='range'] {
+	-webkit-appearance: none;
+	appearance: none;
+	background: transparent;
+	width: 100%;
+	height: 1.5rem;
+}
+input[type='range']::-webkit-slider-runnable-track {
+	height: 0.5rem;
+	border-radius: 9999px;
+	background-color: oklch(91% 0.004 90);
+	box-shadow: var(--shadow-inset-sm);
+}
+input[type='range']::-moz-range-track {
+	height: 0.5rem;
+	border-radius: 9999px;
+	background-color: oklch(91% 0.004 90);
+	box-shadow: var(--shadow-inset-sm);
+}
+input[type='range']::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	margin-top: -0.4rem;
+	width: 1.25rem;
+	height: 1.25rem;
+	border-radius: 9999px;
+	background-color: oklch(95% 0.004 90);
+	border: 1px solid oklch(88% 0.004 90);
+	box-shadow: var(--shadow-raised-sm);
+	cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+	width: 1.25rem;
+	height: 1.25rem;
+	border-radius: 9999px;
+	background-color: oklch(95% 0.004 90);
+	border: 1px solid oklch(88% 0.004 90);
+	box-shadow: var(--shadow-raised-sm);
+	cursor: pointer;
+}
+
+/* Checkbox & radio — pressed-in tiles */
+.checkbox, .radio,
+input[type='checkbox'].checkbox,
+input[type='radio'].radio {
+	background-color: oklch(93% 0.004 90);
+	border: 1px solid oklch(86% 0.004 90);
+	box-shadow: var(--shadow-inset-sm);
+}
+.checkbox:checked,
+input[type='checkbox'].checkbox:checked {
+	background-color: oklch(58% 0.05 148);
+	border-color: oklch(50% 0.05 148);
+	box-shadow: var(--shadow-raised-sm);
+}
+.radio:checked,
+input[type='radio'].radio:checked {
+	background-color: oklch(58% 0.05 148);
+	box-shadow: var(--shadow-raised-sm);
+}
+
+/* DaisyUI toggle (switch) — neumorphic pill */
+.toggle {
+	background-color: oklch(91% 0.004 90);
+	border: 1px solid oklch(86% 0.004 90);
+	box-shadow: var(--shadow-inset-sm);
+}
+.toggle:checked {
+	background-color: oklch(82% 0.04 148);
+	border-color: oklch(74% 0.05 148);
+}
 
 /* ==========================================================================
- * Animations — short, quiet.
+ * Animations
  * ========================================================================== */
 @keyframes fade-up {
 	from { opacity: 0; transform: translateY(4px); }
-	to { opacity: 1; transform: translateY(0); }
+	to   { opacity: 1; transform: translateY(0); }
 }
-.fade-up {
-	animation: fade-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
+.fade-up { animation: fade-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .fade-up-delay-1 { animation-delay: 50ms; }
 .fade-up-delay-2 { animation-delay: 100ms; }
 .fade-up-delay-3 { animation-delay: 150ms; }
@@ -262,14 +427,13 @@ textarea.textarea-bordered {
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-	background-color: oklch(85% 0.022 90);
+	background-color: oklch(86% 0.005 90);
 	border-radius: 6px;
-	border: 2px solid oklch(97% 0.014 92);
+	border: 2px solid oklch(95% 0.004 90);
 }
-::-webkit-scrollbar-thumb:hover { background-color: oklch(74% 0.025 90); }
+::-webkit-scrollbar-thumb:hover { background-color: oklch(78% 0.006 90); }
 
-/* Selection */
 ::selection {
-	background-color: oklch(60% 0.055 148 / 0.25);
-	color: oklch(22% 0.012 70);
+	background-color: oklch(58% 0.05 148 / 0.22);
+	color: oklch(28% 0.006 90);
 }
