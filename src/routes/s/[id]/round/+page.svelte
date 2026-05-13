@@ -77,8 +77,9 @@
 		})
 	);
 
-	// Stake selector state per market — null = "nichts gewählt".
-	const stakeSelections = $state<Record<string, number | null>>({});
+	// Stake accumulator per market — each chip tap adds its value to a running
+	// total. "Setzen" submits the accumulated amount. Reset zeros it.
+	const stakeTotals = $state<Record<string, number>>({});
 
 	const startingMoney = $derived(data.session.config.startingMoney ?? 1000);
 	const minStake = $derived(data.session.config.minStake ?? 1);
@@ -94,11 +95,14 @@
 	}
 	const stakes = $derived(stakeOptions());
 
-	function pickStake(marketId: string, value: number) {
-		stakeSelections[marketId] = value;
+	function addStake(marketId: string, value: number) {
+		const current = stakeTotals[marketId] ?? 0;
+		const next = current + value;
+		if (next > data.me.moneyBalance) return;
+		stakeTotals[marketId] = next;
 	}
 	function resetStake(marketId: string) {
-		stakeSelections[marketId] = null;
+		stakeTotals[marketId] = 0;
 	}
 
 	let es: EventSource | null = null;
@@ -188,7 +192,7 @@
 			{@const myTotalOnMarket = m.outcomes.reduce((s, o) => s + o.myStake, 0)}
 			{@const myTotalPayout = m.outcomes.reduce((s, o) => s + o.myPayout, 0)}
 			{@const myProfit = myTotalPayout - myTotalOnMarket}
-			{@const selectedStake = stakeSelections[m.id] ?? null}
+			{@const stakeTotal = stakeTotals[m.id] ?? 0}
 			{@const canBet = m.status === 'OPEN' && !isTerminal && !isBetLocked}
 			<article class="market-card">
 				<header class="px-4 pt-3.5 pb-2">
@@ -227,26 +231,29 @@
 				{#if canBet}
 					<div class="px-3 pb-2">
 						<div class="stake-row">
-							<span class="stake-label">Einsatz</span>
+							<span class="stake-label">+</span>
 							{#each stakes as s (s)}
 								<button
 									type="button"
-									class="stake-chip {selectedStake === s ? 'stake-chip-active' : ''}"
-									disabled={s > data.me.moneyBalance}
-									onclick={() => pickStake(m.id, s)}
+									class="stake-chip"
+									disabled={stakeTotal + s > data.me.moneyBalance}
+									onclick={() => addStake(m.id, s)}
 								>
-									{s}
+									+{s}
 								</button>
 							{/each}
 							<button
 								type="button"
 								class="stake-chip stake-reset"
-								disabled={selectedStake === null}
+								disabled={stakeTotal === 0}
 								onclick={() => resetStake(m.id)}
 								aria-label="Zurücksetzen"
 							>
 								<RotateCcw size={12} />
 							</button>
+							{#if stakeTotal > 0}
+								<span class="stake-running tabular">= {stakeTotal}</span>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -254,7 +261,7 @@
 				<ul class="space-y-1.5 px-3 pb-3">
 					{#each m.outcomes as o (o.id)}
 						{@const odds = o.stakeTotal > 0 && m.poolTotal > 0 ? m.poolTotal / o.stakeTotal : null}
-						{@const refStake = selectedStake ?? minStake}
+						{@const refStake = stakeTotal > 0 ? stakeTotal : minStake}
 						{@const projectedOdds =
 							m.status === 'OPEN'
 								? (m.poolTotal + refStake) / (o.stakeTotal + refStake)
@@ -292,17 +299,22 @@
 								<form
 									method="POST"
 									action="?/placeBet"
-									use:enhance
+									use:enhance={() => {
+										return async ({ update }) => {
+											await update();
+											stakeTotals[m.id] = 0;
+										};
+									}}
 									class="mt-2 flex items-center gap-2"
 								>
 									<input type="hidden" name="outcomeId" value={o.id} />
-									<input type="hidden" name="stake" value={selectedStake ?? 0} />
+									<input type="hidden" name="stake" value={stakeTotal} />
 									<button
 										type="submit"
 										class="btn btn-sm btn-primary flex-1 font-semibold"
-										disabled={selectedStake === null || selectedStake > data.me.moneyBalance}
+										disabled={stakeTotal === 0 || stakeTotal > data.me.moneyBalance}
 									>
-										{selectedStake ? `Setzen · ${selectedStake}` : 'Einsatz wählen'}
+										{stakeTotal > 0 ? `Setzen · ${stakeTotal}` : 'Einsatz wählen'}
 									</button>
 									{#if o.myStake > 0}
 										<span class="tabular text-[0.7rem] font-semibold text-primary">
@@ -599,7 +611,7 @@
 		opacity: 0.38;
 		box-shadow: none;
 	}
-	.stake-chip-active {
+	.stake-chip:not(:disabled):active {
 		background-color: oklch(93% 0.012 148);
 		color: oklch(38% 0.05 148);
 		box-shadow:
@@ -608,6 +620,17 @@
 	}
 	.stake-reset {
 		color: oklch(48% 0.10 28);
+	}
+	.stake-running {
+		margin-left: auto;
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: oklch(38% 0.05 148);
+		padding: 0 0.4rem;
+	}
+	.stake-label {
+		color: oklch(45% 0.006 90);
+		font-weight: 700;
 	}
 	.outcome-row {
 		padding: 0.65rem 0.75rem;
