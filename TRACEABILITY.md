@@ -167,6 +167,10 @@
 | REQ-UI-007 | D9 | `src/lib/components/ModeForm.svelte` (entity row, trackable row, PALETTE, colorFor, initialFor, scope chip toggle, hidden inputs) | manual `/modes/new` + `/modes/[id]` | ☑ |
 | REQ-UI-008 | D9 | `src/lib/server/db/schema.ts` (`ModeDefaultConfig.showOdds`), `src/lib/server/modes/parseForm.ts`, `src/lib/server/modes/defaults.ts`, `src/lib/components/ModeForm.svelte` (Quoten-Toggle), `src/routes/s/[id]/round/+page.svelte` (conditional render) | manual | ☑ |
 | REQ-UI-009 | D9 | `src/routes/s/[id]/round/+page.svelte` (Quick-Stake-Chips Form) | manual `/s/:id/round` | ☑ |
+| REQ-UI-010 | D9 / Phase 5 | `src/routes/s/[id]/drinks/+page.server.ts` (redirect), `src/routes/s/[id]/+page.svelte` (Lobby DrinkPanel), `src/lib/components/BottomDock.svelte` (Drinks-Tab entfernt), `src/lib/components/DrinkPanel.svelte` (Buy-In/Verteilen Wording) | manual `/s/:id` + `/s/:id/drinks` Redirect | ☑ |
+| REQ-UI-011 | D9 / Phase 5 | `src/routes/s/[id]/info/+page.server.ts`, `src/routes/s/[id]/info/+page.svelte`, `src/lib/components/BottomDock.svelte` (Wettinfos-Tab) | manual `/s/:id/info` | ☑ |
+| REQ-UI-012 | D9 / Phase 5 | `src/routes/s/[id]/round/+page.svelte` (Wetten rewrite: stake-row 2/5/25 % + RotateCcw reset, per-outcome Setzen-Button, kein eyebrow/predicate-subtext, Starten/Abrechnen + GM-Disclosure) | manual `/s/:id/round` | ☑ |
+| REQ-UI-013 | D9 / Phase 5 | `src/lib/components/SessionTopBar.svelte` (minimal: back + pills + prominenter Balance-Chip), `src/routes/s/[id]/+layout.svelte` | manual mobile viewport | ☑ |
 
 ## REQ-GM — Game Master Tools
 

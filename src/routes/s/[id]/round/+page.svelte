@@ -1,11 +1,14 @@
 <!--
-	@file s/[id]/round/+page.svelte — round flow (events + markets + bets).
-	@implements REQ-UI-004, REQ-ROUND, REQ-EVENT, REQ-MARKET, REQ-BET
+	@file s/[id]/round/+page.svelte — Wetten (player-first betting view).
+	@implements REQ-UI-004, REQ-UI-010, REQ-UI-012, REQ-ROUND, REQ-MARKET, REQ-BET
 
-	Player-first redesign:
-	  - SessionTopBar + BottomDock come from /s/[id]/+layout.svelte
-	  - Body focus: status, markets (primary), events (collapsible per trackable)
-	  - Host controls live in a single "GM" disclosure block
+	Layout:
+	  - SessionTopBar + BottomDock from /s/[id]/+layout.svelte (balance prominent there)
+	  - No round number, no session name, no status text
+	  - Markets as primary tiles with bold title + outcome rows
+	  - Shared stake selector per market: 2% / 5% / 25% of startingMoney + Reset
+	  - Each outcome has a "Setzen" button submitting the selected stake
+	  - Host: single "Starten" button when SETUP/BETTING_OPEN, "Abrechnen" when LIVE
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
@@ -13,21 +16,18 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { playSound } from '$lib/client/sounds.svelte';
 	import {
-		ArrowRight,
 		Lock,
-		Trophy,
 		CircleCheck,
 		X,
 		Save,
 		Undo2,
-		BarChart3,
 		Crown,
-		Plus,
 		ChevronDown,
 		Sparkles,
-		Activity
+		Activity,
+		Play,
+		RotateCcw
 	} from '@lucide/svelte';
-	import { describePredicate as describePredicateLib } from '$lib/predicate-describe';
 
 	let { data, form } = $props();
 
@@ -67,14 +67,6 @@
 		return data.counters[key] ?? 0;
 	}
 
-	function describePredicate(p: unknown): string {
-		return describePredicateLib(p as never, {
-			trackableLabel: (id) => trackableById.get(id)?.label ?? id,
-			entityLabel: (id) => (id ? (entityById.get(id)?.name ?? '?') : '∑')
-		});
-	}
-
-	// Group markets by status for visual ordering: OPEN first, then LOCKED, then SETTLED, VOID
 	const orderedMarkets = $derived(
 		[...data.markets].sort((a, b) => {
 			const order = { OPEN: 0, LOCKED: 1, SETTLED: 2, VOID: 3 } as const;
@@ -85,22 +77,29 @@
 		})
 	);
 
-	const statusLabel: Record<string, string> = {
-		SETUP: 'Vorbereitung',
-		BETTING_OPEN: 'Wetten offen',
-		LIVE: 'läuft',
-		RESOLVING: 'rechnet ab',
-		SETTLED: 'beendet',
-		CANCELLED: 'abgebrochen'
-	};
-	const statusTone: Record<string, string> = {
-		SETUP: 'badge-ghost',
-		BETTING_OPEN: 'badge-primary',
-		LIVE: 'badge-accent',
-		RESOLVING: 'badge-warning',
-		SETTLED: 'badge-success',
-		CANCELLED: 'badge-ghost'
-	};
+	// Stake selector state per market — null = "nichts gewählt".
+	const stakeSelections = $state<Record<string, number | null>>({});
+
+	const startingMoney = $derived(data.session.config.startingMoney ?? 1000);
+	const minStake = $derived(data.session.config.minStake ?? 1);
+	const showOdds = $derived(data.session.config.showOdds !== false);
+
+	function stakeOptions(): number[] {
+		const raw = [
+			Math.max(minStake, Math.round(startingMoney * 0.02)),
+			Math.max(minStake, Math.round(startingMoney * 0.05)),
+			Math.max(minStake, Math.round(startingMoney * 0.25))
+		];
+		return [...new Set(raw)].sort((a, b) => a - b);
+	}
+	const stakes = $derived(stakeOptions());
+
+	function pickStake(marketId: string, value: number) {
+		stakeSelections[marketId] = value;
+	}
+	function resetStake(marketId: string) {
+		stakeSelections[marketId] = null;
+	}
 
 	let es: EventSource | null = null;
 	onMount(() => {
@@ -134,20 +133,6 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- Round status strip -->
-<section class="mb-4 flex items-center justify-between gap-2">
-	<div class="flex items-baseline gap-2">
-		<h2 class="display text-xl leading-none">
-			Runde <span class="text-gradient-primary">#{round?.roundNumber ?? '—'}</span>
-		</h2>
-		{#if status}
-			<span class="badge badge-sm {statusTone[status] ?? 'badge-ghost'}"
-				>{statusLabel[status] ?? status}</span
-			>
-		{/if}
-	</div>
-</section>
-
 {#if isBetLocked}
 	<div class="alert alert-error mb-3 py-2 text-sm">
 		<Lock size={14} />
@@ -159,39 +144,30 @@
 	<div class="alert alert-error mb-3 py-2 text-xs">{form.error}</div>
 {/if}
 
-<!-- No round yet -->
 {#if !round}
 	<div class="glass rounded-2xl p-6 text-center">
-		<p class="text-base-content/65 mb-4 text-sm">Noch keine Runde gestartet.</p>
+		<p class="text-base-content/65 mb-4 text-sm">Keine offene Wette.</p>
 		{#if isHost}
 			<form method="POST" action="?/createRound" use:enhance>
-				<button class="btn btn-primary glow-primary h-12 w-full gap-2">
-					<Plus size={16} /> Neue Runde starten
+				<button class="btn btn-primary h-12 w-full gap-2 text-base font-semibold">
+					<Play size={16} /> Starten
 				</button>
 			</form>
 		{:else}
-			<p class="text-base-content/40 text-xs">Warte, bis der Host startet.</p>
+			<p class="text-base-content/45 text-xs">Warte, bis der Host startet.</p>
 		{/if}
 	</div>
 {:else}
-	<!-- Terminal banner -->
 	{#if isTerminal}
 		<section class="glass mb-4 rounded-2xl p-4">
 			<div class="flex items-center justify-between gap-3">
-				<div>
-					<p class="text-base-content/50 text-[0.65rem] uppercase tracking-wider">
-						Runde {round.roundNumber} {status === 'SETTLED' ? 'beendet' : 'abgebrochen'}
-					</p>
-					{#if status === 'SETTLED'}
-						<p class="text-base-content/70 text-xs">
-							{data.markets.filter((m) => m.status === 'SETTLED').length} Märkte abgerechnet
-						</p>
-					{/if}
-				</div>
+				<p class="text-base-content/65 text-sm">
+					{status === 'SETTLED' ? 'Wette abgerechnet.' : 'Wette abgebrochen.'}
+				</p>
 				{#if isHost}
 					<form method="POST" action="?/createRound" use:enhance>
-						<button class="btn btn-primary btn-sm glow-primary gap-1">
-							Neue Runde <ArrowRight size={14} />
+						<button class="btn btn-primary btn-sm gap-1">
+							<Play size={14} /> Starten
 						</button>
 					</form>
 				{/if}
@@ -199,18 +175,12 @@
 		</section>
 	{/if}
 
-	<!-- Markets — primary content -->
 	<section class="space-y-3 {isBetLocked ? 'opacity-60' : ''}">
-		<div class="flex items-center justify-between px-1">
-			<p class="eyebrow">Wetten</p>
-			<p class="text-base-content/45 text-[0.7rem]">{data.markets.length} aktiv</p>
-		</div>
-
 		{#if data.markets.length === 0}
 			<div class="border-base-content/10 rounded-2xl border border-dashed p-5 text-center text-sm opacity-70">
 				{isHost
 					? 'Definiere Wetten-Templates im Mode, damit sie automatisch entstehen.'
-					: 'Der Host hat noch keine Märkte erstellt.'}
+					: 'Der Host hat noch keine Wetten erstellt.'}
 			</div>
 		{/if}
 
@@ -218,24 +188,17 @@
 			{@const myTotalOnMarket = m.outcomes.reduce((s, o) => s + o.myStake, 0)}
 			{@const myTotalPayout = m.outcomes.reduce((s, o) => s + o.myPayout, 0)}
 			{@const myProfit = myTotalPayout - myTotalOnMarket}
-			<article class="glass overflow-hidden rounded-2xl">
-				<header class="flex items-start justify-between gap-2 px-4 pt-3 pb-2">
-					<h3 class="text-sm font-semibold leading-tight">{m.title}</h3>
-					<span
-						class="badge badge-xs shrink-0 {m.status === 'OPEN'
-							? 'badge-primary'
-							: m.status === 'LOCKED'
-								? 'badge-warning'
-								: m.status === 'SETTLED'
-									? 'badge-success'
-									: 'badge-ghost'}">{m.status}</span
-					>
+			{@const selectedStake = stakeSelections[m.id] ?? null}
+			{@const canBet = m.status === 'OPEN' && !isTerminal && !isBetLocked}
+			<article class="market-card">
+				<header class="px-4 pt-3.5 pb-2">
+					<h3 class="market-title">{m.title}</h3>
 				</header>
 
 				<div class="flex items-end justify-between gap-3 px-4 pb-2 text-xs">
 					<div>
 						<p class="text-base-content/40 text-[0.6rem] uppercase tracking-wider">Pool</p>
-						<p class="text-gradient-primary tabular text-2xl font-bold leading-none">
+						<p class="tabular text-2xl font-bold leading-none" style="color: oklch(45% 0.05 148);">
 							{m.poolTotal}
 						</p>
 					</div>
@@ -261,89 +224,92 @@
 					{/if}
 				</div>
 
+				{#if canBet}
+					<div class="px-3 pb-2">
+						<div class="stake-row">
+							<span class="stake-label">Einsatz</span>
+							{#each stakes as s (s)}
+								<button
+									type="button"
+									class="stake-chip {selectedStake === s ? 'stake-chip-active' : ''}"
+									disabled={s > data.me.moneyBalance}
+									onclick={() => pickStake(m.id, s)}
+								>
+									{s}
+								</button>
+							{/each}
+							<button
+								type="button"
+								class="stake-chip stake-reset"
+								disabled={selectedStake === null}
+								onclick={() => resetStake(m.id)}
+								aria-label="Zurücksetzen"
+							>
+								<RotateCcw size={12} />
+							</button>
+						</div>
+					</div>
+				{/if}
+
 				<ul class="space-y-1.5 px-3 pb-3">
 					{#each m.outcomes as o (o.id)}
 						{@const odds = o.stakeTotal > 0 && m.poolTotal > 0 ? m.poolTotal / o.stakeTotal : null}
-						{@const refStake = data.session.config.minStake}
+						{@const refStake = selectedStake ?? minStake}
 						{@const projectedOdds =
 							m.status === 'OPEN'
 								? (m.poolTotal + refStake) / (o.stakeTotal + refStake)
 								: odds}
 						{@const pct = m.poolTotal > 0 ? Math.round((o.stakeTotal / m.poolTotal) * 100) : 0}
-						{@const showOdds = data.session.config.showOdds !== false}
 						<li
-							class="rounded-xl border p-2.5 transition {o.isWinner
-								? 'border-success bg-success/10'
+							class="outcome-row {o.isWinner
+								? 'outcome-winner'
 								: m.status === 'SETTLED'
-									? 'border-base-content/10 opacity-60'
+									? 'outcome-faded'
 									: o.myStake > 0
-										? 'border-primary/60 bg-primary/5'
-										: 'border-base-content/10'}"
+										? 'outcome-mine'
+										: ''}"
 						>
-							<div class="flex items-start justify-between gap-3">
+							<div class="flex items-center justify-between gap-3">
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-1.5">
-										<strong class="text-sm">{o.label}</strong>
-										{#if m.status === 'OPEN' && o.currentTruth}
-											<span class="badge badge-xs badge-success">aktuell</span>
-										{:else if m.status === 'SETTLED' && o.isWinner}
+										<strong class="outcome-label">{o.label}</strong>
+										{#if m.status === 'SETTLED' && o.isWinner}
 											<span class="badge badge-xs badge-success">Gewinner</span>
 										{/if}
 									</div>
-									<p class="text-base-content/50 mt-0.5 text-[0.7rem] leading-snug">
-										{describePredicate(o.predicate)}
-									</p>
 								</div>
 								<div class="shrink-0 text-right">
 									{#if showOdds && projectedOdds != null}
-										<p class="text-gradient-primary tabular text-lg font-bold leading-none">
-											{projectedOdds.toFixed(2)}<span class="text-xs">×</span>
+										<p class="tabular text-base font-bold leading-none" style="color: oklch(48% 0.05 148);">
+											{projectedOdds.toFixed(2)}<span class="text-[0.65rem]">×</span>
 										</p>
 										<p class="text-base-content/40 text-[0.6rem]">{pct}%</p>
-									{:else if showOdds}
-										<p class="text-base-content/40 text-xs italic">—</p>
 									{/if}
 								</div>
 							</div>
 
-							{#if m.status === 'OPEN' && !isTerminal}
-								{#if o.myStake > 0}
-									<p class="text-primary mt-2 text-[0.7rem]">
-										Du: <strong class="tabular">{o.myStake}</strong>
-									</p>
-								{/if}
-								{#if !isBetLocked}
-									{@const minS = data.session.config.minStake}
-									{@const bal = data.me.moneyBalance}
-									{@const roundDown = (v: number) => Math.max(minS, Math.floor(v / minS) * minS)}
-									{@const chips = bal >= minS
-										? [...new Set([minS, roundDown(bal * 0.25), roundDown(bal * 0.5), bal])]
-												.filter((v) => v >= minS && v <= bal)
-												.sort((a, b) => a - b)
-										: []}
-									{#if chips.length === 0}
-										<p class="text-warning mt-2 text-[0.7rem]">Zu wenig Geld für Mindesteinsatz.</p>
-									{:else}
-										<form
-											method="POST"
-											action="?/placeBet"
-											use:enhance
-											class="mt-2 flex gap-1"
-										>
-											<input type="hidden" name="outcomeId" value={o.id} />
-											{#each chips as s (s)}
-												<button
-													type="submit"
-													name="stake"
-													value={s}
-													class="btn btn-sm btn-primary tabular flex-1 px-1 font-semibold"
-												>
-													{s === bal ? 'All-in' : `+${s}`}
-												</button>
-											{/each}
-										</form>
+							{#if canBet}
+								<form
+									method="POST"
+									action="?/placeBet"
+									use:enhance
+									class="mt-2 flex items-center gap-2"
+								>
+									<input type="hidden" name="outcomeId" value={o.id} />
+									<input type="hidden" name="stake" value={selectedStake ?? 0} />
+									<button
+										type="submit"
+										class="btn btn-sm btn-primary flex-1 font-semibold"
+										disabled={selectedStake === null || selectedStake > data.me.moneyBalance}
+									>
+										{selectedStake ? `Setzen · ${selectedStake}` : 'Einsatz wählen'}
+									</button>
+									{#if o.myStake > 0}
+										<span class="tabular text-[0.7rem] font-semibold text-primary">
+											+{o.myStake}
+										</span>
 									{/if}
-								{/if}
+								</form>
 							{:else if m.status === 'SETTLED' && o.myStake > 0}
 								{@const profit = o.myPayout - o.myStake}
 								<p
@@ -367,7 +333,6 @@
 		{/each}
 	</section>
 
-	<!-- Events: only during LIVE — collapsed per trackable -->
 	{#if isLive && data.session.trackables.length > 0}
 		<section class="mt-5 space-y-2">
 			<div class="flex items-center justify-between px-1">
@@ -421,7 +386,6 @@
 		</section>
 	{/if}
 
-	<!-- Own pending events feedback (non-host) -->
 	{#if !isHost && myPendingEvents.length > 0}
 		<section class="glass mt-4 space-y-2 rounded-2xl p-3">
 			<div class="flex items-center justify-between">
@@ -446,167 +410,226 @@
 		</section>
 	{/if}
 
-	<!-- HOST: GM disclosure (status step + pending queue + cancel) -->
 	{#if isHost && !isTerminal}
-		<section class="glass mt-5 overflow-hidden rounded-2xl">
-			<details open class="group">
-				<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
-					<Crown size={16} class="text-primary" />
-					<span class="font-semibold">GM-Werkzeuge</span>
-					{#if pendingEvents.length > 0}
-						<span class="badge badge-warning badge-sm ml-auto">
-							{pendingEvents.length} offen
-						</span>
-					{:else}
-						<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
-					{/if}
-				</summary>
+		<section class="mt-5 space-y-2">
+			{#if isOpen}
+				<form method="POST" action="?/goLive" use:enhance>
+					<input type="hidden" name="roundId" value={round.id} />
+					<button class="btn btn-primary h-12 w-full gap-2 text-base font-semibold">
+						<Play size={16} /> Starten
+					</button>
+				</form>
+			{:else if isLive || isResolving}
+				<form method="POST" action="?/settle" use:enhance>
+					<input type="hidden" name="roundId" value={round.id} />
+					<button class="btn btn-success h-12 w-full gap-2 text-base font-semibold">
+						<CircleCheck size={16} /> Abrechnen
+					</button>
+				</form>
+			{/if}
 
-				<div class="border-base-content/10 space-y-3 border-t p-3">
-					<!-- Lifecycle step -->
-					<div class="flex flex-wrap items-center gap-2">
-						{#if isOpen}
-							<form method="POST" action="?/goLive" use:enhance>
-								<input type="hidden" name="roundId" value={round.id} />
-								<button class="btn btn-sm btn-primary glow-primary gap-1">
-									Spiel starten <ArrowRight size={14} />
-								</button>
-							</form>
-						{:else if isLive || isResolving}
-							<form method="POST" action="?/settle" use:enhance>
-								<input type="hidden" name="roundId" value={round.id} />
-								<button class="btn btn-sm btn-success glow-primary gap-1">
-									Abrechnen <CircleCheck size={14} />
-								</button>
-							</form>
+			{#if pendingEvents.length > 0 || isLive || isOpen}
+				<details class="glass overflow-hidden rounded-2xl group">
+					<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
+						<Crown size={14} class="text-primary" />
+						<span class="font-medium">GM</span>
+						{#if pendingEvents.length > 0}
+							<span class="badge badge-warning badge-sm ml-auto">
+								{pendingEvents.length} prüfen
+							</span>
+						{:else}
+							<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
 						{/if}
+					</summary>
+					<div class="border-base-content/10 space-y-3 border-t p-3">
 						<form method="POST" action="?/cancel" use:enhance>
 							<input type="hidden" name="roundId" value={round.id} />
-							<button class="btn btn-xs btn-error btn-outline">Abbrechen</button>
+							<button class="btn btn-xs btn-error btn-outline w-full">Abbrechen</button>
 						</form>
-					</div>
-					<p class="text-base-content/50 text-[0.7rem]">
-						{#if isOpen}Spieler setzen. Nach „Spiel starten" sind keine neuen Wetten mehr möglich.
-						{:else if isLive}Wetten gelockt. Buffer prüfen, dann „Abrechnen".
-						{:else if isResolving}Abrechnung läuft …{/if}
-					</p>
 
-					<!-- Pending event queue -->
-					{#if pendingEvents.length > 0}
-						<div class="border-base-content/10 space-y-2 border-t pt-3">
-							<p class="eyebrow flex items-center gap-2">
-								<Activity size={12} /> Buffer prüfen ({pendingEvents.length})
-							</p>
-							{#each pendingByProposer as group (group.userId)}
-								<details class="bg-base-100/40 rounded-xl">
-									<summary
-										class="flex cursor-pointer items-center justify-between gap-2 p-2 text-xs"
-									>
-										<span class="flex items-center gap-2">
-											<span class="badge badge-xs badge-neutral">{group.events.length}</span>
-											<span class="font-medium">{group.name}</span>
-										</span>
-										<span
-											class="flex items-center gap-1"
-											onclick={(e) => e.stopPropagation()}
-											role="group"
+						{#if pendingEvents.length > 0}
+							<div class="border-base-content/10 space-y-2 border-t pt-3">
+								<p class="eyebrow flex items-center gap-2">
+									<Activity size={12} /> Buffer prüfen ({pendingEvents.length})
+								</p>
+								{#each pendingByProposer as group (group.userId)}
+									<details class="bg-base-100/40 rounded-xl">
+										<summary
+											class="flex cursor-pointer items-center justify-between gap-2 p-2 text-xs"
 										>
-											<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-												<input type="hidden" name="roundId" value={round.id} />
-												<input type="hidden" name="proposerUserId" value={group.userId} />
-												<input type="hidden" name="decision" value="CONFIRMED" />
-												<button class="btn btn-xs btn-success" title="Alle akzeptieren">
-													<CircleCheck size={11} />
-												</button>
-											</form>
-											<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-												<input type="hidden" name="roundId" value={round.id} />
-												<input type="hidden" name="proposerUserId" value={group.userId} />
-												<input type="hidden" name="decision" value="CANCELLED" />
-												<button class="btn btn-xs btn-error btn-outline" title="Alle ablehnen">
-													<X size={11} />
-												</button>
-											</form>
-										</span>
-									</summary>
-									<div class="border-base-content/10 space-y-1.5 border-t p-2">
-										{#each group.events as ev (ev.id)}
-											<div class="flex flex-wrap items-center justify-between gap-2">
-												<span class="text-xs">
-													<span class="font-medium">
-														{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
+											<span class="flex items-center gap-2">
+												<span class="badge badge-xs badge-neutral">{group.events.length}</span>
+												<span class="font-medium">{group.name}</span>
+											</span>
+											<span
+												class="flex items-center gap-1"
+												onclick={(e) => e.stopPropagation()}
+												role="group"
+											>
+												<form method="POST" action="?/bulkDecideByProposer" use:enhance>
+													<input type="hidden" name="roundId" value={round.id} />
+													<input type="hidden" name="proposerUserId" value={group.userId} />
+													<input type="hidden" name="decision" value="CONFIRMED" />
+													<button class="btn btn-xs btn-success" title="Alle akzeptieren">
+														<CircleCheck size={11} />
+													</button>
+												</form>
+												<form method="POST" action="?/bulkDecideByProposer" use:enhance>
+													<input type="hidden" name="roundId" value={round.id} />
+													<input type="hidden" name="proposerUserId" value={group.userId} />
+													<input type="hidden" name="decision" value="CANCELLED" />
+													<button class="btn btn-xs btn-error btn-outline" title="Alle ablehnen">
+														<X size={11} />
+													</button>
+												</form>
+											</span>
+										</summary>
+										<div class="border-base-content/10 space-y-1.5 border-t p-2">
+											{#each group.events as ev (ev.id)}
+												<div class="flex flex-wrap items-center justify-between gap-2">
+													<span class="text-xs">
+														<span class="font-medium">
+															{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
+														</span>
+														{#if ev.entityId}→ {entityById.get(ev.entityId)?.name}{/if}
 													</span>
-													{#if ev.entityId}→ {entityById.get(ev.entityId)?.name}{/if}
-												</span>
-												<div class="flex items-center gap-1">
-													<form
-														method="POST"
-														action="?/editEventDelta"
-														use:enhance
-														class="flex items-center gap-1"
-													>
-														<input type="hidden" name="eventId" value={ev.id} />
-														<input
-															type="number"
-															name="delta"
-															value={ev.delta}
-															step="1"
-															class="input input-xs w-14"
-															title="Wert"
-														/>
-														<button
-															class="btn btn-xs btn-ghost"
-															type="submit"
-															title="Speichern"
+													<div class="flex items-center gap-1">
+														<form
+															method="POST"
+															action="?/editEventDelta"
+															use:enhance
+															class="flex items-center gap-1"
 														>
-															<Save size={11} />
-														</button>
-													</form>
-													<form method="POST" action="?/confirmEvent" use:enhance>
-														<input type="hidden" name="eventId" value={ev.id} />
-														<button class="btn btn-xs btn-success" title="OK">
-															<CircleCheck size={11} />
-														</button>
-													</form>
-													<form method="POST" action="?/cancelEvent" use:enhance>
-														<input type="hidden" name="eventId" value={ev.id} />
-														<button class="btn btn-xs btn-error btn-outline" title="Nein">
-															<X size={11} />
-														</button>
-													</form>
+															<input type="hidden" name="eventId" value={ev.id} />
+															<input
+																type="number"
+																name="delta"
+																value={ev.delta}
+																step="1"
+																class="input input-xs w-14"
+																title="Wert"
+															/>
+															<button
+																class="btn btn-xs btn-ghost"
+																type="submit"
+																title="Speichern"
+															>
+																<Save size={11} />
+															</button>
+														</form>
+														<form method="POST" action="?/confirmEvent" use:enhance>
+															<input type="hidden" name="eventId" value={ev.id} />
+															<button class="btn btn-xs btn-success" title="OK">
+																<CircleCheck size={11} />
+															</button>
+														</form>
+														<form method="POST" action="?/cancelEvent" use:enhance>
+															<input type="hidden" name="eventId" value={ev.id} />
+															<button class="btn btn-xs btn-error btn-outline" title="Nein">
+																<X size={11} />
+															</button>
+														</form>
+													</div>
 												</div>
-											</div>
-										{/each}
-									</div>
-								</details>
-							{/each}
-						</div>
-					{/if}
-
-					<!-- Counter recap (host quick-view) -->
-					{#if Object.keys(data.counters).length > 0}
-						<div class="border-base-content/10 space-y-1 border-t pt-3">
-							<p class="eyebrow flex items-center gap-2">
-								<BarChart3 size={12} /> Counter
-							</p>
-							<ul class="space-y-0.5 text-[0.7rem]">
-								{#each Object.entries(data.counters) as [key, v] (key)}
-									{@const parts = key.split(':')}
-									{@const tId = parts[0]}
-									{@const eId = parts[1] ?? null}
-									<li class="flex justify-between">
-										<span>
-											{trackableById.get(tId)?.label ?? tId}
-											{#if eId}→ {entityById.get(eId)?.name}{/if}
-										</span>
-										<span class="tabular font-semibold">{v}</span>
-									</li>
+											{/each}
+										</div>
+									</details>
 								{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
-			</details>
+							</div>
+						{/if}
+					</div>
+				</details>
+			{/if}
 		</section>
 	{/if}
 {/if}
+
+<style>
+	.market-card {
+		background-color: oklch(96% 0.006 90);
+		border: 1px solid oklch(89% 0.004 90 / 0.6);
+		border-radius: 1.25rem;
+		box-shadow:
+			-3px -3px 7px oklch(100% 0 0 / 0.78),
+			4px 4px 10px oklch(40% 0.01 80 / 0.13);
+		overflow: hidden;
+	}
+	.market-title {
+		font-size: 1.15rem;
+		font-weight: 700;
+		line-height: 1.2;
+		color: oklch(22% 0 0);
+		letter-spacing: -0.01em;
+	}
+	.stake-row {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	.stake-label {
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: oklch(50% 0.006 90);
+		margin-right: 0.2rem;
+	}
+	.stake-chip {
+		min-width: 2.6rem;
+		height: 1.9rem;
+		padding: 0 0.65rem;
+		border-radius: 9999px;
+		font-size: 0.78rem;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		background-color: oklch(96% 0.006 90);
+		color: oklch(30% 0.006 90);
+		border: 1px solid oklch(88% 0.004 90 / 0.55);
+		box-shadow:
+			-1.5px -1.5px 3.5px oklch(100% 0 0 / 0.72),
+			2px 2px 5px oklch(40% 0.01 80 / 0.10);
+		transition: all 140ms ease;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+	}
+	.stake-chip:disabled {
+		opacity: 0.38;
+		box-shadow: none;
+	}
+	.stake-chip-active {
+		background-color: oklch(93% 0.012 148);
+		color: oklch(38% 0.05 148);
+		box-shadow:
+			inset 1.5px 1.5px 3px oklch(40% 0.05 148 / 0.18),
+			inset -1.5px -1.5px 3px oklch(100% 0 0 / 0.78);
+	}
+	.stake-reset {
+		color: oklch(48% 0.10 28);
+	}
+	.outcome-row {
+		padding: 0.65rem 0.75rem;
+		border-radius: 0.9rem;
+		background-color: oklch(97% 0.004 90);
+		border: 1px solid oklch(90% 0.004 90 / 0.5);
+	}
+	.outcome-mine {
+		background-color: oklch(94% 0.012 148);
+		border-color: oklch(80% 0.04 148 / 0.55);
+	}
+	.outcome-winner {
+		background-color: oklch(93% 0.05 148);
+		border-color: oklch(70% 0.08 148 / 0.7);
+	}
+	.outcome-faded {
+		opacity: 0.6;
+	}
+	.outcome-label {
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: -0.005em;
+		color: oklch(22% 0 0);
+	}
+</style>

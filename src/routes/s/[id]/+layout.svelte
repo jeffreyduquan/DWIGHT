@@ -13,34 +13,18 @@
 	const pathname = $derived(page.url.pathname);
 	const base = $derived(`/s/${chrome.sessionId}`);
 
-	const subPath = $derived(
-		pathname === base ? '' : pathname.slice(base.length).replace(/^\//, '').split('/')[0] ?? ''
-	);
-
-	const backHref = $derived(subPath === '' ? '/' : base);
-	const backLabel = $derived(subPath === '' ? 'Sessions' : 'Lobby');
-
-	const pageTitle = $derived(
-		subPath === 'round'
-			? 'Runde'
-			: subPath === 'drinks'
-				? 'Drinks'
-				: subPath === 'stats'
-					? 'Statistik'
-					: undefined
-	);
+	const backHref = $derived(pathname === base ? '/' : base);
+	const backLabel = $derived(pathname === base ? 'Sessions' : 'Lobby');
 </script>
 
 <SessionTopBar
-	sessionName={chrome.sessionName}
 	balance={chrome.balance}
 	betLocked={chrome.betLocked}
 	isHost={chrome.isHost}
 	{backHref}
 	{backLabel}
-	subtitle={pageTitle ?? chrome.modeName ?? undefined}
 />
 
 {@render children()}
 
-<BottomDock sessionId={chrome.sessionId} pendingDrinks={chrome.pendingDrinks} />
+<BottomDock sessionId={chrome.sessionId} />

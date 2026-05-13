@@ -1,17 +1,15 @@
 <!--
-	@component BottomDock — floating session navigation (Runde / Drinks / Stats / Lobby).
+	@component BottomDock — floating session navigation (Lobby / Wetten / Wettinfos / Stats).
 	Used on all /s/[id]/* routes. Mobile-first; auto-highlights current route.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Play, Beer, BarChart3, Users } from '@lucide/svelte';
+	import { Play, BookOpen, BarChart3, Users } from '@lucide/svelte';
 
 	let {
-		sessionId,
-		pendingDrinks = 0
+		sessionId
 	}: {
 		sessionId: string;
-		pendingDrinks?: number;
 	} = $props();
 
 	const pathname = $derived(page.url.pathname);
@@ -40,27 +38,19 @@
 			href={`${base}/round`}
 			class="dock-item"
 			class:dock-active={isActive(`${base}/round`)}
-			aria-label="Runde"
+			aria-label="Wetten"
 		>
 			<Play size={18} />
-			<span>Runde</span>
+			<span>Wetten</span>
 		</a>
 		<a
-			href={`${base}/drinks`}
-			class="dock-item relative"
-			class:dock-active={isActive(`${base}/drinks`)}
-			aria-label="Drinks"
+			href={`${base}/info`}
+			class="dock-item"
+			class:dock-active={isActive(`${base}/info`)}
+			aria-label="Wettinfos"
 		>
-			<Beer size={18} />
-			<span>Drinks</span>
-			{#if pendingDrinks > 0}
-				<span
-					class="absolute -top-1 -right-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.6rem] font-bold tabular-nums"
-					style="background: oklch(56% 0.10 28); color: oklch(98% 0.004 90);"
-				>
-					{pendingDrinks > 9 ? '9+' : pendingDrinks}
-				</span>
-			{/if}
+			<BookOpen size={18} />
+			<span>Wettinfos</span>
 		</a>
 		<a
 			href={`${base}/stats`}

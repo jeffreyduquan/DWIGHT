@@ -1,65 +1,43 @@
 <!--
-	@component SessionTopBar — compact, mobile-first session header.
-	Shows: back link · session name · balance · lock indicator · host badge.
+	@component SessionTopBar — minimal session header (balance-focused).
+	Shows: back link · prominent balance · subtle host/lock pills.
+	No session name, no mode subtitle (REQ-UI-010).
 -->
 <script lang="ts">
-	import { ArrowLeft, Coins, Lock, Crown } from '@lucide/svelte';
+	import { ArrowLeft, Coins } from '@lucide/svelte';
 
 	let {
-		sessionName,
 		balance,
 		betLocked = false,
 		isHost = false,
 		backHref = '/',
-		backLabel = 'Zurück',
-		subtitle
+		backLabel = 'Zurück'
 	}: {
-		sessionName: string;
 		balance: number;
 		betLocked?: boolean;
 		isHost?: boolean;
 		backHref?: string;
 		backLabel?: string;
-		subtitle?: string;
 	} = $props();
 </script>
 
-<header class="mb-5 space-y-3">
-	<div class="flex items-center justify-between gap-2">
-		<a
-			href={backHref}
-			class="btn btn-ghost btn-xs gap-1 text-xs"
-		>
+<header class="mb-5 flex items-center justify-between gap-3">
+	<div class="flex items-center gap-1.5">
+		<a href={backHref} class="btn btn-ghost btn-xs gap-1 text-xs">
 			<ArrowLeft size={13} />
 			{backLabel}
 		</a>
-		<div class="flex items-center gap-1.5">
-			{#if isHost}
-				<span class="eyebrow inline-flex items-center gap-1 px-2 py-1 rounded-full"
-					style="background-color: oklch(93% 0.012 148); color: oklch(40% 0.05 148);">
-					<Crown size={10} /> Host
-				</span>
-			{/if}
-			{#if betLocked}
-				<span class="eyebrow inline-flex items-center gap-1 px-2 py-1 rounded-full"
-					style="background-color: oklch(93% 0.04 28); color: oklch(48% 0.10 28);">
-					<Lock size={10} /> Sperre
-				</span>
-			{/if}
-		</div>
+		{#if isHost}
+			<span class="pill-host">Host</span>
+		{/if}
+		{#if betLocked}
+			<span class="pill-lock">Gesperrt</span>
+		{/if}
 	</div>
 
-	<div class="flex items-end justify-between gap-3">
-		<div class="min-w-0 flex-1">
-			<h1 class="display text-[1.6rem] leading-tight truncate">{sessionName}</h1>
-			{#if subtitle}
-				<p class="eyebrow mt-1">{subtitle}</p>
-			{/if}
-		</div>
-		<div class="balance-chip shrink-0">
-			<Coins size={14} class="opacity-50" />
-			<span class="tabular text-lg font-bold {betLocked ? 'text-error' : ''}">{balance}</span>
-		</div>
+	<div class="balance-chip {betLocked ? 'balance-locked' : ''}">
+		<Coins size={18} class="opacity-55" />
+		<span class="tabular text-2xl font-bold leading-none">{balance}</span>
 	</div>
 </header>
 
@@ -67,13 +45,38 @@
 	.balance-chip {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.45rem 0.9rem;
+		gap: 0.55rem;
+		padding: 0.55rem 1.1rem;
 		border-radius: 9999px;
-		background-color: oklch(94% 0.004 90);
+		background-color: oklch(95% 0.006 90);
 		border: 1px solid oklch(88% 0.004 90 / 0.7);
 		box-shadow:
-			-2px -2px 5px oklch(100% 0 0 / 0.78),
-			3px 3px 8px oklch(40% 0.01 80 / 0.13);
+			-3px -3px 7px oklch(100% 0 0 / 0.85),
+			4px 4px 10px oklch(40% 0.01 80 / 0.16);
+	}
+	.balance-locked {
+		background-color: oklch(94% 0.04 28);
+		border-color: oklch(82% 0.04 28 / 0.55);
+		color: oklch(46% 0.10 28);
+	}
+	.pill-host,
+	.pill-lock {
+		display: inline-flex;
+		align-items: center;
+		font-size: 0.62rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		padding: 0.25rem 0.55rem;
+		border-radius: 9999px;
+		line-height: 1;
+	}
+	.pill-host {
+		background-color: oklch(92% 0.004 90);
+		color: oklch(45% 0.006 90);
+	}
+	.pill-lock {
+		background-color: oklch(93% 0.04 28);
+		color: oklch(48% 0.10 28);
 	}
 </style>

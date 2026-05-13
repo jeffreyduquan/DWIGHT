@@ -1,6 +1,6 @@
 <!--
-	@file s/[id]/+page.svelte — lobby (Aurora-glass redesign + DrinkPanel embed)
-	@implements REQ-UI-001, UI_UX §6.4 (lobby)
+	@file s/[id]/+page.svelte — lobby (consolidated drinks + players hub)
+	@implements REQ-UI-001, REQ-UI-010, REQ-UI-011, UI_UX §6.4 (lobby)
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
@@ -11,16 +11,14 @@
 	import IconBubble from '$lib/components/IconBubble.svelte';
 	import {
 		ArrowRight,
-		Crown,
-		Lock,
 		Beer,
 		Users,
-		Sparkles,
 		Volume2,
 		VolumeX,
 		Settings,
 		Trash2,
 		StopCircle,
+		Lock,
 		Unlock
 	} from '@lucide/svelte';
 
@@ -54,101 +52,74 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- Invite code mini-chip + mode -->
-<section class="mb-4 flex items-center justify-between gap-2">
-	<div class="min-w-0">
-		{#if data.mode}
-			<p class="text-base-content/50 truncate text-[0.7rem] uppercase tracking-wider">
-				{data.mode.name}
-			</p>
-		{/if}
-	</div>
-	<span class="badge badge-ghost tabular badge-sm">{data.session.inviteCode}</span>
+<!-- Invite code chip -->
+<section class="mb-4 flex items-center justify-end">
+	<span class="badge badge-ghost tabular badge-sm">Code: {data.session.inviteCode}</span>
 </section>
 
 {#if data.me.betLocked}
 	<section
-		class="glass glass-xl border-error/60 mb-4 flex items-center gap-4 border-2 p-5 shadow-lg"
+		class="glass glass-xl mb-4 flex items-center gap-4 p-5 shadow-sm"
+		style="border: 2px solid oklch(72% 0.10 28);"
 		role="alert"
 	>
 		<IconBubble tone="error" size="lg"><Beer size={22} /></IconBubble>
 		<div class="flex-1">
-			<p class="text-error text-lg font-bold uppercase tracking-wide">Wetten gesperrt</p>
-			<p class="text-base-content/80 mb-2 text-sm">
-				Du musst trinken — keine Wetten möglich, bis dein Drink bestätigt ist.
+			<p class="text-lg font-bold uppercase tracking-wide" style="color: oklch(46% 0.10 28);">
+				Wetten gesperrt
 			</p>
-			<a href="/s/{data.session.id}/drinks" class="btn btn-error btn-sm gap-1">
-				<Beer size={14} /> Drink bestätigen lassen <ArrowRight size={12} />
-			</a>
+			<p class="text-base-content/75 text-sm">
+				Du musst trinken — bestätige deinen offenen Drink unten.
+			</p>
 		</div>
 	</section>
 {/if}
 
-<!-- Drinks panel embed -->
-<details class="glass glass-xl mb-4 p-4" open={pendingDrinks.length > 0}>
-	<summary class="flex cursor-pointer items-center gap-3 text-sm font-medium">
-		<IconBubble tone="accent"><Beer size={18} /></IconBubble>
-		<span class="flex-1">
-			<span class="eyebrow block">Drinks</span>
-			<span class="text-base-content/80 text-base">
-				{#if pendingDrinks.length > 0}{pendingDrinks.length} offen{:else}Verteilen &amp; abgleichen{/if}
-			</span>
-		</span>
-		{#if pendingDrinks.length > 0}
-			<span class="badge badge-warning">{pendingDrinks.length}</span>
-		{/if}
-		<a
-			href={`/s/${data.session.id}/drinks`}
-			class="text-base-content/40 hover:text-base-content inline-flex items-center gap-1 text-xs"
-			onclick={(e) => e.stopPropagation()}
-		>
-			Vollansicht <ArrowRight size={12} />
-		</a>
-	</summary>
-	<div class="divider-soft my-3"></div>
-	<div>
-		<DrinkPanel
-			session={data.session}
-			me={data.me}
-			players={data.players}
-			drinks={data.drinks}
-			actionPrefix="drink"
-			compact
-		/>
+<!-- Drinks hub: the ONLY drinks UI -->
+<section class="mb-5 space-y-2">
+	<div class="flex items-center gap-3 px-1">
+		<IconBubble tone="accent" size="sm"><Beer size={16} /></IconBubble>
+		<div class="flex-1">
+			<p class="eyebrow">Drinks</p>
+			<p class="text-base-content/55 text-xs">
+				{#if pendingDrinks.length > 0}{pendingDrinks.length} offen{:else}Buy-In · Verteilen · Verlauf{/if}
+			</p>
+		</div>
 	</div>
-</details>
+	<DrinkPanel
+		session={data.session}
+		me={data.me}
+		players={data.players}
+		drinks={data.drinks}
+		actionPrefix="drink"
+	/>
+</section>
 
 <!-- Players -->
-<section class="mb-4 space-y-2">
+<section class="mb-5 space-y-2">
 	<div class="flex items-center gap-3 px-1">
 		<IconBubble tone="info" size="sm"><Users size={16} /></IconBubble>
 		<div class="flex-1">
 			<p class="eyebrow">Spieler</p>
-			<p class="text-base-content/60 text-xs">{data.players.length} dabei</p>
+			<p class="text-base-content/55 text-xs">{data.players.length} dabei</p>
 		</div>
 	</div>
 	<ul class="space-y-2">
 		{#each data.players as p (p.userId)}
+			{@const isSelf = p.userId === data.me.userId}
+			{@const isPHost = p.role === 'HOST'}
 			<li
-				class="glass flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5"
+				class="player-row {p.betLocked ? 'player-locked' : isPHost ? 'player-host' : ''}"
 			>
 				<span class="flex min-w-0 items-center gap-2">
-					<span class="truncate font-medium">{p.username}</span>
-					{#if p.role === 'HOST'}
-						<span class="badge badge-primary badge-sm gap-1"><Crown size={10} /> Host</span>
+					{#if isSelf}
+						<span class="self-marker">Du</span>
 					{/if}
-					{#if p.userId === data.me.userId}
-						<span class="text-base-content/40 text-xs">(du)</span>
-					{/if}
-					{#if p.betLocked}
-						<span class="badge badge-warning badge-sm gap-1" title="Trink-Sperre"
-							><Beer size={10} /></span
-						>
-					{/if}
+					<span class="truncate text-sm font-medium">{p.username}</span>
 				</span>
 				<div class="flex shrink-0 items-center gap-2">
 					<span class="tabular text-sm font-semibold">{p.moneyBalance}</span>
-					{#if isHost && p.userId !== data.me.userId}
+					{#if isHost && !isSelf}
 						<form method="POST" action="?/toggleBetLock" use:enhance>
 							<input type="hidden" name="userId" value={p.userId} />
 							<button
@@ -165,30 +136,6 @@
 	</ul>
 </section>
 
-<!-- Entities preview -->
-{#if data.entities.length > 0}
-	<section class="mb-4 space-y-2">
-		<div class="flex items-center gap-3 px-1">
-			<IconBubble tone="accent" size="sm"><Sparkles size={16} /></IconBubble>
-			<div class="flex-1">
-				<p class="eyebrow">{data.mode?.terminology.entity ?? 'Entitäten'}</p>
-				<p class="text-base-content/60 text-xs">{data.entities.length} definiert</p>
-			</div>
-		</div>
-		<ul class="glass glass-xl space-y-1.5 p-4">
-			{#each data.entities as e (e.id)}
-				<li class="flex items-center gap-3">
-					<span
-						class="inline-block h-3 w-3 rounded-full ring-2 ring-base-300"
-						style="background: {(e.attributes as { color?: string })?.color ?? '#888'}"
-					></span>
-					<span class="text-sm">{e.name}</span>
-				</li>
-			{/each}
-		</ul>
-	</section>
-{/if}
-
 {#if isHost}
 	<section class="mb-4 space-y-2">
 		<div class="flex items-center gap-3 px-1">
@@ -202,9 +149,6 @@
 						<StopCircle size={14} /> Session beenden
 					</button>
 				</form>
-				<p class="text-base-content/40 text-[10px]">
-					Markiert die Session als ENDED. Daten bleiben erhalten, kein Beitritt mehr.
-				</p>
 			{:else}
 				<p class="alert alert-warning text-xs">
 					Session bereits beendet (Status: {data.session.status}).
@@ -227,14 +171,10 @@
 					<Trash2 size={14} /> Session komplett löschen
 				</button>
 			</form>
-			<p class="text-base-content/40 text-[10px]">
-				Permanent. Cascade-Löschung aller verbundenen Daten.
-			</p>
 		</div>
 	</section>
 {/if}
 
-<!-- Sound toggle -->
 <section class="flex justify-end">
 	<button
 		class="btn btn-xs btn-ghost gap-1"
@@ -244,3 +184,40 @@
 		{#if soundOn}<Volume2 size={12} /> Sound an{:else}<VolumeX size={12} /> Sound aus{/if}
 	</button>
 </section>
+
+<style>
+	.player-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.65rem 0.85rem;
+		border-radius: 1rem;
+		background-color: oklch(96% 0.004 90);
+		border: 1px solid oklch(89% 0.004 90 / 0.6);
+		box-shadow:
+			-2px -2px 5px oklch(100% 0 0 / 0.75),
+			3px 3px 7px oklch(40% 0.01 80 / 0.10);
+	}
+	.player-host {
+		background-color: oklch(94% 0.004 90);
+		border-color: oklch(86% 0.004 90 / 0.7);
+	}
+	.player-locked {
+		background-color: oklch(94% 0.045 28);
+		border-color: oklch(80% 0.05 28 / 0.5);
+		color: oklch(46% 0.10 28);
+	}
+	.self-marker {
+		display: inline-flex;
+		align-items: center;
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		padding: 0.18rem 0.5rem;
+		border-radius: 9999px;
+		text-transform: uppercase;
+		background-color: oklch(93% 0.012 148);
+		color: oklch(40% 0.05 148);
+	}
+</style>

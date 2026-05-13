@@ -237,6 +237,20 @@ Done — Phase 4b ("Soft Linen" Neumorphic Light, REQ-BRAND-003/005 Überarbeitu
 - ☑ `app.html` `theme-color` `#FAF7F0` → `#F2EFE9`.
 - ☑ REQ-BRAND-003/004/005/006 auf "Soft Linen" aktualisiert.
 
+Done — Phase 5 (User-Directed Structural Simplification, REQ-UI-010/011/012/013):
+- ☑ **Drinks-only-in-Lobby (REQ-UI-010):** `BottomDock` "Drinks"-Tab entfernt. `/s/:id/drinks` route auf permanenten 303-Redirect zur Lobby reduziert (`+page.svelte` gelöscht, `+page.server.ts` slim load). Lobby (`/s/:id/+page.svelte`) komplett überarbeitet — `DrinkPanel` direkt eingebettet (kein `compact`), nur noch Invite-Code-Chip + DrinkPanel + Player-Liste + optional Host-Session-Manage.
+- ☑ **Wording (REQ-UI-010):** `DrinkPanel` Tab-Labels `Cashout` → **Buy-In**, `Force` → **Verteilen**. Action-Button "Zwingen" → "Verteilen". Section-Headers entsprechend.
+- ☑ **Wettinfos-Tab (REQ-UI-011):** Neue Route `/s/:id/info` mit `+page.server.ts` (lädt mode + trackables + entities) und `+page.svelte` (2 Sections: Entities mit Color/Emoji/Initial-Avatar, Trackables mit Scope/Emoji/Description). `BottomDock` Tabs jetzt: Lobby · Wetten · Wettinfos · Stats (`BookOpen`-Icon).
+- ☑ **Wetten-Redesign (REQ-UI-012):** `/s/:id/round/+page.svelte` komplett neu geschrieben (~600 LOC, `create_file` nach `Remove-Item` wegen partial-replace Korruption). "Runde" → **Wetten**. Kein Round-Number, kein Status-Eyebrow, kein `describePredicate`-Subtext. Per-Market `stakeSelections` $state, shared Chip-Row `2% · 5% · 25% of startingMoney` plus `RotateCcw` Reset-Chip (ersetzt All-in). Pro Outcome eigener `Setzen · {n}` Submit-Button (deaktiviert bis Stake gewählt). Host-Controls auf einen Primary-Button kollabiert (**Starten** für SETUP/BETTING_OPEN, **Abrechnen** für LIVE) + sekundäres `GM`-Disclosure für Cancel + Buffer-Review. Neumorphische `.market-card` / `.outcome-row` Styles inline.
+- ☑ **SessionTopBar minimal (REQ-UI-013):** `sessionName` + `subtitle` Props entfernt. Nur noch Back-Link, Host/Gesperrt-Pills, prominente `tabular text-2xl` Balance-Chip mit raised Neumorphic-Shadow (`.balance-chip`, `.balance-locked` coral-Variante).
+- ☑ **Layout-Wire-up:** `s/[id]/+layout.svelte` reicht nur noch `balance/betLocked/isHost/backHref/backLabel` durch. `+layout.server.ts` Loader unverändert (`pendingDrinks` etc. nun unused-but-harmless).
+- ☑ `svelte-check` 0 Errors / 13 Warnings (unchanged baseline).
+- ☑ REQ-UI-005 aktualisiert (neue Tab-Liste, drink-pending Badge wandert in Lobby).
+
+Notes:
+- `StakePicker.svelte` weiterhin unused; kann später entfernt werden.
+- Drinks-Server-Action `?/initiate` ist weiterhin im `s/[id]/+layout.server.ts` registriert und wird aus der Lobby genutzt — Pfad `/s/:id?/initiate` funktioniert wie zuvor.
+
 Notes:
 - Schema unverändert (Lego-Refactor + Section-Restructure verändern nur UI; alle 9 `kind` Werte, parseForm-Verträge und `?/` Action-Contracts bleiben)
 - BottomDock-Badge nutzt Layout-Loader für Pending-Drink-Zähler (live via SSE)

@@ -95,22 +95,20 @@
 	let self_type = $state<DrinkType>('SCHLUCK');
 </script>
 
-<nav class="glass {compact ? 'mb-2' : 'mb-4'} grid {compact ? 'grid-cols-3' : 'grid-cols-4'} gap-1 rounded-2xl p-1">
+<nav class="glass {compact ? 'mb-2' : 'mb-4'} grid grid-cols-4 gap-1 rounded-2xl p-1">
 	<button class="btn btn-xs sm:btn-sm gap-1 px-1 sm:px-3" class:btn-primary={tab === 'pending'} onclick={() => (tab = 'pending')}>
 		<span class="truncate">Offen</span>
 		{#if allPending.length}<span class="badge badge-xs">{allPending.length}</span>{/if}
 	</button>
-	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Cashout</button>
-	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'force'} onclick={() => (tab = 'force')}>Force</button>
-	{#if !compact}
-		<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'history'} onclick={() => (tab = 'history')}>Verlauf</button>
-	{/if}
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Buy-In</button>
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'force'} onclick={() => (tab = 'force')}>Verteilen</button>
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'history'} onclick={() => (tab = 'history')}>Verlauf</button>
 </nav>
 
 {#if tab === 'self'}
 	<section class="glass space-y-3 rounded-2xl p-3">
 		<h3 class="text-base-content/70 text-xs font-medium uppercase tracking-wider">
-			Selber trinken → Geld
+			Buy-In: selber trinken → Geld bekommen
 		</h3>
 		<form method="POST" action={aname('self')} use:enhance class="space-y-2">
 			<select bind:value={self_type} name="drinkType" class="select select-bordered select-sm w-full">
@@ -131,7 +129,7 @@
 {:else if tab === 'force'}
 	<section class="glass space-y-3 rounded-2xl p-3">
 		<h3 class="text-base-content/70 text-xs font-medium uppercase tracking-wider">
-			Andere trinken lassen
+			Verteilen: andere trinken lassen
 		</h3>
 		<form method="POST" action={aname('force')} use:enhance class="space-y-2">
 			<select bind:value={force_target} name="targetUserId" class="select select-bordered select-sm w-full" required>
@@ -147,7 +145,7 @@
 				{/each}
 			</select>
 			<button class="btn btn-sm btn-warning w-full" disabled={me.moneyBalance < (session.config.drinkPrices[force_type] ?? 0)}>
-				Zwingen
+				Verteilen
 			</button>
 			<p class="text-base-content/40 text-xs">Geld wird sofort abgezogen; bei Cancel zurückerstattet.</p>
 		</form>
