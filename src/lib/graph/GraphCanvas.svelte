@@ -484,12 +484,16 @@
 		{/each}
 
 		{#if graph.nodes.length === 0}
-			<p class="empty">Leerer Graph. Tippe „+ Node" um zu starten.</p>
+			<div class="empty-state">
+				<p class="empty">Leerer Graph. Wähle einen Start-Knoten.</p>
+				<button type="button" class="empty-add" onclick={() => (paletteOpen = true)}>+ Node hinzufügen</button>
+			</div>
 		{/if}
 	</div>
 
 	<button type="button" class="fab" onclick={() => (paletteOpen = !paletteOpen)} aria-label="Node hinzufügen">
-		{paletteOpen ? '✕' : '+'}
+		<span class="fab-icon">{paletteOpen ? '✕' : '+'}</span>
+		<span class="fab-label">{paletteOpen ? 'Schließen' : 'Node'}</span>
 	</button>
 
 	{#if paletteOpen}
@@ -752,13 +756,40 @@
 		background: oklch(60% 0.055 148);
 		color: white;
 		border: none;
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		font-size: 1.6rem;
+		min-height: 56px;
+		padding: 0 1.25rem;
+		border-radius: 28px;
 		cursor: pointer;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 		z-index: 10;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 600;
+	}
+	.fab-icon {
+		font-size: 1.4rem;
+		line-height: 1;
+	}
+	.fab-label {
+		font-size: 0.95rem;
+	}
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1.5rem 1rem;
+	}
+	.empty-add {
+		background: oklch(60% 0.055 148);
+		color: white;
+		border: none;
+		padding: 0.6rem 1rem;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 	}
 	.palette {
 		position: fixed;
