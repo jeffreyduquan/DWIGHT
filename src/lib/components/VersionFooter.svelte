@@ -103,7 +103,7 @@
 
 {#if showModal}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: oklch(20% 0.006 90 / 0.45); backdrop-filter: blur(4px);"
 		role="dialog"
 		aria-modal="true"
 	>

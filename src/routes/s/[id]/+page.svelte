@@ -179,7 +179,7 @@
 			{#each data.entities as e (e.id)}
 				<li class="flex items-center gap-3">
 					<span
-						class="inline-block h-3 w-3 rounded-full ring-2 ring-white/10"
+						class="inline-block h-3 w-3 rounded-full ring-2 ring-base-300"
 						style="background: {(e.attributes as { color?: string })?.color ?? '#888'}"
 					></span>
 					<span class="text-sm">{e.name}</span>

@@ -31,13 +31,8 @@
 	style="padding-bottom: env(safe-area-inset-bottom, 0);"
 	aria-label="Session-Navigation"
 >
-	<div class="dock-inner grid grid-cols-4 gap-1 rounded-2xl p-1.5">
-		<a
-			href={base}
-			class="dock-item"
-			class:dock-active={isActive(base)}
-			aria-label="Lobby"
-		>
+	<div class="grid grid-cols-4 gap-1 p-1.5">
+		<a href={base} class="dock-item" class:dock-active={isActive(base)} aria-label="Lobby">
 			<Users size={18} />
 			<span>Lobby</span>
 		</a>
@@ -60,7 +55,8 @@
 			<span>Drinks</span>
 			{#if pendingDrinks > 0}
 				<span
-					class="bg-warning text-warning-content absolute -top-1 -right-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.6rem] font-bold tabular-nums"
+					class="absolute -top-1 -right-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.6rem] font-bold tabular-nums"
+					style="background: oklch(56% 0.10 28); color: oklch(98% 0.004 90);"
 				>
 					{pendingDrinks > 9 ? '9+' : pendingDrinks}
 				</span>
@@ -79,49 +75,39 @@
 </nav>
 
 <style>
-	.dock-inner {
-		background: oklch(10% 0.02 280 / 0.85);
-		backdrop-filter: blur(20px) saturate(160%);
-		-webkit-backdrop-filter: blur(20px) saturate(160%);
-		border: 1px solid oklch(40% 0.04 280 / 0.5);
-		box-shadow:
-			0 10px 28px -10px rgba(0, 0, 0, 0.6),
-			inset 0 1px 0 0 oklch(90% 0.04 280 / 0.08);
-	}
 	.dock-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.15rem;
-		padding: 0.5rem 0.25rem;
-		border-radius: 0.875rem;
-		color: oklch(75% 0.02 280);
-		font-size: 0.7rem;
-		font-weight: 500;
+		gap: 0.2rem;
+		padding: 0.55rem 0.25rem;
+		border-radius: 9999px;
+		color: oklch(50% 0.006 90);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
 		line-height: 1;
 		transition:
-			background-color 180ms ease,
-			color 180ms ease,
-			transform 120ms ease;
-		min-height: 48px; /* a11y touch target */
+			box-shadow 160ms ease,
+			color 160ms ease,
+			background-color 160ms ease;
+		min-height: 52px;
 	}
 	.dock-item:hover {
-		color: oklch(96% 0.005 280);
-		background: oklch(30% 0.04 280 / 0.4);
+		color: oklch(30% 0.006 90);
+		background-color: oklch(94% 0.004 90);
 	}
 	.dock-item:active {
-		transform: scale(0.96);
+		box-shadow:
+			inset 1px 1px 3px oklch(40% 0.01 80 / 0.13),
+			inset -1px -1px 3px oklch(100% 0 0 / 0.78);
 	}
 	.dock-active {
-		color: oklch(96% 0.005 280);
-		background: linear-gradient(
-			180deg,
-			oklch(86% 0.22 165 / 0.18),
-			oklch(71% 0.16 290 / 0.14)
-		);
+		color: oklch(40% 0.05 148);
+		background-color: oklch(93% 0.012 148);
 		box-shadow:
-			inset 0 0 0 1px oklch(86% 0.22 165 / 0.4),
-			0 2px 12px -4px oklch(86% 0.22 165 / 0.35);
+			inset 1px 1px 3px oklch(40% 0.05 148 / 0.18),
+			inset -1px -1px 3px oklch(100% 0 0 / 0.78);
 	}
 </style>
