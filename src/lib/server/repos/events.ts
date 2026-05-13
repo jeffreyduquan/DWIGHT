@@ -112,11 +112,14 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 
 	// Fetch round.startedAt as the baseline for timestamp expressions.
 	const roundRow = await db
-		.select({ startedAt: rounds.startedAt })
+		.select({ startedAt: rounds.startedAt, lockedAt: rounds.lockedAt })
 		.from(rounds)
 		.where(eq(rounds.id, roundId))
 		.limit(1);
 	const startedAtMs = roundRow[0]?.startedAt ? roundRow[0].startedAt.getTime() : null;
+	const referenceEndMs = roundRow[0]?.lockedAt
+		? roundRow[0].lockedAt.getTime()
+		: Date.now();
 
 	const snap: Record<string, number> = {};
 	for (const row of rows) {
@@ -164,9 +167,55 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 		for (const [k, atMs] of firstByKey) {
 			snap[k] = Math.max(0, Math.round((atMs - startedAtMs) / 1000));
 		}
+		// round duration ("now" reference): lockedAt - startedAt, or now - startedAt while live.
+		snap['roundDurationSeconds'] = Math.max(
+			0,
+			Math.round((referenceEndMs - startedAtMs) / 1000)
+		);
 	}
 
 	return snap;
+}
+
+/**
+ * Return the CONFIRMED event log for a round in chronological order
+ * (decidedAt asc, id asc for tiebreak). Times are seconds since round.startedAt.
+ * Used by predicates that depend on event order (`events_in_order`).
+ */
+export async function getEventLog(roundId: string): Promise<
+	Array<{ trackableId: string; entityId: string | null; tsSeconds: number }>
+> {
+	const rows = await db
+		.select({
+			trackableId: roundEvents.trackableId,
+			entityId: roundEvents.entityId,
+			decidedAt: roundEvents.decidedAt,
+			id: roundEvents.id
+		})
+		.from(roundEvents)
+		.where(and(eq(roundEvents.roundId, roundId), eq(roundEvents.status, 'CONFIRMED')));
+	const roundRow = await db
+		.select({ startedAt: rounds.startedAt })
+		.from(rounds)
+		.where(eq(rounds.id, roundId))
+		.limit(1);
+	const startedAtMs = roundRow[0]?.startedAt ? roundRow[0].startedAt.getTime() : null;
+	if (startedAtMs == null) return [];
+	const enriched = rows
+		.filter((r) => r.decidedAt != null)
+		.map((r) => ({
+			trackableId: r.trackableId,
+			entityId: r.entityId,
+			tsSeconds: Math.max(0, Math.round((r.decidedAt!.getTime() - startedAtMs) / 1000)),
+			id: r.id,
+			atMs: r.decidedAt!.getTime()
+		}));
+	enriched.sort((a, b) => a.atMs - b.atMs || (a.id < b.id ? -1 : 1));
+	return enriched.map((r) => ({
+		trackableId: r.trackableId,
+		entityId: r.entityId,
+		tsSeconds: r.tsSeconds
+	}));
 }
 
 export async function listEvents(roundId: string): Promise<DbRoundEvent[]> {

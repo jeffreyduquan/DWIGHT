@@ -140,6 +140,64 @@ function buildArgMaxOutcomes(
 	};
 }
 
+function buildRankingOutcomes(
+	graph: BetGraph,
+	outcome: GraphNode,
+	rankNode: GraphNode,
+	ctx: CompileContext
+): CompileResult {
+	const trackableSrc = inSrc(graph, rankNode.id, 'trackable');
+	const trackableId = resolveTrackableId(graph, trackableSrc);
+	if (!trackableId) return { ok: false, error: 'ranking: kein Trackable verbunden' };
+	if (ctx.entities.length < 2) {
+		return { ok: false, error: 'ranking braucht mindestens 2 Entities.' };
+	}
+	const props =
+		(outcome.props as { topK?: number; withOrder?: boolean; marketTitle?: string }) ?? {};
+	const topK = Math.max(1, Math.min(props.topK ?? 3, ctx.entities.length));
+	const withOrder = props.withOrder !== false;
+	const outcomes: CompiledOutcome[] = [];
+	if (withOrder) {
+		for (let pos = 1; pos <= topK; pos++) {
+			for (const ent of ctx.entities) {
+				outcomes.push({
+					label: `${ent.name} auf Platz ${pos}`,
+					predicate: { kind: 'log_rank', trackableId, entityId: ent.id, position: pos },
+					orderIndex: outcomes.length
+				});
+			}
+		}
+	} else {
+		for (let i = 0; i < ctx.entities.length; i++) {
+			const ent = ctx.entities[i];
+			const positionPreds: Predicate[] = [];
+			for (let pos = 1; pos <= topK; pos++) {
+				positionPreds.push({
+					kind: 'log_rank',
+					trackableId,
+					entityId: ent.id,
+					position: pos
+				});
+			}
+			outcomes.push({
+				label: `${ent.name} (Top-${topK})`,
+				predicate:
+					positionPreds.length === 1
+						? positionPreds[0]
+						: { kind: 'or', children: positionPreds },
+				orderIndex: i
+			});
+		}
+	}
+	return {
+		ok: true,
+		market: {
+			title: String(props.marketTitle ?? `Top-${topK}`),
+			outcomes
+		}
+	};
+}
+
 function buildRaceOutcomes(
 	graph: BetGraph,
 	outcome: GraphNode,
@@ -310,6 +368,31 @@ function compileBoolean(graph: BetGraph, node: GraphNode, ctx: CompileContext): 
 				value: { kind: 'or', children: [{ kind: 'not', child: c.value }, t.value] }
 			};
 		}
+		case 'sequence_match': {
+			// Collect all edges into the multi-input `steps` pin, resolve each to a trackableId.
+			const edges = graph.edges.filter(
+				(e) => e.to.nodeId === node.id && e.to.pin === 'steps'
+			);
+			if (edges.length < 1) {
+				return { ok: false, error: 'sequence_match: keine Steps verbunden' };
+			}
+			const steps: string[] = [];
+			for (const e of edges) {
+				const src = graph.nodes.find((n) => n.id === e.from.nodeId);
+				const tid = resolveTrackableId(graph, src);
+				if (!tid) {
+					return { ok: false, error: 'sequence_match: jede Step braucht einen Trackable' };
+				}
+				steps.push(tid);
+			}
+			const allowOthersBetween =
+				((node.props as { allowOthersBetween?: boolean } | undefined)?.allowOthersBetween ??
+					false) === true;
+			return {
+				ok: true,
+				value: { kind: 'events_in_order', steps, allowOthersBetween }
+			};
+		}
 		case 'entity_equals':
 			return {
 				ok: false,
@@ -431,6 +514,9 @@ function compileTimestampExpr(
 			}
 			return { ok: true, value: { kind: 'const_seconds', value: v } };
 		}
+		case 'now': {
+			return { ok: true, value: { kind: 'round_now' } };
+		}
 		default:
 			return {
 				ok: false,
@@ -462,6 +548,16 @@ export function compileGraph(graph: BetGraph, ctx: CompileContext): CompileResul
 
 	if (outcome.kind === 'boolean_outcome') {
 		return buildBooleanFromTree(graph, outcome, source, ctx);
+	}
+
+	if (outcome.kind === 'ranking_outcome') {
+		if (source.kind === 'rank') {
+			return buildRankingOutcomes(graph, outcome, source, ctx);
+		}
+		return {
+			ok: false,
+			error: `ranking_outcome braucht einen "rank"-Knoten als Quelle.`
+		};
 	}
 
 	return {

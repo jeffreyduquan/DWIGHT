@@ -100,6 +100,15 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 		outputs: [{ name: 'out', type: 'Number' }],
 		props: [{ name: 'value', kind: 'number', label: 'Wert', defaultValue: 0 }]
 	},
+	now: {
+		kind: 'now',
+		family: 'source',
+		label: 'Jetzt',
+		description: 'Zeitpunkt der Auswertung (Sekunden seit Rundenstart).',
+		inputs: [],
+		outputs: [{ name: 'out', type: 'Timestamp' }],
+		props: []
+	},
 	// ---------- Compute ----------
 	count: {
 		kind: 'count',

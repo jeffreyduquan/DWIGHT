@@ -308,7 +308,8 @@ export type CounterExpr =
  */
 export type TimestampExpr =
 	| { kind: 'first_occurrence'; trackableId: string; entityId: string | null }
-	| { kind: 'const_seconds'; value: number };
+	| { kind: 'const_seconds'; value: number }
+	| { kind: 'round_now' };
 
 export type Predicate =
 	| {
@@ -372,7 +373,27 @@ export type Predicate =
 			left: TimestampExpr;
 			right: TimestampExpr;
 			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
+	  }
+	| {
+			/**
+			 * True when the listed `steps` (trackable ids) appear in order within
+			 * the round's CONFIRMED event log. If `allowOthersBetween` is false,
+			 * any intervening event of a different trackable breaks the match.
+			 */
+			kind: 'events_in_order';
+			steps: string[];
+			allowOthersBetween: boolean;
 	  };
+
+/**
+ * Single CONFIRMED event row in the per-round event log,
+ * sorted ascending by `tsSeconds` (seconds since round start).
+ */
+export type EventLogEntry = {
+	trackableId: string;
+	entityId: string | null;
+	tsSeconds: number;
+};
 
 export type EntityAttributes = {
 	color?: string;
@@ -399,6 +420,7 @@ export type GraphNodeKind =
 	| 'all_entities'
 	| 'trackable'
 	| 'constant'
+	| 'now'
 	// Compute
 	| 'count'
 	| 'sum'

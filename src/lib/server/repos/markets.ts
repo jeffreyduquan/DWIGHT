@@ -19,7 +19,7 @@ import {
 } from '../db/schema';
 import { evalPredicate, negate, type CounterSnapshot } from '../bets/predicate';
 import { computeMarketPayouts, type OutcomeForPayout } from '../bets/payout';
-import { getCounterSnapshot } from './events';
+import { getCounterSnapshot, getEventLog } from './events';
 import { compileSessionGraphs } from '$lib/graph/compile';
 
 export type DbBetMarket = typeof betMarkets.$inferSelect;
@@ -656,6 +656,8 @@ export async function settleRoundMarkets(roundId: string): Promise<void> {
 
 	const snap: CounterSnapshot =
 		r.status === 'CANCELLED' ? {} : await getCounterSnapshot(roundId);
+	const events =
+		r.status === 'CANCELLED' ? [] : await getEventLog(roundId);
 	const voidAll = r.status === 'CANCELLED';
 
 	const markets = await db
@@ -665,14 +667,15 @@ export async function settleRoundMarkets(roundId: string): Promise<void> {
 
 	for (const m of markets) {
 		if (m.status === 'SETTLED' || m.status === 'VOID') continue;
-		await settleOneMarket(m.id, snap, voidAll);
+		await settleOneMarket(m.id, snap, voidAll, events);
 	}
 }
 
 async function settleOneMarket(
 	marketId: string,
 	snap: CounterSnapshot,
-	voidAll: boolean
+	voidAll: boolean,
+	events: Awaited<ReturnType<typeof getEventLog>>
 ): Promise<void> {
 	await db.transaction(async (tx) => {
 		const [m] = await tx.select().from(betMarkets).where(eq(betMarkets.id, marketId)).for('update');
@@ -688,7 +691,7 @@ async function settleOneMarket(
 		// Set isWinner per outcome (false if voidAll so payout module triggers void path)
 		const withWin = outs.map((o) => ({
 			outcome: o,
-			isWinner: voidAll ? false : evalPredicate(o.predicate, snap)
+			isWinner: voidAll ? false : evalPredicate(o.predicate, snap, events)
 		}));
 
 		for (const w of withWin) {

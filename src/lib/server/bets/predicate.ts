@@ -3,7 +3,7 @@
  *
  * @implements REQ-TRACK-003, REQ-TRACK-004, REQ-BET-003
  */
-import type { CounterExpr, Predicate, TimestampExpr } from '../db/schema';
+import type { CounterExpr, EventLogEntry, Predicate, TimestampExpr } from '../db/schema';
 
 /**
  * Counter snapshot for one round.
@@ -67,7 +67,11 @@ export function evalCounterExpr(
 }
 
 /** Evaluate a Predicate AST against a counter snapshot. */
-export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
+export function evalPredicate(
+	pred: Predicate,
+	snap: CounterSnapshot,
+	events: ReadonlyArray<EventLogEntry> = []
+): boolean {
 	switch (pred.kind) {
 		case 'count': {
 			const v = getCount(snap, pred.trackableId, pred.entityId);
@@ -79,16 +83,16 @@ export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
 			return cmpInt(l, pred.cmp, r);
 		}
 		case 'and':
-			return pred.children.every((c) => evalPredicate(c, snap));
+			return pred.children.every((c) => evalPredicate(c, snap, events));
 		case 'or':
-			return pred.children.some((c) => evalPredicate(c, snap));
+			return pred.children.some((c) => evalPredicate(c, snap, events));
 		case 'not':
-			return !evalPredicate(pred.child, snap);
+			return !evalPredicate(pred.child, snap, events);
 		case 'count_entities_where': {
 			let matches = 0;
 			for (const eid of pred.candidates) {
 				const bound = bindSelf(pred.child, eid);
-				if (evalPredicate(bound, snap)) matches++;
+				if (evalPredicate(bound, snap, events)) matches++;
 			}
 			return cmpInt(matches, pred.cmp, pred.n);
 		}
@@ -102,7 +106,32 @@ export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
 			if (l === null || r === null) return false;
 			return cmpInt(l, pred.cmp, r);
 		}
+		case 'events_in_order':
+			return evalEventsInOrder(pred.steps, pred.allowOthersBetween, events);
 	}
+}
+
+/**
+ * Greedy match: walk through `events` left to right and consume one event per
+ * step in order. If `allowOthersBetween` is false, any intervening event of a
+ * trackable not in the current step breaks the match.
+ */
+function evalEventsInOrder(
+	steps: string[],
+	allowOthersBetween: boolean,
+	events: ReadonlyArray<EventLogEntry>
+): boolean {
+	if (steps.length === 0) return true;
+	let stepIdx = 0;
+	for (const evt of events) {
+		if (evt.trackableId === steps[stepIdx]) {
+			stepIdx++;
+			if (stepIdx === steps.length) return true;
+		} else if (!allowOthersBetween) {
+			return false;
+		}
+	}
+	return false;
 }
 
 /**
@@ -111,6 +140,10 @@ export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
  */
 export function evalTimestampExpr(expr: TimestampExpr, snap: CounterSnapshot): number | null {
 	if (expr.kind === 'const_seconds') return expr.value;
+	if (expr.kind === 'round_now') {
+		const v = snap['roundDurationSeconds'];
+		return v === undefined ? null : v;
+	}
 	// first_occurrence
 	const v = snap[firstAtKey(expr.trackableId, expr.entityId)];
 	return v === undefined ? null : v;
@@ -148,6 +181,8 @@ export function bindSelf(pred: Predicate, eid: string): Predicate {
 				right: bindSelfTimestamp(pred.right, eid),
 				cmp: pred.cmp
 			};
+		case 'events_in_order':
+			return pred;
 	}
 }
 
@@ -274,6 +309,14 @@ export function validatePredicate(
 			if (r) return r;
 			return null;
 		}
+		case 'events_in_order': {
+			if (!Array.isArray(pred.steps) || pred.steps.length === 0)
+				return `events_in_order requires at least one step`;
+			for (const t of pred.steps) {
+				if (!validTrackables.has(t)) return `Unknown trackable in steps: ${t}`;
+			}
+			return null;
+		}
 	}
 }
 
@@ -346,6 +389,7 @@ function validateTimestampExpr(
 			return `const_seconds must be a non-negative number`;
 		return null;
 	}
+	if (expr.kind === 'round_now') return null;
 	// first_occurrence
 	return checkCounterRef(expr.trackableId, expr.entityId, validTrackables, validEntities, allowSelf);
 }

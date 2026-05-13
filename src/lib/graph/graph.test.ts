@@ -321,6 +321,102 @@ describe('compileGraph', () => {
 		expect(yes.cmp).toBe('lt');
 	});
 
+	it('compiles ranking_outcome with rank to N*K log_rank outcomes (Family J)', () => {
+		const graph = g(
+			[
+				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'a', kind: 'all_entities' },
+				{ id: 'rk', kind: 'rank' },
+				{ id: 'o', kind: 'ranking_outcome', props: { topK: 2, withOrder: true, marketTitle: 'Podium' } }
+			],
+			[
+				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'rk', pin: 'trackable' } },
+				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'rk', pin: 'scope' } },
+				{ from: { nodeId: 'rk', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		expect(res.market.title).toBe('Podium');
+		// 3 entities × topK=2 = 6 outcomes
+		expect(res.market.outcomes).toHaveLength(6);
+		expect(res.market.outcomes[0].predicate.kind).toBe('log_rank');
+		const labels = res.market.outcomes.map((o) => o.label);
+		expect(labels).toContain('Mario auf Platz 1');
+		expect(labels).toContain('Peach auf Platz 2');
+	});
+
+	it('compiles ranking_outcome withOrder=false to per-entity OR(log_rank...)', () => {
+		const graph = g(
+			[
+				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'a', kind: 'all_entities' },
+				{ id: 'rk', kind: 'rank' },
+				{ id: 'o', kind: 'ranking_outcome', props: { topK: 2, withOrder: false } }
+			],
+			[
+				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'rk', pin: 'trackable' } },
+				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'rk', pin: 'scope' } },
+				{ from: { nodeId: 'rk', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		expect(res.market.outcomes).toHaveLength(3);
+		expect(res.market.outcomes[0].predicate.kind).toBe('or');
+	});
+
+	it('compiles "now vs first_occurrence" via round_now TimestampExpr (Family I)', () => {
+		const graph = g(
+			[
+				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'fo', kind: 'first_occurrence' },
+				{ id: 'nw', kind: 'now' },
+				{ id: 'tc', kind: 'time_compare', props: { op: 'gt' } },
+				{ id: 'o', kind: 'boolean_outcome' }
+			],
+			[
+				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'fo', pin: 'trackable' } },
+				{ from: { nodeId: 'nw', pin: 'out' }, to: { nodeId: 'tc', pin: 'a' } },
+				{ from: { nodeId: 'fo', pin: 'out' }, to: { nodeId: 'tc', pin: 'b' } },
+				{ from: { nodeId: 'tc', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('timestamp_compare');
+		if (yes.kind !== 'timestamp_compare') return;
+		expect(yes.left.kind).toBe('round_now');
+	});
+
+	it('compiles sequence_match into events_in_order predicate (Family H)', () => {
+		const graph = g(
+			[
+				{ id: 'tg', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'tf', kind: 'trackable', props: { trackableId: 'foul' } },
+				{ id: 'sm', kind: 'sequence_match', props: { allowOthersBetween: true } },
+				{ id: 'o', kind: 'boolean_outcome' }
+			],
+			[
+				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'sm', pin: 'steps' } },
+				{ from: { nodeId: 'tf', pin: 'out' }, to: { nodeId: 'sm', pin: 'steps' } },
+				{ from: { nodeId: 'sm', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('events_in_order');
+		if (yes.kind !== 'events_in_order') return;
+		expect(yes.steps).toEqual(['goal', 'foul']);
+		expect(yes.allowOthersBetween).toBe(true);
+	});
+
 	it('returns ok:false for unsupported shapes', () => {
 		const graph = g(
 			[

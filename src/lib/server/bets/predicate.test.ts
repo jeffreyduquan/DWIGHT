@@ -343,4 +343,54 @@ describe('evalPredicate -- timestamp_compare', () => {
 		};
 		expect(evalPredicate(pred, snap)).toBe(false);
 	});
+
+	it('round_now vs first_occurrence (time since event)', () => {
+		// roundDurationSeconds=200, first_occurrence(goal:a)=30 -> 200 > 30 -> true
+		const s2 = { ...snap, roundDurationSeconds: 200 };
+		const pred: Predicate = {
+			kind: 'timestamp_compare',
+			left: { kind: 'round_now' },
+			right: { kind: 'first_occurrence', trackableId: 'goal', entityId: 'a' },
+			cmp: 'gt'
+		};
+		expect(evalPredicate(pred, s2)).toBe(true);
+	});
+});
+
+describe('evalPredicate -- events_in_order', () => {
+	const log = [
+		{ trackableId: 'goal', entityId: 'a', tsSeconds: 10 },
+		{ trackableId: 'foul', entityId: null, tsSeconds: 20 },
+		{ trackableId: 'goal', entityId: 'b', tsSeconds: 30 }
+	];
+
+	it('strict: goal then foul matches (allowOthersBetween=false)', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['goal', 'foul'], allowOthersBetween: false };
+		expect(evalPredicate(pred, {}, log)).toBe(true);
+	});
+
+	it('strict: foul then goal fails because preceding goal:a breaks consecutive run', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['foul', 'goal'], allowOthersBetween: false };
+		expect(evalPredicate(pred, {}, log)).toBe(false);
+	});
+
+	it('relaxed: foul then goal matches when others-between allowed', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['foul', 'goal'], allowOthersBetween: true };
+		expect(evalPredicate(pred, {}, log)).toBe(true);
+	});
+
+	it('strict: goal-goal-foul fails because foul comes BEFORE second goal', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['goal', 'goal', 'foul'], allowOthersBetween: false };
+		expect(evalPredicate(pred, {}, log)).toBe(false);
+	});
+
+	it('relaxed: pattern with skip allowed', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['goal', 'goal'], allowOthersBetween: true };
+		expect(evalPredicate(pred, {}, log)).toBe(true);
+	});
+
+	it('no events -> false', () => {
+		const pred: Predicate = { kind: 'events_in_order', steps: ['goal'], allowOthersBetween: false };
+		expect(evalPredicate(pred, {}, [])).toBe(false);
+	});
 });
