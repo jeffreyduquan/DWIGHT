@@ -179,6 +179,7 @@
 | REQ-UI-018 | D9 / Phase 5c | `src/routes/s/[id]/+page.svelte` (kombinierter Beenden-&-Löschen-Button mit confirm()), `src/routes/s/[id]/+page.server.ts` (deleteSession Action bleibt) | manual Host Session löschen | ☑ |
 | REQ-UI-019 | Phase 6 | `src/routes/modes/[id]/graphs/+page.{server.ts,svelte}`, `src/routes/modes/[id]/+page.svelte` (Discovery-Link) | manual | ◑ |
 | REQ-UI-020 | Phase 6 | `src/lib/graph/{validate,preview,compile}.ts`, `src/lib/server/repos/markets.ts` (`instantiateBetGraphs` log-and-skip) | `src/lib/graph/graph.test.ts` | ◑ |
+| REQ-UI-021 | Phase 7 | `src/lib/graph/GraphCanvas.svelte`, `src/routes/modes/[id]/graphs/+page.svelte` (integration) | manual visual | ◑ |
 
 ## REQ-GM — Game Master Tools
 

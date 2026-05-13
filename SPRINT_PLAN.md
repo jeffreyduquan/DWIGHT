@@ -294,6 +294,52 @@ Deferred → Phase 7:
 
 ---
 
+## Phase 7 — Visueller Bet-Graph-Editor ◐
+**Goal:** JSON-Textarea durch Tap-to-Connect Node-Canvas ersetzen. Mobile-first, vertikales Auto-Layout, kein freies Canvas-Pan.
+
+Done:
+- ☑ `src/lib/graph/GraphCanvas.svelte` (~530 Zeilen, $state/$derived/$effect): vertikales Auto-Layout (topologische Sortierung), Family-getönte Node-Karten, Pin-Buttons (links Inputs, rechts Outputs), SVG-Edge-Overlay mit kubischen Kurven, Tap-to-Connect mit Pin-Type-Check + Compat-Glow, per-Node Prop-Editor (enum/boolean/number/modeRef-trackable/entity), `×`-Delete pro Node, Edge-Hit-Circles für Edge-Selektion + Delete-Pill, FAB `+` öffnet Bottom-Sheet-Palette gruppiert nach `FAMILY_LABELS`, Live-Validation-Banner + Preview-Satz oben, pin-position ResizeObserver für korrekte SVG-Pfade.
+- ☑ `/modes/[id]/graphs/+page.svelte`: GraphCanvas in Edit-Form integriert; JSON-Textarea bleibt als `<details>` „Advanced" Fallback mit Live-Parse-Sync.
+- ☑ `pnpm check` 0 errors / 15 warnings; vitest 60/60 grün.
+
+Open:
+- ☐ Long-press / Drag-to-Connect Geste (Desktop optional).
+- ☐ Undo/Redo via history-stack in `$state`.
+- ☐ Visual-Editor-E2E-Smoketest (Playwright).
+
+---
+
+## Phase 8 — Compiler-Familien-Erweiterung ☐
+**Goal:** Compiler deckt alle 10 Wett-Familien ab.
+
+Tasks:
+- ☐ Familie E (delta): `delta` Node (Trackable, Window) → kompiliert via neuem `count_in_window` Predicate (Window = letzte N Sekunden / seit Round-Start / seit Marker).
+- ☐ Familie F (time-compare): Vergleich zweier Timestamps; benötigt neues `timestamp_compare` Predicate (cmp + tolerance).
+- ☐ Familie G (if-then): `if_then` Logic-Node → kompiliert zu `or(not(cond), then)` (klassische Implikation).
+- ☐ Familie H (sequence): `sequence_match` Macro-Node → ordered-events Predicate (neue Primitive `events_in_order`).
+- ☐ Familie I (time-threshold): „Event innerhalb T Sekunden" → `time_since` Compute-Node + `compare_number`; neue Engine-Funktion `time_since_event_start`.
+- ☐ Familie J (ranking): `rank` Compute-Node (entity → number) + bestehender `log_rank` Predicate-Generalisierung (N>1).
+- ☐ Tests: pro Familie 1 Compiler-Test + 1 Engine-Test in `predicate.test.ts`.
+- ☐ Preview-Sentence-Erweiterung für neue Node-Kinds.
+
+---
+
+## Phase 9 — Legacy Cutover ☐
+**Goal:** `market_templates` deprecaten und entfernen (Hardcut, ein einziger Sprint).
+
+Tasks:
+- ☐ Migrations-Script `scripts/migrate-templates-to-graphs.ts`: liest alle `modes.market_templates`, generiert äquivalente `BetGraph`-JSON, schreibt in `bet_graphs`. Idempotent + Trockenlauf-Modus.
+- ☐ Per-User Migrations-Banner in `/modes`: „Du hast N alte Templates -- jetzt migrieren?" Knopf führt Script user-scoped aus.
+- ☐ Drizzle Migration `0006_drop_market_templates.sql`: ALTER TABLE modes DROP COLUMN market_templates; ALTER TABLE sessions DROP COLUMN market_templates.
+- ☐ Schema: `modes.market_templates` + `sessions.market_templates` + `MarketTemplate` type entfernen.
+- ☐ `repos/markets.ts`: `instantiateMarketTemplates` löschen.
+- ☐ `/s/[id]/round/+page.server.ts`: market-template-Instantiation-Call entfernen.
+- ☐ `ModeForm.svelte`: Lego-Gallery für Wett-Templates entfernen; nur noch Discovery-Link zu `/modes/[id]/graphs`.
+- ☐ `parseModeForm`: market_templates-Parsing weg.
+- ☐ REQUIREMENTS-Update: REQ-MODE-003 (terminology/slug bereits weg) + alte Template-bezogene REQs markieren als „obsolet -- ersetzt durch REQ-MODE-007".
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

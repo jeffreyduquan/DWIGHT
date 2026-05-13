@@ -1,28 +1,47 @@
 <!--
-  @file modes/[id]/graphs/+page.svelte -- Bet-graph CRUD MVP (Phase 6).
-  Raw JSON textarea editor with live validation + preview sentence.
-  Visual Blueprints-style editor lands in a follow-up phase.
+  @file modes/[id]/graphs/+page.svelte -- Bet-graph CRUD with visual editor (Phase 7).
+
+  Inline visual editor (GraphCanvas) for the selected graph. JSON-textarea
+  remains as <details> fallback for power-users.
 -->
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { enhance } from '$app/forms';
+	import GraphCanvas from '$lib/graph/GraphCanvas.svelte';
+	import type { BetGraph } from '$lib/server/db/schema';
 
 	let { data }: { data: PageData } = $props();
 
 	let editingId = $state<string | null>(null);
 	let draftName = $state('');
 	let draftDesc = $state('');
-	let draftJson = $state('');
+	let draftGraph = $state<BetGraph>({ version: 1, nodes: [], edges: [] });
+	let showJson = $state(false);
 
 	function startEdit(g: PageData['graphs'][number]) {
 		editingId = g.id;
 		draftName = g.name;
 		draftDesc = g.description ?? '';
-		draftJson = JSON.stringify(g.graphJson, null, 2);
+		draftGraph = structuredClone(g.graphJson);
+		showJson = false;
 	}
 
 	function cancelEdit() {
 		editingId = null;
+	}
+
+	const draftJson = $derived(JSON.stringify(draftGraph, null, 2));
+
+	function onJsonInput(ev: Event) {
+		const raw = (ev.target as HTMLTextAreaElement).value;
+		try {
+			const parsed = JSON.parse(raw);
+			if (parsed?.version === 1 && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+				draftGraph = parsed;
+			}
+		} catch {
+			// Ignore -- live-feedback only.
+		}
 	}
 </script>
 
@@ -34,7 +53,7 @@
 	<header class="head">
 		<a class="back" href="/modes/{data.mode.id}">← {data.mode.name}</a>
 		<h1>Bet-Graphs</h1>
-		<p class="sub">Visueller Wett-Builder (MVP -- JSON-Editor). Visueller Editor folgt.</p>
+		<p class="sub">Visueller Wett-Builder. Tippe „+ Node" zum Hinzufügen, Pins zum Verbinden.</p>
 	</header>
 
 	<form method="POST" action="?/create" use:enhance class="add">
@@ -51,8 +70,17 @@
 		{#each data.graphs as g (g.id)}
 			<li class="row" class:editing={editingId === g.id}>
 				{#if editingId === g.id}
-					<form method="POST" action="?/save" use:enhance={() => async ({ update }) => { await update(); editingId = null; }} class="edit">
+					<form
+						method="POST"
+						action="?/save"
+						use:enhance={() => async ({ update }) => {
+							await update();
+							editingId = null;
+						}}
+						class="edit"
+					>
 						<input type="hidden" name="id" value={g.id} />
+						<input type="hidden" name="graphJson" value={draftJson} />
 						<label>
 							Name
 							<input name="name" type="text" bind:value={draftName} required maxlength="64" />
@@ -61,10 +89,24 @@
 							Beschreibung
 							<input name="description" type="text" bind:value={draftDesc} maxlength="200" />
 						</label>
-						<label>
-							Graph (JSON)
-							<textarea name="graphJson" bind:value={draftJson} rows="12" spellcheck="false" class="json"></textarea>
-						</label>
+
+						<GraphCanvas
+							bind:graph={draftGraph}
+							mode={{ trackables: data.mode.trackables, defaultEntities: data.mode.defaultEntities }}
+						/>
+
+						<details bind:open={showJson} class="json-fallback">
+							<summary>Advanced: JSON bearbeiten</summary>
+							<textarea
+								rows="10"
+								spellcheck="false"
+								class="json"
+								value={draftJson}
+								oninput={onJsonInput}
+							></textarea>
+							<small>Live-Parsed; ungültiges JSON wird verworfen.</small>
+						</details>
+
 						<div class="actions">
 							<button type="submit" class="btn-primary">Speichern</button>
 							<button type="button" class="btn-ghost" onclick={cancelEdit}>Abbrechen</button>
@@ -78,46 +120,26 @@
 						{#if !g.validation.ok}
 							<small class="invalid">⚠ {g.validation.errors.length} Validierungsfehler</small>
 						{:else}
-							<small class="valid">✓ Valid</small>
+							<small class="valid">✓ Valid · {g.graphJson.nodes.length} Nodes</small>
 						{/if}
 					</div>
 					<div class="row-actions">
 						<button type="button" class="btn-ghost" onclick={() => startEdit(g)}>Bearbeiten</button>
 						<form method="POST" action="?/delete" use:enhance>
 							<input type="hidden" name="id" value={g.id} />
-							<button type="submit" class="btn-danger" onclick={(e) => { if (!confirm('Graph löschen?')) e.preventDefault(); }}>Löschen</button>
+							<button
+								type="submit"
+								class="btn-danger"
+								onclick={(e) => {
+									if (!confirm('Graph löschen?')) e.preventDefault();
+								}}>Löschen</button
+							>
 						</form>
 					</div>
 				{/if}
 			</li>
 		{/each}
 	</ul>
-
-	<section class="help">
-		<details>
-			<summary>Hilfe -- Graph-JSON-Format</summary>
-			<p>Minimaler valider Graph: <code>{`{ "version": 1, "nodes": [...], "edges": [...] }`}</code></p>
-			<p>Beispiel <em>Top-Scorer</em> (arg_max -> entity_outcome):</p>
-			<pre>{JSON.stringify(
-				{
-					version: 1,
-					nodes: [
-						{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-						{ id: 'a', kind: 'all_entities' },
-						{ id: 'am', kind: 'arg_max' },
-						{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Top-Scorer' } }
-					],
-					edges: [
-						{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'am', pin: 'trackable' } },
-						{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'am', pin: 'scope' } },
-						{ from: { nodeId: 'am', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-					]
-				},
-				null,
-				2
-			)}</pre>
-		</details>
-	</section>
 </section>
 
 <style>
@@ -211,24 +233,35 @@
 	.edit {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.6rem;
 	}
-	.edit label {
+	.edit > label {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 		font-size: 0.85rem;
 	}
-	.edit input,
-	.edit textarea {
+	.edit > label > input {
 		padding: 0.4rem 0.55rem;
 		border-radius: 6px;
 		border: 1px solid var(--neutral-300, #ccc);
 		background: white;
 	}
-	.edit textarea.json {
+	.json-fallback {
+		background: white;
+		padding: 0.5rem 0.7rem;
+		border-radius: 8px;
+		font-size: 0.85rem;
+	}
+	.json-fallback textarea.json {
 		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
+		width: 100%;
+		padding: 0.4rem 0.55rem;
+		border-radius: 6px;
+		border: 1px solid var(--neutral-300, #ccc);
+		background: white;
+		margin-top: 0.3rem;
 	}
 	.actions {
 		display: flex;
@@ -256,12 +289,5 @@
 		padding: 0.45rem 0.85rem;
 		border-radius: 8px;
 		cursor: pointer;
-	}
-	.help pre {
-		background: white;
-		padding: 0.75rem;
-		border-radius: 6px;
-		overflow-x: auto;
-		font-size: 0.75rem;
 	}
 </style>
