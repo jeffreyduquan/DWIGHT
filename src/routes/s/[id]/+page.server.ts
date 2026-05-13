@@ -158,7 +158,7 @@ export const actions: Actions = {
 		} catch (e) {
 			return fail(400, { error: (e as Error).message });
 		}
-		return { ok: true };
+		throw redirect(303, '/');
 	},
 
 	deleteSession: async ({ locals, params }) => {

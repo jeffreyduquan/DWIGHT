@@ -10,12 +10,14 @@
 		balance,
 		betLocked = false,
 		isHost = false,
+		isEnded = false,
 		backHref = '/',
 		backLabel = 'Zurück'
 	}: {
 		balance: number;
 		betLocked?: boolean;
 		isHost?: boolean;
+		isEnded?: boolean;
 		backHref?: string;
 		backLabel?: string;
 	} = $props();
@@ -27,11 +29,14 @@
 			<ArrowLeft size={13} />
 			{backLabel}
 		</a>
-		{#if isHost}
+		{#if isHost && !isEnded}
 			<span class="pill-host">Host</span>
 		{/if}
-		{#if betLocked}
+		{#if betLocked && !isEnded}
 			<span class="pill-lock">Gesperrt</span>
+		{/if}
+		{#if isEnded}
+			<span class="pill-ended">Beendet</span>
 		{/if}
 	</div>
 
@@ -60,7 +65,8 @@
 		color: oklch(46% 0.10 28);
 	}
 	.pill-host,
-	.pill-lock {
+	.pill-lock,
+	.pill-ended {
 		display: inline-flex;
 		align-items: center;
 		font-size: 0.62rem;
@@ -78,5 +84,9 @@
 	.pill-lock {
 		background-color: oklch(93% 0.04 28);
 		color: oklch(48% 0.10 28);
+	}
+	.pill-ended {
+		background-color: oklch(92% 0.004 90);
+		color: oklch(40% 0.006 90);
 	}
 </style>

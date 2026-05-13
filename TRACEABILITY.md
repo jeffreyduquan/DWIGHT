@@ -171,6 +171,8 @@
 | REQ-UI-011 | D9 / Phase 5 | `src/routes/s/[id]/info/+page.server.ts`, `src/routes/s/[id]/info/+page.svelte`, `src/lib/components/BottomDock.svelte` (Wettinfos-Tab) | manual `/s/:id/info` | ☑ |
 | REQ-UI-012 | D9 / Phase 5 | `src/routes/s/[id]/round/+page.svelte` (Wetten rewrite: stake-row 2/5/25 % + RotateCcw reset, per-outcome Setzen-Button, kein eyebrow/predicate-subtext, Starten/Abrechnen + GM-Disclosure) | manual `/s/:id/round` | ☑ |
 | REQ-UI-013 | D9 / Phase 5 | `src/lib/components/SessionTopBar.svelte` (minimal: back + pills + prominenter Balance-Chip), `src/routes/s/[id]/+layout.svelte` | manual mobile viewport | ☑ |
+| REQ-UI-014 | D9 / Phase 5 | `src/routes/s/[id]/+layout.server.ts` (ENDED-redirect zu /stats), `src/routes/s/[id]/+layout.svelte` (kein BottomDock wenn isEnded), `src/lib/components/SessionTopBar.svelte` (Beendet-Pill), `src/routes/s/[id]/+page.server.ts` (endSession → redirect '/'), `src/routes/+page.svelte` (Aktiv vs. Beendet Listen) | manual `/s/:id` nach endSession, `/` mit gemischten Sessions | ☑ |
+| REQ-UI-015 | D9 / Phase 5 | `src/routes/modes/new/+page.server.ts` (redirect '/modes'), `src/routes/modes/[id]/+page.server.ts` (redirect '/modes' bereits vorhanden) | manual `/modes/new` + `/modes/[id]` save | ☑ |
 
 ## REQ-GM — Game Master Tools
 

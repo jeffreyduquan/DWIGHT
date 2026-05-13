@@ -32,7 +32,7 @@
 						Gewinnen.
 					</h1>
 					<p class="text-base-content/70 mx-auto max-w-xs text-base">
-						Das programmierbare Trinkspiel. Wetten, Modi, Regeln — du baust den Abend.
+						Saufen
 					</p>
 				</div>
 
@@ -79,20 +79,43 @@
 						<p class="text-base-content/60 text-sm">Noch keine Sessions.</p>
 					</div>
 				{:else}
-					<ul class="space-y-2">
-						{#each data.sessions as s (s.id)}
-							<li>
-								<a href="/s/{s.id}" class="glass-interactive group flex items-center gap-3 rounded-xl p-3">
-									<IconBubble tone="primary" size="sm"><Layers size={14} /></IconBubble>
-									<div class="flex flex-1 flex-col">
-										<span class="font-medium leading-tight">{s.name}</span>
-										<span class="tabular-nums text-base-content/50 text-[0.65rem] uppercase tracking-wider">{s.inviteCode}</span>
-									</div>
-									<ArrowRight size={16} class="text-base-content/40 group-hover:text-primary transition" />
-								</a>
-							</li>
-						{/each}
-					</ul>
+					{@const activeSessions = data.sessions.filter((x) => x.status !== 'ENDED')}
+					{@const endedSessions = data.sessions.filter((x) => x.status === 'ENDED')}
+					{#if activeSessions.length > 0}
+						<ul class="space-y-2">
+							{#each activeSessions as s (s.id)}
+								<li>
+									<a href="/s/{s.id}" class="glass-interactive group flex items-center gap-3 rounded-xl p-3">
+										<IconBubble tone="primary" size="sm"><Layers size={14} /></IconBubble>
+										<div class="flex flex-1 flex-col">
+											<span class="font-medium leading-tight">{s.name}</span>
+											<span class="tabular-nums text-base-content/50 text-[0.65rem] uppercase tracking-wider">{s.inviteCode}</span>
+										</div>
+										<ArrowRight size={16} class="text-base-content/40 group-hover:text-primary transition" />
+									</a>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if endedSessions.length > 0}
+						<div class="mt-6">
+							<p class="text-base-content/45 mb-2 text-[0.65rem] uppercase tracking-wider">Beendet</p>
+							<ul class="space-y-2">
+								{#each endedSessions as s (s.id)}
+									<li>
+										<a href="/s/{s.id}/stats" class="glass-interactive group flex items-center gap-3 rounded-xl p-3 opacity-75 hover:opacity-100">
+											<IconBubble tone="neutral" size="sm"><Layers size={14} /></IconBubble>
+											<div class="flex flex-1 flex-col">
+												<span class="font-medium leading-tight">{s.name}</span>
+												<span class="text-base-content/45 text-[0.65rem] uppercase tracking-wider">Statistik anzeigen</span>
+											</div>
+											<ArrowRight size={16} class="text-base-content/40 group-hover:text-primary transition" />
+										</a>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
 				{/if}
 			</section>
 

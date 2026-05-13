@@ -13,18 +13,23 @@
 	const pathname = $derived(page.url.pathname);
 	const base = $derived(`/s/${chrome.sessionId}`);
 
-	const backHref = $derived(pathname === base ? '/' : base);
-	const backLabel = $derived(pathname === base ? 'Sessions' : 'Lobby');
+	const backHref = $derived(chrome.isEnded ? '/' : pathname === base ? '/' : base);
+	const backLabel = $derived(
+		chrome.isEnded ? 'Zurück' : pathname === base ? 'Sessions' : 'Lobby'
+	);
 </script>
 
 <SessionTopBar
 	balance={chrome.balance}
 	betLocked={chrome.betLocked}
 	isHost={chrome.isHost}
+	isEnded={chrome.isEnded}
 	{backHref}
 	{backLabel}
 />
 
 {@render children()}
 
-<BottomDock sessionId={chrome.sessionId} />
+{#if !chrome.isEnded}
+	<BottomDock sessionId={chrome.sessionId} />
+{/if}

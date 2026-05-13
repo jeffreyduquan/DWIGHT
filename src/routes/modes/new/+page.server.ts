@@ -39,6 +39,9 @@ export const actions: Actions = {
 		if (next && next.startsWith('/') && !next.startsWith('//')) {
 			throw redirect(303, next);
 		}
-		throw redirect(303, `/modes/${created.id}`);
+		// Mode-save closes the edit window and returns to the templates list.
+		// (created.id available via flash if needed in future.)
+		void created;
+		throw redirect(303, '/modes');
 	}
 };

@@ -247,6 +247,10 @@ Done — Phase 5 (User-Directed Structural Simplification, REQ-UI-010/011/012/01
 - ☑ `svelte-check` 0 Errors / 13 Warnings (unchanged baseline).
 - ☑ REQ-UI-005 aktualisiert (neue Tab-Liste, drink-pending Badge wandert in Lobby).
 
+Done — Phase 5b (Lifecycle-Fixes, REQ-UI-014/015):
+- ☑ **Ended-Session-Recap (REQ-UI-014):** `s/[id]/+layout.server.ts` erkennt `status === 'ENDED'` und redirected jede Non-Stats-Route auf `/s/:id/stats`. `+layout.svelte` rendert kein BottomDock mehr wenn `isEnded`. `SessionTopBar` zeigt `Beendet`-Pill statt Host/Gesperrt. `endSession` Action redirected nach `/` (vorher `return ok` → User blieb auf "Session bereits beendet"-Screen). Landing-Page (`/+page.svelte`) listet Sessions getrennt: Aktiv (Link auf `/s/:id`) und Beendet (Link auf `/s/:id/stats` mit dezenter Opacity).
+- ☑ **Save-and-Close (REQ-UI-015):** `modes/new/+page.server.ts` redirected nach `'/modes'` (vorher `/modes/{id}`), damit User nach Create direkt zur Templates-Liste zurückkehrt. `modes/[id]` save war bereits korrekt.
+
 Notes:
 - `StakePicker.svelte` weiterhin unused; kann später entfernt werden.
 - Drinks-Server-Action `?/initiate` ist weiterhin im `s/[id]/+layout.server.ts` registriert und wird aus der Lobby genutzt — Pfad `/s/:id?/initiate` funktioniert wie zuvor.
