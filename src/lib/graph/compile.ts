@@ -14,13 +14,14 @@
  *      -> compare_entities min direction
  *  entity_outcome ← race_to_threshold(trackable, all_entities, constant=1)
  *      -> log_rank position=1 (one outcome per entity)
- *  boolean_outcome ← compare(sum(trackable, all_entities), constant)
- *      -> sum predicate via compare_counters
- *  boolean_outcome ← compare(count(trackable [, entity]), constant)
- *      -> count predicate
+ *  boolean_outcome ← <boolean-tree>
+ *      Recursive composition over: compare, between, and, or, not, if_then.
+ *      Number leaves: count(trackable[, entity]), sum(trackable, all_entities),
+ *                     delta(a, b), constant.
  */
 import type {
 	BetGraph,
+	CounterExpr,
 	GraphNode,
 	Predicate,
 	SessionBetGraph,
@@ -176,30 +177,14 @@ function buildRaceOutcomes(
 	};
 }
 
-function buildBooleanFromCompare(
+function buildBooleanFromTree(
 	graph: BetGraph,
 	outcome: GraphNode,
-	cmpNode: GraphNode,
+	root: GraphNode,
 	ctx: CompileContext
 ): CompileResult {
-	const left = inSrc(graph, cmpNode.id, 'a');
-	const right = inSrc(graph, cmpNode.id, 'b');
-	const op = String((cmpNode.props as { op?: string } | undefined)?.op ?? 'gte');
-	const cmp = cmpFromOp(op);
-
-	// constant on either side
-	const leftConst = resolveNumber(graph, left);
-	const rightConst = resolveNumber(graph, right);
-
-	// Compute side -> Predicate building helper
-	const compute = leftConst != null ? right : left;
-	const constant = leftConst != null ? leftConst : rightConst;
-	if (compute == null || constant == null) {
-		return { ok: false, error: 'compare: braucht eine Seite als Konstante.' };
-	}
-	// If constant is on the LEFT, we need to flip the operator.
-	const finalCmp: typeof cmp = leftConst != null ? flipCmp(cmp) : cmp;
-
+	const pr = compileBoolean(graph, root, ctx);
+	if (!pr.ok) return { ok: false, error: pr.error };
 	const yesLabel = String(
 		(outcome.props as { yesLabel?: string } | undefined)?.yesLabel ?? 'Ja'
 	);
@@ -209,69 +194,195 @@ function buildBooleanFromCompare(
 	const title = String(
 		(outcome.props as { marketTitle?: string } | undefined)?.marketTitle ?? 'Wette'
 	);
-
-	if (compute.kind === 'count') {
-		const tSrc = inSrc(graph, compute.id, 'trackable');
-		const trackableId = resolveTrackableId(graph, tSrc);
-		if (!trackableId) return { ok: false, error: 'count: kein Trackable verbunden' };
-		const eSrc = inSrc(graph, compute.id, 'entity');
-		const entityId = resolveEntityId(eSrc, ctx);
-		const yes: Predicate = { kind: 'count', trackableId, entityId, cmp: finalCmp, n: constant };
-		return {
-			ok: true,
-			market: {
-				title,
-				outcomes: [
-					{ label: yesLabel, predicate: yes, orderIndex: 0 },
-					{ label: noLabel, predicate: { kind: 'not', child: yes }, orderIndex: 1 }
-				]
-			}
-		};
-	}
-	if (compute.kind === 'sum') {
-		const tSrc = inSrc(graph, compute.id, 'trackable');
-		const trackableId = resolveTrackableId(graph, tSrc);
-		if (!trackableId) return { ok: false, error: 'sum: kein Trackable verbunden' };
-		const operands = ctx.entities.map((e) => ({
-			kind: 'ref' as const,
-			trackableId,
-			entityId: e.id
-		}));
-		const yes: Predicate = {
-			kind: 'compare_counters',
-			left: { kind: 'sum', operands },
-			right: { kind: 'const', value: constant },
-			cmp: finalCmp
-		};
-		return {
-			ok: true,
-			market: {
-				title,
-				outcomes: [
-					{ label: yesLabel, predicate: yes, orderIndex: 0 },
-					{ label: noLabel, predicate: { kind: 'not', child: yes }, orderIndex: 1 }
-				]
-			}
-		};
-	}
 	return {
-		ok: false,
-		error: `boolean_outcome ← compare ← ${compute.kind} ist im Phase-6-Compiler noch nicht unterstützt.`
+		ok: true,
+		market: {
+			title,
+			outcomes: [
+				{ label: yesLabel, predicate: pr.value, orderIndex: 0 },
+				{ label: noLabel, predicate: { kind: 'not', child: pr.value }, orderIndex: 1 }
+			]
+		}
 	};
 }
 
-function flipCmp(op: 'gte' | 'lte' | 'eq' | 'gt' | 'lt'): 'gte' | 'lte' | 'eq' | 'gt' | 'lt' {
-	switch (op) {
-		case 'gt':
-			return 'lt';
-		case 'lt':
-			return 'gt';
-		case 'gte':
-			return 'lte';
-		case 'lte':
-			return 'gte';
-		case 'eq':
-			return 'eq';
+type PredResult = { ok: true; value: Predicate } | { ok: false; error: string };
+type ExprResult = { ok: true; value: CounterExpr } | { ok: false; error: string };
+
+/**
+ * Recursively compile a node whose output type is `Boolean` into a `Predicate`.
+ * Supports: compare, between, and, or, not, if_then.
+ */
+function compileBoolean(graph: BetGraph, node: GraphNode, ctx: CompileContext): PredResult {
+	switch (node.kind) {
+		case 'compare': {
+			const left = inSrc(graph, node.id, 'a');
+			const right = inSrc(graph, node.id, 'b');
+			const op = String((node.props as { op?: string } | undefined)?.op ?? 'gte');
+			const cmp = cmpFromOp(op);
+			if (!left || !right) return { ok: false, error: 'compare: a oder b nicht verbunden' };
+			const leftE = compileCounterExpr(graph, left, ctx);
+			if (!leftE.ok) return { ok: false, error: leftE.error };
+			const rightE = compileCounterExpr(graph, right, ctx);
+			if (!rightE.ok) return { ok: false, error: rightE.error };
+			let value: Predicate = {
+				kind: 'compare_counters',
+				left: leftE.value,
+				right: rightE.value,
+				cmp
+			};
+			if (op === 'neq') value = { kind: 'not', child: value };
+			return { ok: true, value };
+		}
+		case 'between': {
+			const v = inSrc(graph, node.id, 'value');
+			const lo = inSrc(graph, node.id, 'min');
+			const hi = inSrc(graph, node.id, 'max');
+			if (!v || !lo || !hi) {
+				return { ok: false, error: 'between: value/min/max nicht verbunden' };
+			}
+			const vE = compileCounterExpr(graph, v, ctx);
+			const loE = compileCounterExpr(graph, lo, ctx);
+			const hiE = compileCounterExpr(graph, hi, ctx);
+			if (!vE.ok) return { ok: false, error: vE.error };
+			if (!loE.ok) return { ok: false, error: loE.error };
+			if (!hiE.ok) return { ok: false, error: hiE.error };
+			const inclusive =
+				((node.props as { inclusive?: boolean } | undefined)?.inclusive ?? true) === true;
+			return {
+				ok: true,
+				value: {
+					kind: 'and',
+					children: [
+						{
+							kind: 'compare_counters',
+							left: vE.value,
+							right: loE.value,
+							cmp: inclusive ? 'gte' : 'gt'
+						},
+						{
+							kind: 'compare_counters',
+							left: vE.value,
+							right: hiE.value,
+							cmp: inclusive ? 'lte' : 'lt'
+						}
+					]
+				}
+			};
+		}
+		case 'and':
+		case 'or': {
+			const edges = graph.edges.filter((e) => e.to.nodeId === node.id && e.to.pin === 'inputs');
+			if (edges.length < 2) {
+				return { ok: false, error: `${node.kind}: braucht mindestens 2 Eingänge` };
+			}
+			const children: Predicate[] = [];
+			for (const e of edges) {
+				const src = graph.nodes.find((n) => n.id === e.from.nodeId);
+				if (!src) return { ok: false, error: `${node.kind}: Eingang fehlt` };
+				const r = compileBoolean(graph, src, ctx);
+				if (!r.ok) return { ok: false, error: r.error };
+				children.push(r.value);
+			}
+			return { ok: true, value: { kind: node.kind, children } };
+		}
+		case 'not': {
+			const src = inSrc(graph, node.id, 'in');
+			if (!src) return { ok: false, error: 'not: kein Eingang' };
+			const r = compileBoolean(graph, src, ctx);
+			if (!r.ok) return r;
+			return { ok: true, value: { kind: 'not', child: r.value } };
+		}
+		case 'if_then': {
+			// cond -> then  ≡  ¬cond ∨ then
+			const condSrc = inSrc(graph, node.id, 'cond');
+			const thenSrc = inSrc(graph, node.id, 'then');
+			if (!condSrc || !thenSrc) {
+				return { ok: false, error: 'if_then: cond/then nicht verbunden' };
+			}
+			const c = compileBoolean(graph, condSrc, ctx);
+			if (!c.ok) return c;
+			const t = compileBoolean(graph, thenSrc, ctx);
+			if (!t.ok) return t;
+			return {
+				ok: true,
+				value: { kind: 'or', children: [{ kind: 'not', child: c.value }, t.value] }
+			};
+		}
+		case 'entity_equals':
+			return {
+				ok: false,
+				error: 'entity_equals → Boolean: noch nicht im Compiler unterstützt'
+			};
+		case 'time_compare':
+			return {
+				ok: false,
+				error: 'time_compare: braucht Timestamp-Predicate (Phase 8.5)'
+			};
+		default:
+			return {
+				ok: false,
+				error: `compileBoolean: Knoten "${node.kind}" liefert kein Boolean`
+			};
+	}
+}
+
+/**
+ * Recursively compile a node whose output type is `Number` into a `CounterExpr`.
+ * Supports: count, sum, delta, constant.
+ */
+function compileCounterExpr(
+	graph: BetGraph,
+	node: GraphNode,
+	ctx: CompileContext
+): ExprResult {
+	switch (node.kind) {
+		case 'constant': {
+			const v = (node.props as { value?: number } | undefined)?.value;
+			if (typeof v !== 'number') return { ok: false, error: 'constant: kein Wert' };
+			return { ok: true, value: { kind: 'const', value: v } };
+		}
+		case 'count': {
+			const tSrc = inSrc(graph, node.id, 'trackable');
+			const trackableId = resolveTrackableId(graph, tSrc);
+			if (!trackableId) return { ok: false, error: 'count: kein Trackable verbunden' };
+			const eSrc = inSrc(graph, node.id, 'entity');
+			const entityId = resolveEntityId(eSrc, ctx);
+			return { ok: true, value: { kind: 'ref', trackableId, entityId } };
+		}
+		case 'sum': {
+			const tSrc = inSrc(graph, node.id, 'trackable');
+			const trackableId = resolveTrackableId(graph, tSrc);
+			if (!trackableId) return { ok: false, error: 'sum: kein Trackable verbunden' };
+			// scope is "all_entities" only at the moment
+			const operands: CounterExpr[] = ctx.entities.map((e) => ({
+				kind: 'ref',
+				trackableId,
+				entityId: e.id
+			}));
+			return { ok: true, value: { kind: 'sum', operands } };
+		}
+		case 'delta': {
+			const aSrc = inSrc(graph, node.id, 'a');
+			const bSrc = inSrc(graph, node.id, 'b');
+			if (!aSrc || !bSrc) return { ok: false, error: 'delta: a oder b fehlt' };
+			const aE = compileCounterExpr(graph, aSrc, ctx);
+			if (!aE.ok) return aE;
+			const bE = compileCounterExpr(graph, bSrc, ctx);
+			if (!bE.ok) return bE;
+			// `abs` mode is not directly expressible in CounterExpr; engine has no abs.
+			// For abs we'd need predicate-level handling. Skip for now.
+			const mode = (node.props as { mode?: string } | undefined)?.mode ?? 'signed';
+			if (mode === 'abs') {
+				return { ok: false, error: 'delta(abs): nicht im Compiler unterstützt (Phase 8.5)' };
+			}
+			return { ok: true, value: { kind: 'diff', operands: [aE.value, bE.value] } };
+		}
+		default:
+			return {
+				ok: false,
+				error: `compileCounterExpr: Knoten "${node.kind}" liefert keine Zahl`
+			};
 	}
 }
 
@@ -297,9 +408,7 @@ export function compileGraph(graph: BetGraph, ctx: CompileContext): CompileResul
 	}
 
 	if (outcome.kind === 'boolean_outcome') {
-		if (source.kind === 'compare') {
-			return buildBooleanFromCompare(graph, outcome, source, ctx);
-		}
+		return buildBooleanFromTree(graph, outcome, source, ctx);
 	}
 
 	return {
