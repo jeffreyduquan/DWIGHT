@@ -162,6 +162,8 @@
 | REQ-UI-002 | D2 / D3 / D4 / D5 | route tree under `/s/*` (lobby + round live; drinks/stats pending) | manual | ◐ |
 | REQ-UI-003 | D0+ | all `+page.svelte` (German copy) | manual | ☑ |
 | REQ-UI-004 | D0+ | Tailwind responsive utilities | manual mobile viewport | ☑ |
+| REQ-UI-005 | D9 | `src/lib/components/SessionTopBar.svelte`, `src/lib/components/BottomDock.svelte`, `src/routes/s/[id]/+layout.svelte`, `src/routes/s/[id]/+layout.server.ts` | manual mobile viewport (lobby/round/drinks/stats) | ☑ |
+| REQ-UI-006 | D9 | `src/lib/components/ModeForm.svelte` (kindGallery + addTemplate) | manual `/modes/new` | ☑ |
 
 ## REQ-GM — Game Master Tools
 

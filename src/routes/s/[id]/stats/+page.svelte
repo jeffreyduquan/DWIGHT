@@ -4,7 +4,6 @@
 -->
 <script lang="ts">
 	import {
-		ArrowLeft,
 		Trophy,
 		Medal,
 		Award,
@@ -31,18 +30,7 @@
 	const medalRing = ['ring-warning/60', 'ring-base-content/30', 'ring-accent/50'];
 </script>
 
-<header class="mb-5 space-y-2">
-	<a
-		href={`/s/${data.session.id}`}
-		class="text-base-content/60 hover:text-base-content inline-flex items-center gap-1.5 text-sm transition"
-	>
-		<ArrowLeft size={16} /> Lobby
-	</a>
-	<p class="eyebrow">Statistik</p>
-	<h1 class="display text-gradient-primary text-3xl leading-none">
-		{data.session.name}
-	</h1>
-</header>
+<p class="eyebrow mb-4">Statistik · {data.session.name}</p>
 
 {#if podium.length > 0}
 	<section class="mb-6 space-y-3">

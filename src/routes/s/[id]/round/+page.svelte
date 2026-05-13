@@ -1,6 +1,11 @@
 <!--
 	@file s/[id]/round/+page.svelte — round flow (events + markets + bets).
 	@implements REQ-UI-004, REQ-ROUND, REQ-EVENT, REQ-MARKET, REQ-BET
+
+	Player-first redesign:
+	  - SessionTopBar + BottomDock come from /s/[id]/+layout.svelte
+	  - Body focus: status, markets (primary), events (collapsible per trackable)
+	  - Host controls live in a single "GM" disclosure block
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
@@ -8,9 +13,21 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { playSound } from '$lib/client/sounds.svelte';
 	import StakePicker from '$lib/components/StakePicker.svelte';
-	import DrinkPanel from '$lib/components/DrinkPanel.svelte';
-	import IconBubble from '$lib/components/IconBubble.svelte';
-	import { ArrowLeft, ArrowRight, Coins, Crown, Lock, Beer, Trophy, BellRing, Play, CircleCheck, X, RotateCcw, Save, Undo2, BarChart3, Activity, History, Users, Sparkles } from '@lucide/svelte';
+	import {
+		ArrowRight,
+		Lock,
+		Trophy,
+		CircleCheck,
+		X,
+		Save,
+		Undo2,
+		BarChart3,
+		Crown,
+		Plus,
+		ChevronDown,
+		Sparkles,
+		Activity
+	} from '@lucide/svelte';
 	import { describePredicate as describePredicateLib } from '$lib/predicate-describe';
 
 	let { data, form } = $props();
@@ -24,9 +41,7 @@
 	const isResolving = $derived(status === 'RESOLVING');
 	const isTerminal = $derived(status === 'SETTLED' || status === 'CANCELLED');
 
-	const pendingDrinks = $derived(data.drinks.filter((d) => d.status === 'PENDING'));
 	const pendingEvents = $derived(data.events.filter((e) => e.status === 'PENDING'));
-	const confirmedEvents = $derived(data.events.filter((e) => e.status === 'CONFIRMED'));
 	const myPendingEvents = $derived(
 		pendingEvents.filter((e) => e.proposedByUserId === data.me.userId)
 	);
@@ -53,16 +68,40 @@
 		return data.counters[key] ?? 0;
 	}
 
-	function describePredicate(p: any): string {
-		return describePredicateLib(p, {
+	function describePredicate(p: unknown): string {
+		return describePredicateLib(p as never, {
 			trackableLabel: (id) => trackableById.get(id)?.label ?? id,
-			entityLabel: (id) => (id ? entityById.get(id)?.name ?? '?' : '∑')
+			entityLabel: (id) => (id ? (entityById.get(id)?.name ?? '?') : '∑')
 		});
 	}
 
-	function cmpSymbol(c: string): string {
-		return c === 'gte' ? '≥' : c === 'lte' ? '≤' : c === 'gt' ? '>' : c === 'lt' ? '<' : '=';
-	}
+	// Group markets by status for visual ordering: OPEN first, then LOCKED, then SETTLED, VOID
+	const orderedMarkets = $derived(
+		[...data.markets].sort((a, b) => {
+			const order = { OPEN: 0, LOCKED: 1, SETTLED: 2, VOID: 3 } as const;
+			return (
+				(order[a.status as keyof typeof order] ?? 9) -
+				(order[b.status as keyof typeof order] ?? 9)
+			);
+		})
+	);
+
+	const statusLabel: Record<string, string> = {
+		SETUP: 'Vorbereitung',
+		BETTING_OPEN: 'Wetten offen',
+		LIVE: 'läuft',
+		RESOLVING: 'rechnet ab',
+		SETTLED: 'beendet',
+		CANCELLED: 'abgebrochen'
+	};
+	const statusTone: Record<string, string> = {
+		SETUP: 'badge-ghost',
+		BETTING_OPEN: 'badge-primary',
+		LIVE: 'badge-accent',
+		RESOLVING: 'badge-warning',
+		SETTLED: 'badge-success',
+		CANCELLED: 'badge-ghost'
+	};
 
 	let es: EventSource | null = null;
 	onMount(() => {
@@ -96,409 +135,122 @@
 	onDestroy(() => es?.close());
 </script>
 
-<header class="mb-5 space-y-2">
-	<a
-		href={`/s/${data.session.id}`}
-		class="text-base-content/60 hover:text-base-content inline-flex items-center gap-1 text-sm"
-		><ArrowLeft size={14} /> Lobby</a
-	>
-	<div class="flex items-baseline justify-between gap-3">
-		<h1 class="display text-3xl">
-			Runde <span class="text-gradient-primary">{round?.roundNumber ?? '—'}</span>
-		</h1>
+<!-- Round status strip -->
+<section class="mb-4 flex items-center justify-between gap-2">
+	<div class="flex items-baseline gap-2">
+		<h2 class="display text-xl leading-none">
+			Runde <span class="text-gradient-primary">#{round?.roundNumber ?? '—'}</span>
+		</h2>
 		{#if status}
-			<span class="badge badge-sm tracking-wider">{status}</span>
-		{/if}
-	</div>
-</header>
-
-<section
-	class="card-stat fade-up mb-4 flex items-center justify-between gap-3 px-5 py-4 {isBetLocked
-		? 'border-error/60 ring-error/30 ring-2'
-		: ''}"
->
-	<div class="flex items-center gap-3">
-		<IconBubble tone={isBetLocked ? 'error' : 'primary'} size="lg">
-			{#if isBetLocked}<Lock size={22} />{:else}<Coins size={22} />{/if}
-		</IconBubble>
-		<div>
-			<p class="eyebrow">Saldo</p>
-			<p class="stat-hero text-3xl">
-				<span class="text-gradient-primary">{data.me.moneyBalance}</span>
-			</p>
-		</div>
-	</div>
-	<div class="flex flex-col items-end gap-1">
-		{#if isBetLocked}
-			<span class="badge badge-error gap-1"><Lock size={12} /> GESPERRT</span>
-		{/if}
-		{#if data.me.role === 'HOST'}
-			<span class="badge badge-primary gap-1"><Crown size={12} /> Host</span>
+			<span class="badge badge-sm {statusTone[status] ?? 'badge-ghost'}"
+				>{statusLabel[status] ?? status}</span
+			>
 		{/if}
 	</div>
 </section>
 
 {#if isBetLocked}
-	<section
-		class="glass glass-xl border-error/60 mb-4 flex items-center gap-4 border-2 p-5 shadow-lg"
-		role="alert"
-	>
-		<IconBubble tone="error" size="lg"><Beer size={22} /></IconBubble>
-		<div class="flex-1">
-			<p class="text-error text-lg font-bold uppercase tracking-wide">Wetten gesperrt</p>
-			<p class="text-base-content/80 text-sm">
-				Du musst trinken — in dieser Runde sind keine Wetten möglich. Der Host hebt die Sperre
-				auf, sobald dein Drink bestätigt ist.
-			</p>
-		</div>
-	</section>
+	<div class="alert alert-error mb-3 py-2 text-sm">
+		<Lock size={14} />
+		<span>Wetten gesperrt — bestätige deinen offenen Drink.</span>
+	</div>
 {/if}
 
 {#if form?.error}
-	<div class="alert alert-error mb-4">{form.error}</div>
+	<div class="alert alert-error mb-3 py-2 text-xs">{form.error}</div>
 {/if}
 
 <!-- No round yet -->
 {#if !round}
-	<div class="glass rounded-2xl p-4 text-center">
-		<p class="text-base-content/60 mb-3 text-sm">Noch keine Runde gestartet.</p>
+	<div class="glass rounded-2xl p-6 text-center">
+		<p class="text-base-content/65 mb-4 text-sm">Noch keine Runde gestartet.</p>
 		{#if isHost}
 			<form method="POST" action="?/createRound" use:enhance>
-				<button class="btn btn-primary">Neue Runde starten</button>
+				<button class="btn btn-primary glow-primary h-12 w-full gap-2">
+					<Plus size={16} /> Neue Runde starten
+				</button>
 			</form>
 		{:else}
-			<p class="text-base-content/40 text-xs">Warte bis der Host startet.</p>
+			<p class="text-base-content/40 text-xs">Warte, bis der Host startet.</p>
 		{/if}
 	</div>
 {:else}
-	<!-- Terminal: round just settled / cancelled -->
+	<!-- Terminal banner -->
 	{#if isTerminal}
-		<section class="glass mb-4 space-y-3 rounded-2xl p-4">
-			<div class="flex items-center justify-between">
+		<section class="glass mb-4 rounded-2xl p-4">
+			<div class="flex items-center justify-between gap-3">
 				<div>
-					<p class="text-base-content/50 text-xs uppercase tracking-wider">
+					<p class="text-base-content/50 text-[0.65rem] uppercase tracking-wider">
 						Runde {round.roundNumber} {status === 'SETTLED' ? 'beendet' : 'abgebrochen'}
 					</p>
-					<p class="text-base-content/70 text-xs">
-						{#if status === 'SETTLED' && data.markets.length > 0}
+					{#if status === 'SETTLED'}
+						<p class="text-base-content/70 text-xs">
 							{data.markets.filter((m) => m.status === 'SETTLED').length} Märkte abgerechnet
-						{/if}
-					</p>
+						</p>
+					{/if}
 				</div>
 				{#if isHost}
 					<form method="POST" action="?/createRound" use:enhance>
-						<button class="btn btn-primary glow-primary gap-1">Neue Runde starten <ArrowRight size={16} /></button>
-					</form>
-				{/if}
-			</div>
-			{#if !isHost}
-				<p class="text-base-content/40 text-center text-xs">Warte bis der Host eine neue Runde startet.</p>
-			{/if}
-		</section>
-	{/if}
-
-	<!-- Host controls -->
-	{#if isHost && !isTerminal}
-		<section class="glass mb-4 space-y-2 rounded-2xl p-3">
-			<h2 class="text-base-content/70 text-xs font-medium uppercase tracking-wider">Host-Aktionen</h2>
-			<div class="flex flex-wrap gap-2">
-				{#if isOpen}
-					<form method="POST" action="?/goLive" use:enhance>
-						<input type="hidden" name="roundId" value={round.id} />
-						<button class="btn btn-primary glow-primary gap-1">1 · Spiel starten (Wetten zu) <ArrowRight size={16} /></button>
-					</form>
-				{:else if isLive || isResolving}
-					<form method="POST" action="?/settle" use:enhance>
-						<input type="hidden" name="roundId" value={round.id} />
-						<button class="btn btn-success glow-primary gap-1">2 · Runde abrechnen <CircleCheck size={16} /></button>
-					</form>
-				{/if}
-				<form method="POST" action="?/cancel" use:enhance>
-					<input type="hidden" name="roundId" value={round.id} />
-					<button class="btn btn-sm btn-error btn-outline">Abbrechen (Refund)</button>
-				</form>
-			</div>
-			<p class="text-base-content/40 text-xs">
-				{#if isOpen}Spieler setzen jetzt. Wenn das Spiel/Trinken/Rennen losgeht: „Spiel starten" — danach keine neuen Einsätze.
-				{:else if isLive}Wetten gelockt. Trag Ereignisse ein (+1 Buttons) und schließ die Runde mit „Runde abrechnen" ab.
-				{:else if isResolving}Abrechnung läuft…{/if}
-			</p>
-		</section>
-	{/if}
-
-	<!-- Drinks panel: verteilen / trinken / abgleichen direkt in der Runde -->
-	{#if !isTerminal}
-		<details class="glass glass-xl mb-4 p-4" open={isLive || pendingDrinks.length > 0}>
-			<summary class="flex cursor-pointer items-center gap-3 text-sm font-medium">
-				<IconBubble tone="accent"><Beer size={18} /></IconBubble>
-				<span class="flex-1">
-					<span class="eyebrow block">Drinks</span>
-					<span class="text-base-content/80 text-base">
-						{#if pendingDrinks.length > 0}{pendingDrinks.length} offen{:else}Verteilen &amp; abgleichen{/if}
-					</span>
-				</span>
-				{#if pendingDrinks.length > 0}
-					<span class="badge badge-warning">{pendingDrinks.length}</span>
-				{/if}
-				<a
-					href={`/s/${data.session.id}/drinks`}
-					class="text-base-content/40 hover:text-base-content inline-flex items-center gap-1 text-xs"
-					onclick={(e) => e.stopPropagation()}
-				>
-					Vollansicht <ArrowRight size={12} />
-				</a>
-			</summary>
-			<div class="divider-soft my-3"></div>
-			<div>
-				<DrinkPanel
-					session={data.session}
-					me={data.me}
-					players={data.players}
-					drinks={data.drinks}
-					actionPrefix="drink"
-					compact
-				/>
-			</div>
-		</details>
-	{/if}
-
-	<!-- Event buttons (only during LIVE — bets are locked) -->
-	{#if isLive && data.session.trackables.length > 0}
-		<section class="glass glass-xl mb-4 space-y-4 p-4">
-			<div class="flex items-center gap-3">
-				<IconBubble tone="warning"><BellRing size={18} /></IconBubble>
-				<div>
-					<p class="eyebrow">Ereignis melden</p>
-					<p class="text-base-content/60 text-xs">+1 drücken — Host bestätigt</p>
-				</div>
-			</div>
-			<div class="divider-soft"></div>
-			{#each data.session.trackables as t (t.id)}
-				<div class="space-y-2">
-					<p class="text-sm font-medium flex items-center gap-2">
-						{#if t.emoji}<span>{t.emoji}</span>{/if}
-						<span>{t.label}</span>
-						<span class="text-base-content/40 text-xs">({t.scope})</span>
-					</p>
-					{#if t.scope === 'global'}
-						<form method="POST" action="?/proposeEvent" use:enhance class="inline-block">
-							<input type="hidden" name="roundId" value={round.id} />
-							<input type="hidden" name="trackableId" value={t.id} />
-							<input type="hidden" name="entityId" value="null" />
-							<button class="btn btn-sm btn-outline gap-1">
-								<Sparkles size={14} /> +1
-								<span class="text-base-content/40">({counterValue(t.id, null)})</span>
-							</button>
-						</form>
-					{:else}
-						<div class="flex flex-wrap gap-1.5">
-							{#each data.entities as e (e.id)}
-								<form method="POST" action="?/proposeEvent" use:enhance class="inline-block">
-									<input type="hidden" name="roundId" value={round.id} />
-									<input type="hidden" name="trackableId" value={t.id} />
-									<input type="hidden" name="entityId" value={e.id} />
-									<button
-										class="btn btn-xs btn-outline gap-1"
-										style="border-color: {(e.attributes as any)?.color ?? undefined}"
-									>
-										{e.name} +1
-										<span class="opacity-50">({counterValue(t.id, e.id)})</span>
-									</button>
-								</form>
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</section>
-	{/if}
-
-	<!-- Pending event queue (host) -->
-	{#if isHost && pendingEvents.length > 0}
-		<section class="glass glass-xl mb-4 space-y-3 p-4">
-			<div class="flex items-center gap-3">
-				<IconBubble tone="warning"><Users size={18} /></IconBubble>
-				<div class="flex-1">
-					<p class="eyebrow">Buffer prüfen</p>
-					<p class="text-base-content/80 text-base font-semibold">{pendingEvents.length} offen</p>
-				</div>
-				<span class="badge badge-warning">{pendingEvents.length}</span>
-			</div>
-			<p class="text-base-content/50 text-xs">
-				Pro Reporter gruppiert. Settle ist gesperrt, solange offene Meldungen existieren.
-			</p>
-			{#each pendingByProposer as group (group.userId)}
-				<details class="bg-base-100/40 rounded-xl">
-					<summary class="flex cursor-pointer items-center justify-between gap-2 p-2 text-sm">
-						<span class="flex items-center gap-2">
-							<span class="badge badge-sm badge-neutral">{group.events.length}</span>
-							<span class="font-medium">{group.name}</span>
-						</span>
-						<span class="flex items-center gap-1" onclick={(e) => e.stopPropagation()} role="group">
-							<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-								<input type="hidden" name="roundId" value={round.id} />
-								<input type="hidden" name="proposerUserId" value={group.userId} />
-								<input type="hidden" name="decision" value="CONFIRMED" />
-								<button class="btn btn-xs btn-success gap-1" title="Alle akzeptieren"
-									><CircleCheck size={12} /> Alle</button
-								>
-							</form>
-							<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-								<input type="hidden" name="roundId" value={round.id} />
-								<input type="hidden" name="proposerUserId" value={group.userId} />
-								<input type="hidden" name="decision" value="CANCELLED" />
-								<button class="btn btn-xs btn-error btn-outline gap-1" title="Alle ablehnen">
-									<X size={12} /> Alle
-								</button>
-							</form>
-						</span>
-					</summary>
-					<div class="divider-soft"></div>
-					<div class="space-y-2 p-2">
-						{#each group.events as ev (ev.id)}
-							<div class="flex flex-wrap items-center justify-between gap-2">
-								<span class="text-sm">
-									<span class="font-medium">
-										{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
-									</span>
-									{#if ev.entityId}
-										→ {entityById.get(ev.entityId)?.name}
-									{/if}
-								</span>
-								<div class="flex items-center gap-1">
-									<form
-										method="POST"
-										action="?/editEventDelta"
-										use:enhance
-										class="flex items-center gap-1"
-									>
-										<input type="hidden" name="eventId" value={ev.id} />
-										<input
-											type="number"
-											name="delta"
-											value={ev.delta}
-											step="1"
-											class="input input-xs w-16"
-											title="Wert anpassen"
-										/>
-										<button class="btn btn-xs btn-ghost" type="submit" title="Wert speichern">
-											<Save size={12} />
-										</button>
-									</form>
-									<form method="POST" action="?/confirmEvent" use:enhance>
-										<input type="hidden" name="eventId" value={ev.id} />
-										<button class="btn btn-xs btn-success" title="Akzeptieren"
-											><CircleCheck size={12} /></button
-										>
-									</form>
-									<form method="POST" action="?/cancelEvent" use:enhance>
-										<input type="hidden" name="eventId" value={ev.id} />
-										<button class="btn btn-xs btn-error btn-outline" title="Ablehnen"
-											><X size={12} /></button
-										>
-									</form>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</details>
-			{/each}
-		</section>
-	{/if}
-
-	<!-- Own pending events (non-host player view) -->
-	{#if !isHost && myPendingEvents.length > 0}
-		<section class="glass glass-xl mb-4 space-y-3 p-4">
-			<div class="flex items-center gap-3">
-				<IconBubble tone="info"><Activity size={18} /></IconBubble>
-				<div>
-					<p class="eyebrow">Deine Meldungen</p>
-					<p class="text-base-content/60 text-xs">Warten auf GM-Freigabe</p>
-				</div>
-				<span class="badge badge-info ml-auto">{myPendingEvents.length}</span>
-			</div>
-			<div class="divider-soft"></div>
-			{#each myPendingEvents as ev (ev.id)}
-				<div class="flex items-center justify-between gap-2">
-					<span class="text-sm">
-						<span class="font-medium">
-							{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
-						</span>
-						{#if ev.entityId}
-							→ {entityById.get(ev.entityId)?.name}
-						{/if}
-						<span class="text-base-content/40 text-xs">±{ev.delta}</span>
-					</span>
-					<form method="POST" action="?/undoOwnEvent" use:enhance>
-						<input type="hidden" name="eventId" value={ev.id} />
-						<button class="btn btn-xs btn-warning btn-outline gap-1" title="Rückgängig">
-							<Undo2 size={12} /> Rückgängig
+						<button class="btn btn-primary btn-sm glow-primary gap-1">
+							Neue Runde <ArrowRight size={14} />
 						</button>
 					</form>
-				</div>
-			{/each}
+				{/if}
+			</div>
 		</section>
 	{/if}
 
-	<!-- Markets list -->
-	<section class="space-y-3 {isBetLocked ? 'opacity-60 grayscale' : ''}">
-		<div class="flex items-center gap-3 px-1">
-			<IconBubble tone="primary" size="sm"><BarChart3 size={16} /></IconBubble>
-			<div class="flex-1">
-				<p class="eyebrow">Märkte</p>
-				<p class="text-base-content/80 text-sm">{data.markets.length} aktiv</p>
-			</div>
+	<!-- Markets — primary content -->
+	<section class="space-y-3 {isBetLocked ? 'opacity-60' : ''}">
+		<div class="flex items-center justify-between px-1">
+			<p class="eyebrow">Wetten</p>
+			<p class="text-base-content/45 text-[0.7rem]">{data.markets.length} aktiv</p>
 		</div>
+
 		{#if data.markets.length === 0}
-			<div class="glass glass-xl p-5 text-center text-sm opacity-70">
-				Noch keine Märkte. {isHost
-					? 'Definiere Wetten-Templates im Mode, damit sie bei Rundenstart automatisch entstehen.'
-					: 'Der GM hat noch keine Märkte für diese Runde.'}
+			<div class="border-base-content/10 rounded-2xl border border-dashed p-5 text-center text-sm opacity-70">
+				{isHost
+					? 'Definiere Wetten-Templates im Mode, damit sie automatisch entstehen.'
+					: 'Der Host hat noch keine Märkte erstellt.'}
 			</div>
 		{/if}
-		{#each data.markets as m (m.id)}
+
+		{#each orderedMarkets as m (m.id)}
 			{@const myTotalOnMarket = m.outcomes.reduce((s, o) => s + o.myStake, 0)}
 			{@const myTotalPayout = m.outcomes.reduce((s, o) => s + o.myPayout, 0)}
 			{@const myProfit = myTotalPayout - myTotalOnMarket}
-			<article class="glass glass-xl overflow-hidden">
-				<!-- Header -->
-				<header class="border-base-content/5 flex items-start justify-between gap-2 border-b px-4 pt-3 pb-2">
-					<div>
-						<p class="text-base-content/40 text-[0.6rem] uppercase tracking-widest">Wette</p>
-						<h3 class="text-base font-semibold leading-tight">{m.title}</h3>
-						{#if m.description}
-							<p class="text-base-content/50 mt-0.5 text-xs">{m.description}</p>
-						{/if}
-					</div>
+			<article class="glass overflow-hidden rounded-2xl">
+				<header class="flex items-start justify-between gap-2 px-4 pt-3 pb-2">
+					<h3 class="text-sm font-semibold leading-tight">{m.title}</h3>
 					<span
-						class="badge badge-sm shrink-0 {m.status === 'OPEN'
+						class="badge badge-xs shrink-0 {m.status === 'OPEN'
 							? 'badge-primary'
 							: m.status === 'LOCKED'
 								? 'badge-warning'
 								: m.status === 'SETTLED'
 									? 'badge-success'
-									: 'badge-ghost'}">{m.status}</span>
+									: 'badge-ghost'}">{m.status}</span
+					>
 				</header>
 
-				<!-- Pool hero -->
-				<div class="flex items-end justify-between gap-3 px-4 py-3">
+				<div class="flex items-end justify-between gap-3 px-4 pb-2 text-xs">
 					<div>
-						<p class="text-base-content/40 text-[0.6rem] uppercase tracking-widest">Pool</p>
-						<p class="text-gradient-primary tabular text-3xl font-extrabold leading-none">
+						<p class="text-base-content/40 text-[0.6rem] uppercase tracking-wider">Pool</p>
+						<p class="text-gradient-primary tabular text-2xl font-bold leading-none">
 							{m.poolTotal}
 						</p>
 					</div>
 					{#if myTotalOnMarket > 0}
 						<div class="text-right">
-							<p class="text-base-content/40 text-[0.6rem] uppercase tracking-widest">Dein Einsatz</p>
-							<p class="tabular text-xl font-bold leading-none">{myTotalOnMarket}</p>
+							<p class="text-base-content/40 text-[0.6rem] uppercase tracking-wider">Du</p>
+							<p class="tabular text-base font-semibold leading-none">{myTotalOnMarket}</p>
 						</div>
 					{/if}
 					{#if m.status === 'SETTLED' && myTotalOnMarket > 0}
 						<div class="text-right">
-							<p class="text-base-content/40 text-[0.6rem] uppercase tracking-widest">Ergebnis</p>
+							<p class="text-base-content/40 text-[0.6rem] uppercase tracking-wider">Ergebnis</p>
 							<p
-								class="tabular text-xl font-extrabold leading-none {myProfit > 0
+								class="tabular text-base font-bold leading-none {myProfit > 0
 									? 'text-success'
 									: myProfit < 0
 										? 'text-error'
@@ -510,13 +262,8 @@
 					{/if}
 				</div>
 
-				<!-- Outcomes -->
-				<ul class="space-y-2 px-3 pb-3">
+				<ul class="space-y-1.5 px-3 pb-3">
 					{#each m.outcomes as o (o.id)}
-						{@const potentialPayout =
-							m.status === 'OPEN' && o.myStake > 0 && o.stakeTotal > 0
-								? Math.floor((o.myStake * m.poolTotal) / o.stakeTotal)
-								: 0}
 						{@const odds = o.stakeTotal > 0 && m.poolTotal > 0 ? m.poolTotal / o.stakeTotal : null}
 						{@const refStake = data.session.config.minStake}
 						{@const projectedOdds =
@@ -525,190 +272,334 @@
 								: odds}
 						{@const pct = m.poolTotal > 0 ? Math.round((o.stakeTotal / m.poolTotal) * 100) : 0}
 						<li
-							class="rounded-xl border-2 p-3 transition {o.isWinner
+							class="rounded-xl border p-2.5 transition {o.isWinner
 								? 'border-success bg-success/10'
 								: m.status === 'SETTLED'
 									? 'border-base-content/10 opacity-60'
 									: o.myStake > 0
 										? 'border-primary/60 bg-primary/5'
-										: 'border-base-content/10 hover:border-base-content/20'}"
+										: 'border-base-content/10'}"
 						>
-							<!-- Outcome top row -->
 							<div class="flex items-start justify-between gap-3">
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-1.5">
-										<strong class="text-base">{o.label}</strong>
+										<strong class="text-sm">{o.label}</strong>
 										{#if m.status === 'OPEN' && o.currentTruth}
-											<span class="badge badge-xs badge-success gap-1"><CircleCheck size={10} /> aktuell</span>
+											<span class="badge badge-xs badge-success">aktuell</span>
 										{:else if m.status === 'SETTLED' && o.isWinner}
 											<span class="badge badge-xs badge-success">Gewinner</span>
 										{/if}
 									</div>
-									<p class="text-base-content/50 mt-0.5 text-xs leading-snug">
-										<span class="text-base-content/40">Ziel:</span>
+									<p class="text-base-content/50 mt-0.5 text-[0.7rem] leading-snug">
 										{describePredicate(o.predicate)}
 									</p>
 								</div>
-
-								<!-- Quote prominent -->
 								<div class="shrink-0 text-right">
-									{#if projectedOdds != null && m.status === 'OPEN'}
-										<p class="text-gradient-primary tabular text-2xl font-bold leading-none">
-											{projectedOdds.toFixed(2)}<span class="text-sm">x</span>
+									{#if projectedOdds != null}
+										<p class="text-gradient-primary tabular text-lg font-bold leading-none">
+											{projectedOdds.toFixed(2)}<span class="text-xs">×</span>
 										</p>
-										<p class="text-base-content/40 text-[0.65rem] leading-tight">
-											{#if o.stakeTotal === 0}neue Wette · {refStake} → {Math.floor(refStake * projectedOdds)}
-											{:else}Quote · Pool {o.stakeTotal} ({pct}%){/if}
-										</p>
-									{:else if odds != null}
-										<p class="text-gradient-primary tabular text-2xl font-bold leading-none">
-											{odds.toFixed(2)}<span class="text-sm">x</span>
-										</p>
-										<p class="text-base-content/40 text-[0.65rem] leading-tight">
-											final · Pool {o.stakeTotal} ({pct}%)
-										</p>
+										<p class="text-base-content/40 text-[0.6rem]">{pct}%</p>
 									{:else}
 										<p class="text-base-content/40 text-xs italic">—</p>
 									{/if}
 								</div>
 							</div>
 
-							<!-- Action / status row -->
 							{#if m.status === 'OPEN' && !isTerminal}
 								{#if o.myStake > 0}
-									<div class="border-primary/20 bg-primary/5 text-primary mt-3 flex items-center justify-between rounded-lg border px-2 py-1.5 text-xs">
-										<span>Du: <strong class="tabular">{o.myStake}</strong></span>
-										{#if potentialPayout > 0}
-											{@const profit = potentialPayout - o.myStake}
-											<span class="text-success font-semibold">
-												{profit > 0 ? `+${profit}` : '±0'} bei Sieg
-											</span>
-										{/if}
-									</div>
+									<p class="text-primary mt-2 text-[0.7rem]">
+										Du: <strong class="tabular">{o.myStake}</strong>
+									</p>
 								{/if}
-								{#if isBetLocked}
-									<div class="bg-error/15 border-error/40 text-error mt-2 flex items-center justify-center gap-2 rounded-lg border px-2 py-2 text-center text-xs font-semibold">
-									<Lock size={12} /> gesperrt
-									</div>
-								{:else}
-									<details class="mt-2 group">
-									<summary
-										class="btn btn-sm btn-primary w-full list-none {o.myStake > 0 ? 'btn-outline' : ''}"
-									>
-										<span class="group-open:hidden">{o.myStake > 0 ? 'Mehr setzen' : 'Auf ' + o.label + ' wetten'} ▾</span>
-										<span class="hidden group-open:inline">Zuklappen ▴</span>
-									</summary>
-									<form method="POST" action="?/placeBet" use:enhance class="mt-2">
-										<input type="hidden" name="outcomeId" value={o.id} />
-										<StakePicker
-											min={data.session.config.minStake}
-											max={data.me.moneyBalance}
-											potentialProfit={projectedOdds
-												? Math.floor(data.session.config.minStake * projectedOdds) -
-													data.session.config.minStake
-												: null}
-										/>
-									</form>
-								</details>
+								{#if !isBetLocked}
+									<details class="group mt-2">
+										<summary
+											class="btn btn-sm w-full list-none {o.myStake > 0
+												? 'btn-outline btn-primary'
+												: 'btn-primary'}"
+										>
+											<span class="group-open:hidden"
+												>{o.myStake > 0 ? 'Mehr setzen' : 'Wetten'} ▾</span
+											>
+											<span class="hidden group-open:inline">Zuklappen ▴</span>
+										</summary>
+										<form method="POST" action="?/placeBet" use:enhance class="mt-2">
+											<input type="hidden" name="outcomeId" value={o.id} />
+											<StakePicker
+												min={data.session.config.minStake}
+												max={data.me.moneyBalance}
+												potentialProfit={projectedOdds
+													? Math.floor(data.session.config.minStake * projectedOdds) -
+														data.session.config.minStake
+													: null}
+											/>
+										</form>
+									</details>
 								{/if}
-							{:else if m.status === 'SETTLED'}
-								{#if o.myStake > 0}
-									{@const profit = o.myPayout - o.myStake}
-									<div
-										class="mt-2 flex items-center justify-between rounded-lg px-2 py-1.5 text-xs {profit >
-										0
-											? 'bg-success/10 text-success'
-											: profit < 0
-												? 'bg-error/10 text-error'
-												: 'bg-base-content/5 text-base-content/60'}"
-									>
-										<span>Dein Einsatz: <strong class="tabular">{o.myStake}</strong></span>
-										<span class="font-bold">
-											{#if profit > 0}+{profit} Gewinn
-											{:else if profit === 0 && o.myPayout > 0}Einsatz zurück
-											{:else}-{o.myStake} verloren{/if}
-										</span>
-									</div>
-								{/if}
-							{:else if m.status === 'VOID'}
-								<div class="text-warning mt-2 rounded-lg bg-warning/10 px-2 py-1.5 text-xs">
-									VOID — Refund {#if o.myStake > 0}({o.myStake} zurück){/if}
-								</div>
+							{:else if m.status === 'SETTLED' && o.myStake > 0}
+								{@const profit = o.myPayout - o.myStake}
+								<p
+									class="mt-1.5 text-[0.7rem] {profit > 0
+										? 'text-success'
+										: profit < 0
+											? 'text-error'
+											: 'text-base-content/60'}"
+								>
+									{profit > 0 ? `+${profit}` : profit === 0 ? '±0' : profit}
+								</p>
 							{:else if m.status === 'LOCKED' && o.myStake > 0}
-								<div class="text-base-content/60 bg-base-content/5 mt-2 rounded-lg px-2 py-1.5 text-xs">
-									Wetten gelockt · Du: <strong class="tabular">{o.myStake}</strong>
-								</div>
+								<p class="text-base-content/55 mt-1.5 text-[0.7rem]">
+									gelockt · Du: <strong class="tabular">{o.myStake}</strong>
+								</p>
 							{/if}
 						</li>
 					{/each}
 				</ul>
 			</article>
 		{/each}
-		{#if data.markets.length === 0}
-			<p class="text-base-content/40 text-center text-xs">Noch keine Märkte.</p>
-		{/if}
 	</section>
 
-	<!-- Confirmed events recap -->
-	{#if confirmedEvents.length > 0}
-		<section class="mt-6 space-y-2">
-			<div class="flex items-center gap-3 px-1">
-				<IconBubble tone="info" size="sm"><Activity size={16} /></IconBubble>
-				<p class="eyebrow">Counter</p>
+	<!-- Events: only during LIVE — collapsed per trackable -->
+	{#if isLive && data.session.trackables.length > 0}
+		<section class="mt-5 space-y-2">
+			<div class="flex items-center justify-between px-1">
+				<p class="eyebrow">Ereignisse melden</p>
+				<p class="text-base-content/45 text-[0.7rem]">+1 = Host bestätigt</p>
 			</div>
-			<ul class="glass glass-xl space-y-1.5 p-4 text-sm">
-				{#each Object.entries(data.counters) as [key, v] (key)}
-					{@const parts = key.split(':')}
-					{@const tId = parts[0]}
-					{@const eId = parts[1] ?? null}
-					<li class="flex justify-between">
-						<span>
-							{trackableById.get(tId)?.label ?? tId}
-							{#if eId}
-								→ {entityById.get(eId)?.name}
-							{/if}
-						</span>
-						<span class="tabular font-semibold">{v}</span>
-					</li>
-				{/each}
-			</ul>
+			{#each data.session.trackables as t (t.id)}
+				<details class="glass rounded-2xl">
+					<summary class="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm">
+						{#if t.emoji}<span>{t.emoji}</span>{/if}
+						<span class="flex-1 font-medium">{t.label}</span>
+						<span class="text-base-content/40 text-[0.65rem] uppercase tracking-wider"
+							>{t.scope === 'global' ? 'global' : 'pro Entität'}</span
+						>
+						<ChevronDown size={14} class="text-base-content/40 transition-transform group-open:rotate-180" />
+					</summary>
+					<div class="border-base-content/10 border-t p-3">
+						{#if t.scope === 'global'}
+							<form method="POST" action="?/proposeEvent" use:enhance>
+								<input type="hidden" name="roundId" value={round.id} />
+								<input type="hidden" name="trackableId" value={t.id} />
+								<input type="hidden" name="entityId" value="null" />
+								<button class="btn btn-sm btn-outline w-full gap-1">
+									<Sparkles size={14} /> +1
+									<span class="text-base-content/40">({counterValue(t.id, null)})</span>
+								</button>
+							</form>
+						{:else}
+							<div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+								{#each data.entities as e (e.id)}
+									<form method="POST" action="?/proposeEvent" use:enhance>
+										<input type="hidden" name="roundId" value={round.id} />
+										<input type="hidden" name="trackableId" value={t.id} />
+										<input type="hidden" name="entityId" value={e.id} />
+										<button
+											class="btn btn-sm btn-outline w-full justify-between gap-1 px-2"
+											style="border-color: {(e.attributes as { color?: string })?.color ?? undefined}"
+										>
+											<span class="truncate">{e.name}</span>
+											<span class="text-base-content/40 tabular text-[0.65rem]"
+												>+1 ({counterValue(t.id, e.id)})</span
+											>
+										</button>
+									</form>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</details>
+			{/each}
 		</section>
 	{/if}
-	<!-- Round history -->
-	{#if data.roundHistory.length > 0}
-		<section class="mt-6 space-y-2">
-			<div class="flex items-center gap-3 px-1">
-				<IconBubble tone="neutral" size="sm"><History size={16} /></IconBubble>
-				<div class="flex-1">
-					<p class="eyebrow">Runden-Historie</p>
-					<p class="text-base-content/60 text-xs">{data.roundHistory.length} Runden</p>
-				</div>
+
+	<!-- Own pending events feedback (non-host) -->
+	{#if !isHost && myPendingEvents.length > 0}
+		<section class="glass mt-4 space-y-2 rounded-2xl p-3">
+			<div class="flex items-center justify-between">
+				<p class="eyebrow">Deine Meldungen</p>
+				<span class="badge badge-info badge-sm">{myPendingEvents.length}</span>
 			</div>
-			<ul class="glass glass-xl space-y-1.5 p-4 text-sm">
-				{#each [...data.roundHistory].reverse() as h (h.id)}
-					<li
-						class="flex items-center justify-between gap-2 {h.id === round?.id
-							? 'text-primary font-medium'
-							: 'text-base-content/70'}"
-					>
-						<span class="flex items-center gap-2">
-							<span class="tabular text-xs">#{h.roundNumber}</span>
-							<span class="badge badge-xs badge-ghost">{h.status}</span>
+			{#each myPendingEvents as ev (ev.id)}
+				<div class="flex items-center justify-between gap-2 text-xs">
+					<span>
+						{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
+						{#if ev.entityId}→ {entityById.get(ev.entityId)?.name}{/if}
+						<span class="text-base-content/40">±{ev.delta}</span>
+					</span>
+					<form method="POST" action="?/undoOwnEvent" use:enhance>
+						<input type="hidden" name="eventId" value={ev.id} />
+						<button class="btn btn-xs btn-ghost gap-1">
+							<Undo2 size={11} /> Rückgängig
+						</button>
+					</form>
+				</div>
+			{/each}
+		</section>
+	{/if}
+
+	<!-- HOST: GM disclosure (status step + pending queue + cancel) -->
+	{#if isHost && !isTerminal}
+		<section class="glass mt-5 overflow-hidden rounded-2xl">
+			<details open class="group">
+				<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
+					<Crown size={16} class="text-primary" />
+					<span class="font-semibold">GM-Werkzeuge</span>
+					{#if pendingEvents.length > 0}
+						<span class="badge badge-warning badge-sm ml-auto">
+							{pendingEvents.length} offen
 						</span>
-						<span class="text-base-content/40 tabular text-xs">
-							{h.markets} M · Pool {h.totalPool}
-						</span>
-					</li>
-				{/each}
-			</ul>
-			<a
-				href={`/s/${data.session.id}/stats`}
-				class="text-primary inline-flex items-center justify-center gap-1 text-center text-xs hover:underline w-full"
-			>
-				Detaillierte Stats <ArrowRight size={12} />
-			</a>
+					{:else}
+						<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
+					{/if}
+				</summary>
+
+				<div class="border-base-content/10 space-y-3 border-t p-3">
+					<!-- Lifecycle step -->
+					<div class="flex flex-wrap items-center gap-2">
+						{#if isOpen}
+							<form method="POST" action="?/goLive" use:enhance>
+								<input type="hidden" name="roundId" value={round.id} />
+								<button class="btn btn-sm btn-primary glow-primary gap-1">
+									Spiel starten <ArrowRight size={14} />
+								</button>
+							</form>
+						{:else if isLive || isResolving}
+							<form method="POST" action="?/settle" use:enhance>
+								<input type="hidden" name="roundId" value={round.id} />
+								<button class="btn btn-sm btn-success glow-primary gap-1">
+									Abrechnen <CircleCheck size={14} />
+								</button>
+							</form>
+						{/if}
+						<form method="POST" action="?/cancel" use:enhance>
+							<input type="hidden" name="roundId" value={round.id} />
+							<button class="btn btn-xs btn-error btn-outline">Abbrechen</button>
+						</form>
+					</div>
+					<p class="text-base-content/50 text-[0.7rem]">
+						{#if isOpen}Spieler setzen. Nach „Spiel starten" sind keine neuen Wetten mehr möglich.
+						{:else if isLive}Wetten gelockt. Buffer prüfen, dann „Abrechnen".
+						{:else if isResolving}Abrechnung läuft …{/if}
+					</p>
+
+					<!-- Pending event queue -->
+					{#if pendingEvents.length > 0}
+						<div class="border-base-content/10 space-y-2 border-t pt-3">
+							<p class="eyebrow flex items-center gap-2">
+								<Activity size={12} /> Buffer prüfen ({pendingEvents.length})
+							</p>
+							{#each pendingByProposer as group (group.userId)}
+								<details class="bg-base-100/40 rounded-xl">
+									<summary
+										class="flex cursor-pointer items-center justify-between gap-2 p-2 text-xs"
+									>
+										<span class="flex items-center gap-2">
+											<span class="badge badge-xs badge-neutral">{group.events.length}</span>
+											<span class="font-medium">{group.name}</span>
+										</span>
+										<span
+											class="flex items-center gap-1"
+											onclick={(e) => e.stopPropagation()}
+											role="group"
+										>
+											<form method="POST" action="?/bulkDecideByProposer" use:enhance>
+												<input type="hidden" name="roundId" value={round.id} />
+												<input type="hidden" name="proposerUserId" value={group.userId} />
+												<input type="hidden" name="decision" value="CONFIRMED" />
+												<button class="btn btn-xs btn-success" title="Alle akzeptieren">
+													<CircleCheck size={11} />
+												</button>
+											</form>
+											<form method="POST" action="?/bulkDecideByProposer" use:enhance>
+												<input type="hidden" name="roundId" value={round.id} />
+												<input type="hidden" name="proposerUserId" value={group.userId} />
+												<input type="hidden" name="decision" value="CANCELLED" />
+												<button class="btn btn-xs btn-error btn-outline" title="Alle ablehnen">
+													<X size={11} />
+												</button>
+											</form>
+										</span>
+									</summary>
+									<div class="border-base-content/10 space-y-1.5 border-t p-2">
+										{#each group.events as ev (ev.id)}
+											<div class="flex flex-wrap items-center justify-between gap-2">
+												<span class="text-xs">
+													<span class="font-medium">
+														{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
+													</span>
+													{#if ev.entityId}→ {entityById.get(ev.entityId)?.name}{/if}
+												</span>
+												<div class="flex items-center gap-1">
+													<form
+														method="POST"
+														action="?/editEventDelta"
+														use:enhance
+														class="flex items-center gap-1"
+													>
+														<input type="hidden" name="eventId" value={ev.id} />
+														<input
+															type="number"
+															name="delta"
+															value={ev.delta}
+															step="1"
+															class="input input-xs w-14"
+															title="Wert"
+														/>
+														<button
+															class="btn btn-xs btn-ghost"
+															type="submit"
+															title="Speichern"
+														>
+															<Save size={11} />
+														</button>
+													</form>
+													<form method="POST" action="?/confirmEvent" use:enhance>
+														<input type="hidden" name="eventId" value={ev.id} />
+														<button class="btn btn-xs btn-success" title="OK">
+															<CircleCheck size={11} />
+														</button>
+													</form>
+													<form method="POST" action="?/cancelEvent" use:enhance>
+														<input type="hidden" name="eventId" value={ev.id} />
+														<button class="btn btn-xs btn-error btn-outline" title="Nein">
+															<X size={11} />
+														</button>
+													</form>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</details>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Counter recap (host quick-view) -->
+					{#if Object.keys(data.counters).length > 0}
+						<div class="border-base-content/10 space-y-1 border-t pt-3">
+							<p class="eyebrow flex items-center gap-2">
+								<BarChart3 size={12} /> Counter
+							</p>
+							<ul class="space-y-0.5 text-[0.7rem]">
+								{#each Object.entries(data.counters) as [key, v] (key)}
+									{@const parts = key.split(':')}
+									{@const tId = parts[0]}
+									{@const eId = parts[1] ?? null}
+									<li class="flex justify-between">
+										<span>
+											{trackableById.get(tId)?.label ?? tId}
+											{#if eId}→ {entityById.get(eId)?.name}{/if}
+										</span>
+										<span class="tabular font-semibold">{v}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
+			</details>
 		</section>
 	{/if}
 {/if}
-
-<div class="h-12"></div>

@@ -195,6 +195,8 @@
   - `/s/:id/stats` — leaderboard + my stats + round history
 - **REQ-UI-003** All player-facing copy is German. Numbers use `tabular` (Geist Mono ss01).
 - **REQ-UI-004** Mobile viewports are first-class. Desktop is a side-effect of fluid layout.
+- **REQ-UI-005** All `/s/:id/*` routes share one chrome: a compact `SessionTopBar` (back, session name, badges, live balance) and a sticky `BottomDock` (Lobby · Runde · Drinks · Stats). Both are rendered once in `s/[id]/+layout.svelte`; child pages render only domain content. Min 48px touch targets, drink-pending badge on Dock.
+- **REQ-UI-006** Mode template builder uses a **Lego-style gallery**: collapsed by default, opens a 2-column visual card grid (icon + label + one-line example) for each of the 9 market-template kinds. Adding a kind appends a single per-template detail form below. No 9-button toolbar.
 
 ---
 

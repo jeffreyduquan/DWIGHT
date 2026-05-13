@@ -317,32 +317,24 @@
 		})
 	);
 
-	function addBinaryTemplate() {
-		templates = [...templates, defaultRow('binary_count')];
-	}
-	function addCompareTemplate() {
-		templates = [...templates, defaultRow('compare_entities')];
-	}
-	function addRangeTemplate() {
-		templates = [...templates, defaultRow('range_count')];
-	}
-	function addH2HTemplate() {
-		templates = [...templates, defaultRow('head_to_head')];
-	}
-	function addTopKTemplate() {
-		templates = [...templates, defaultRow('top_k')];
-	}
-	function addCountMatchingTemplate() {
-		templates = [...templates, defaultRow('count_matching')];
-	}
-	function addTeamTotalTemplate() {
-		templates = [...templates, defaultRow('team_total')];
-	}
-	function addSpreadTemplate() {
-		templates = [...templates, defaultRow('spread')];
-	}
-	function addOrderedFinishTemplate() {
-		templates = [...templates, defaultRow('ordered_finish')];
+	let pickerOpen = $state(false);
+
+	type Kind = MarketTemplateRow['kind'];
+	const kindGallery: { kind: Kind; tone: string; example: string }[] = [
+		{ kind: 'binary_count', tone: 'primary', example: 'Mehr als 5 Fouls?' },
+		{ kind: 'compare_entities', tone: 'warning', example: 'Wer macht die meisten Tore?' },
+		{ kind: 'range_count', tone: 'accent', example: '2–4 Tore insgesamt?' },
+		{ kind: 'head_to_head', tone: 'warning', example: 'Anna vs Ben — wer trinkt mehr?' },
+		{ kind: 'top_k', tone: 'success', example: 'Wer landet im Top-3?' },
+		{ kind: 'count_matching', tone: 'info', example: 'Trinken mind. 3 Spieler?' },
+		{ kind: 'team_total', tone: 'neutral', example: 'Team Rot zusammen ≥10?' },
+		{ kind: 'spread', tone: 'error', example: 'A hat ≥3 mehr als B?' },
+		{ kind: 'ordered_finish', tone: 'primary', example: 'Wer ist der/die Erste?' }
+	];
+
+	function addTemplate(kind: Kind) {
+		templates = [...templates, defaultRow(kind)];
+		pickerOpen = false;
 	}
 	function removeTemplate(i: number) {
 		templates = templates.filter((_, idx) => idx !== i);
@@ -353,10 +345,13 @@
 	<div class="alert alert-error mb-4 text-sm">{error}</div>
 {/if}
 
-<form method="POST" {action} use:enhance class="space-y-8">
+<form method="POST" {action} use:enhance class="space-y-5 pb-24">
 	<!-- Basics -->
 	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Basics</h2>
+		<header class="flex items-baseline gap-2">
+			<span class="bg-primary/15 text-primary inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">1</span>
+			<h2 class="text-base font-semibold">Name deinen Mode</h2>
+		</header>
 
 		<label class="block space-y-1">
 			<span class="text-sm">Name</span>
@@ -394,10 +389,14 @@
 		</label>
 	</section>
 
-	<!-- Terminology -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Terminologie</h2>
-		<div class="grid grid-cols-3 gap-2">
+	<!-- Terminology (optional) -->
+	<details class="glass glass-xl rounded-2xl">
+		<summary class="flex cursor-pointer items-center gap-2 p-4 text-xs">
+			<span class="text-base-content/55 flex-1 font-medium uppercase tracking-widest">Terminologie <span class="text-base-content/35 normal-case tracking-normal">(optional)</span></span>
+			<span class="text-base-content/40">▾</span>
+		</summary>
+		<div class="space-y-3 p-4 pt-0">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
 			<label class="glass space-y-1 rounded-lg p-2">
 				<span class="text-base-content/50 text-xs">Runde heißt</span>
 				<input
@@ -423,36 +422,41 @@
 				/>
 			</label>
 		</div>
-	</section>
+		</div>
+	</details>
 
 	<!-- Entities -->
 	<section class="glass glass-xl space-y-3 p-5">
-		<div class="flex items-center justify-between">
-			<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Entitäten</h2>
+		<header class="flex items-baseline gap-2">
+			<span class="bg-secondary/15 text-secondary inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">2</span>
+			<h2 class="flex-1 text-base font-semibold">Wer / Was tritt an?</h2>
 			<button type="button" onclick={addEntity} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
-		</div>
+		</header>
+		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
+			Entitäten sind die Mitspieler*innen, Murmeln, Teams o.ä. — alles, worauf gewettet wird.
+		</p>
 		<ul class="space-y-2">
 			{#each entities as e, i (i)}
-				<li class="glass grid grid-cols-[1fr_5rem_3rem_2.5rem] items-center gap-2 rounded-xl p-2">
+				<li class="glass flex flex-wrap items-center gap-2 rounded-xl p-2 sm:grid sm:grid-cols-[1fr_5rem_3rem_2.5rem]">
 					<input
 						type="text"
 						name="entityName"
 						bind:value={e.name}
 						placeholder="Name"
-						class="input input-bordered input-sm w-full"
+						class="input input-bordered input-sm w-full sm:flex-1"
 					/>
 					<input
 						type="text"
 						name="entityKind"
 						bind:value={e.kind}
 						placeholder="kind"
-						class="input input-bordered input-sm tabular w-full"
+						class="input input-bordered input-sm tabular w-24 sm:w-full"
 					/>
 					<input
 						type="color"
 						name="entityColor"
 						bind:value={e.color}
-						class="h-9 w-full cursor-pointer rounded-md border-0 bg-transparent"
+						class="h-9 w-12 cursor-pointer rounded-md border-0 bg-transparent sm:w-full"
 					/>
 					<input
 						type="text"
@@ -467,7 +471,7 @@
 					<button
 						type="button"
 						onclick={() => removeEntity(i)}
-						class="text-base-content/40 hover:text-error col-span-4 inline-flex items-center gap-1 self-end justify-self-end text-xs"
+						class="text-base-content/40 hover:text-error ml-auto inline-flex items-center gap-1 text-xs sm:col-span-4 sm:self-end sm:justify-self-end"
 						aria-label="Entfernen"
 					>
 						<X size={11} /> entfernen
@@ -479,17 +483,14 @@
 
 	<!-- Trackables -->
 	<section class="glass glass-xl space-y-3 p-5">
-		<div class="flex items-center justify-between">
-			<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
-				Trackables (zählbare Events)
-			</h2>
-			<button type="button" onclick={addTrackable} class="btn btn-ghost btn-xs"
-				>+ Hinzufügen</button
-			>
-		</div>
-		<p class="text-base-content/40 -mt-1 text-xs">
-			Zählbare Events während einer Runde (z.B. „Foul", „Überholen", „Crash"). Wetten werden
-			später als logische Bedingungen über diese Counter gebaut.
+		<header class="flex items-baseline gap-2">
+			<span class="bg-accent/15 text-accent inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">3</span>
+			<h2 class="flex-1 text-base font-semibold">Was zählen wir mit?</h2>
+			<button type="button" onclick={addTrackable} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
+		</header>
+		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
+			Zählbare Events während einer Runde (z.B. „Foul“, „Überholen“, „Crash“).
+			Wetten werden später als logische Bedingungen über diese Counter gebaut.
 		</p>
 		{#if trackables.length === 0}
 			<div class="border-base-content/10 rounded-xl border border-dashed p-4 text-center">
@@ -501,19 +502,19 @@
 		<ul class="space-y-2">
 			{#each trackables as t, i (i)}
 				<li
-					class="glass grid grid-cols-[1fr_7rem_5rem_2.5rem] items-center gap-2 rounded-xl p-2"
+					class="glass flex flex-wrap items-center gap-2 rounded-xl p-2 sm:grid sm:grid-cols-[1fr_7rem_5rem_2.5rem]"
 				>
 					<input
 						type="text"
 						name="trackableLabel"
 						bind:value={t.label}
 						placeholder="z.B. Foul"
-						class="input input-bordered input-sm w-full"
+						class="input input-bordered input-sm w-full sm:flex-1"
 					/>
 					<select
 						name="trackableScope"
 						bind:value={t.scope}
-						class="select select-bordered select-sm w-full"
+						class="select select-bordered select-sm w-32 sm:w-full"
 					>
 						<option value="global">global</option>
 						<option value="entity">pro Entität</option>
@@ -522,7 +523,7 @@
 						type="color"
 						name="trackableColor"
 						bind:value={t.color}
-						class="h-9 w-full cursor-pointer rounded-md border-0 bg-transparent"
+						class="h-9 w-12 cursor-pointer rounded-md border-0 bg-transparent sm:w-full"
 					/>
 					<input
 						type="text"
@@ -537,7 +538,7 @@
 					<button
 						type="button"
 						onclick={() => removeTrackable(i)}
-						class="text-base-content/40 hover:text-error col-span-4 inline-flex items-center gap-1 self-end justify-self-end text-xs"
+						class="text-base-content/40 hover:text-error ml-auto inline-flex items-center gap-1 text-xs sm:col-span-4 sm:self-end sm:justify-self-end"
 						aria-label="Entfernen"
 					>
 						<X size={11} /> entfernen
@@ -548,89 +549,68 @@
 	</section>
 
 	<!-- Market Templates -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<div class="flex items-center justify-between">
-			<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
-				Wetten-Templates
-			</h2>
-			<div class="flex flex-wrap gap-1">
-				<button type="button" onclick={addBinaryTemplate} class="btn btn-ghost btn-xs"
-					>+ Menge</button
-				>
-				<button type="button" onclick={addCompareTemplate} class="btn btn-ghost btn-xs"
-					>+ Vergleich</button
-				>
-				<button type="button" onclick={addRangeTemplate} class="btn btn-ghost btn-xs"
-					>+ Bereich</button
-				>
-				<button type="button" onclick={addH2HTemplate} class="btn btn-ghost btn-xs"
-					>+ Duell</button
-				>
-				<button type="button" onclick={addTopKTemplate} class="btn btn-ghost btn-xs"
-					>+ Top-K</button
-				>
-				<button type="button" onclick={addCountMatchingTemplate} class="btn btn-ghost btn-xs"
-					>+ Mind. K</button
-				>
-				<button type="button" onclick={addTeamTotalTemplate} class="btn btn-ghost btn-xs"
-					>+ Team-Total</button
-				>
-				<button type="button" onclick={addSpreadTemplate} class="btn btn-ghost btn-xs"
-					>+ Spread</button
-				>
-				<button type="button" onclick={addOrderedFinishTemplate} class="btn btn-ghost btn-xs"
-					>+ Reihenfolge</button
-				>
-			</div>
-		</div>
-		<p class="text-base-content/40 -mt-1 text-xs">
-			Wetten werden im Mode definiert (nicht pro Runde). Beim Öffnen der Wettphase werden sie
-			automatisch instanziiert.
+	<section class="glass glass-xl space-y-3 p-4 sm:p-5">
+		<header class="flex items-baseline gap-2">
+			<span class="bg-warning/15 text-warning inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">4</span>
+			<h2 class="flex-1 text-base font-semibold">Welche Wetten gibt's?</h2>
+			<span class="text-base-content/40 text-[0.65rem]">{templates.length} aktiv</span>
+		</header>
+		<p class="text-base-content/45 text-[0.7rem]">
+			Wähle einen Baustein — jeder Baustein erzeugt automatisch eine Wette pro Runde.
 		</p>
-		<ul class="text-base-content/60 -mt-1 space-y-1 pl-0 text-[0.7rem]">
-			<li class="flex items-start gap-2">
-				<BarChart3 size={14} class="text-primary mt-[0.1rem] shrink-0" />
-				<span><strong>Menge:</strong> Erreicht ein Counter eine Schwelle? (z.B. „Mehr als 5 Fouls?“)</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Trophy size={14} class="text-warning mt-[0.1rem] shrink-0" />
-				<span><strong>Vergleich:</strong> Wer hat am meisten/wenigsten? (z.B. „Wer macht die meisten Tore?“)</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Ruler size={14} class="text-accent mt-[0.1rem] shrink-0" />
-				<span><strong>Bereich:</strong> Liegt der Counter zwischen min und max? (z.B. „2–4 Tore?“)</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Swords size={14} class="text-warning mt-[0.1rem] shrink-0" />
-				<span><strong>Duell:</strong> Wer von zwei festen Entities hat mehr? (z.B. „A vs B")</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Medal size={14} class="text-success mt-[0.1rem] shrink-0" />
-				<span><strong>Top-K:</strong> Wer landet bei den Top-K? (z.B. „Wer ist im Podest, Top 3?")</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Target size={14} class="text-info mt-[0.1rem] shrink-0" />
-				<span><strong>Mind. K:</strong> Ja/Nein: erfüllen mindestens K Entities die Bedingung? (z.B. „Trinken mind. 3 Spieler?")</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<Users size={14} class="text-base-content/60 mt-[0.1rem] shrink-0" />
-				<span><strong>Team-Total:</strong> Summe eines Counters über mehrere Entities (z.B. „Team Rot zusammen ≥10 Tore?")</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<ArrowLeftRight size={14} class="text-error mt-[0.1rem] shrink-0" />
-				<span><strong>Spread:</strong> Differenz zwischen zwei Entities (z.B. „A hat ≥3 mehr Tore als B?")</span>
-			</li>
-			<li class="flex items-start gap-2">
-				<ListOrdered size={14} class="text-primary mt-[0.1rem] shrink-0" />
-				<span><strong>Reihenfolge:</strong> Wer wurde als 1./Letzter/N-ter eingetragen? (Duplikate ignoriert — erste Nennung zählt)</span>
-			</li>
-		</ul>
-		{#if templates.length === 0}
-			<div class="border-base-content/10 rounded-xl border border-dashed p-4 text-center">
-				<p class="text-base-content/40 text-sm">
-					Keine Wetten-Templates. Pro Runde gibt es dann keine automatischen Märkte.
-				</p>
+
+		{#if templates.length === 0 && !pickerOpen}
+			<button
+				type="button"
+				onclick={() => (pickerOpen = true)}
+				class="border-base-content/15 hover:border-primary hover:bg-primary/5 w-full rounded-xl border border-dashed p-5 text-center text-sm transition"
+			>
+				<span class="text-base-content/60 block">Noch keine Wetten</span>
+				<span class="text-primary mt-1 inline-block font-medium">+ Ersten Baustein wählen</span>
+			</button>
+		{/if}
+
+		{#if pickerOpen}
+			<div class="border-base-content/10 space-y-3 rounded-xl border border-dashed p-3">
+				<div class="flex items-center justify-between">
+					<p class="eyebrow">Baustein wählen</p>
+					<button
+						type="button"
+						onclick={() => (pickerOpen = false)}
+						class="btn btn-ghost btn-xs"
+					>
+						<X size={12} />
+					</button>
+				</div>
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+					{#each kindGallery as g (g.kind)}
+						{@const Icon = kindIcon[g.kind]}
+						<button
+							type="button"
+							onclick={() => addTemplate(g.kind)}
+							class="hover:border-primary hover:bg-primary/5 group flex items-start gap-3 rounded-xl border border-white/8 bg-white/3 p-3 text-left transition"
+						>
+							<span class="bg-{g.tone}/15 text-{g.tone} flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+								<Icon size={18} />
+							</span>
+							<span class="min-w-0 flex-1">
+								<span class="block text-sm font-semibold">{kindLabel[g.kind]}</span>
+								<span class="text-base-content/55 mt-0.5 block text-[0.7rem] leading-snug">
+									{g.example}
+								</span>
+							</span>
+						</button>
+					{/each}
+				</div>
 			</div>
+		{:else if templates.length > 0}
+			<button
+				type="button"
+				onclick={() => (pickerOpen = true)}
+				class="btn btn-sm btn-outline btn-primary w-full sm:w-auto"
+			>
+				+ Baustein hinzufügen
+			</button>
 		{/if}
 		<ul class="space-y-3">
 			{#each templates as t, i (i)}
@@ -1240,10 +1220,19 @@
 		</ul>
 	</section>
 
+	<!-- Advanced settings (Terminology + Economy + Drinks + Confirmation + Rebuy) -->
+	<details class="glass glass-xl rounded-2xl">
+		<summary class="flex cursor-pointer items-center gap-2 p-4 text-sm font-medium">
+			<span class="bg-base-content/10 inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">5</span>
+			<span class="flex-1">Erweitert <span class="text-base-content/45 text-[0.7rem]">— Geld, Drinks, Bestätigung, Rebuy</span></span>
+			<span class="text-base-content/40 text-xs">▾</span>
+		</summary>
+		<div class="space-y-4 p-4 pt-0">
+
 	<!-- Economy -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Ökonomie</h2>
-		<div class="grid grid-cols-2 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<label class="glass space-y-1 rounded-lg p-2">
 				<span class="text-base-content/50 text-xs">Startgeld</span>
 				<input
@@ -1271,7 +1260,7 @@
 	<!-- Drinks -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Drink-Preise</h2>
-		<div class="grid grid-cols-3 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
 			<label class="glass space-y-1 rounded-lg p-2">
 				<span class="text-base-content/50 text-xs">Schluck</span>
 				<input
@@ -1310,7 +1299,7 @@
 		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
 			Drink-Bestätigung
 		</h2>
-		<div class="grid grid-cols-2 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<label class="glass space-y-1 rounded-lg p-2">
 				<span class="text-base-content/50 text-xs">Modus</span>
 				<select
@@ -1374,7 +1363,7 @@
 				checked={initial.defaultConfig.rebuy.enabled}
 			/>
 		</label>
-		<div class="grid grid-cols-2 gap-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<label class="glass space-y-1 rounded-lg p-2">
 				<span class="text-base-content/50 text-xs">Rebuy-Drink</span>
 				<select
@@ -1399,12 +1388,12 @@
 			</label>
 		</div>
 	</section>
+		</div>
+	</details>
 
-	<div class="flex gap-2">
-		<a href="/modes" class="btn btn-ghost h-14 flex-1 rounded-xl text-base">
-			Abbrechen
-		</a>
-		<button type="submit" class="btn btn-primary glow-primary h-14 flex-1 rounded-xl text-base">
+	<div class="glass fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-md gap-2 rounded-2xl border border-white/10 p-2 shadow-xl">
+		<a href="/modes" class="btn btn-ghost h-12 flex-1 rounded-xl text-sm">Abbrechen</a>
+		<button type="submit" class="btn btn-primary glow-primary h-12 flex-1 rounded-xl text-sm">
 			{submitLabel}
 		</button>
 	</div>

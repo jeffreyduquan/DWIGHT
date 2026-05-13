@@ -10,9 +10,7 @@
 	import DrinkPanel from '$lib/components/DrinkPanel.svelte';
 	import IconBubble from '$lib/components/IconBubble.svelte';
 	import {
-		ArrowLeft,
 		ArrowRight,
-		Coins,
 		Crown,
 		Lock,
 		Beer,
@@ -20,8 +18,6 @@
 		Sparkles,
 		Volume2,
 		VolumeX,
-		Play,
-		BarChart3,
 		Settings,
 		Trash2,
 		StopCircle,
@@ -58,52 +54,16 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- TopBar -->
-<header class="mb-5 space-y-2">
-	<a
-		href="/"
-		class="text-base-content/60 hover:text-base-content inline-flex items-center gap-1 text-sm"
-		><ArrowLeft size={14} /> Sessions</a
-	>
-	<div class="flex items-baseline justify-between gap-3">
-		<h1 class="display text-3xl">
-			<span class="text-gradient-primary">{data.session.name}</span>
-		</h1>
-		<span class="badge badge-ghost tabular">{data.session.inviteCode}</span>
-	</div>
-	{#if data.mode}
-		<p class="text-base-content/50 text-xs uppercase tracking-wider">{data.mode.name}</p>
-	{/if}
-</header>
-
-<!-- Personal balance hero -->
-<section
-	class="card-stat fade-up mb-4 flex items-center justify-between gap-3 px-5 py-4 {data.me
-		.betLocked
-		? 'border-error/60 ring-error/30 ring-2'
-		: ''}"
->
-	<div class="flex items-center gap-3">
-		<IconBubble tone={data.me.betLocked ? 'error' : 'primary'} size="lg">
-			{#if data.me.betLocked}<Lock size={22} />{:else}<Coins size={22} />{/if}
-		</IconBubble>
-		<div>
-			<p class="eyebrow">Dein Saldo</p>
-			<p class="stat-hero text-3xl">
-				<span class="text-gradient-primary">{data.me.moneyBalance}</span>
+<!-- Invite code mini-chip + mode -->
+<section class="mb-4 flex items-center justify-between gap-2">
+	<div class="min-w-0">
+		{#if data.mode}
+			<p class="text-base-content/50 truncate text-[0.7rem] uppercase tracking-wider">
+				{data.mode.name}
 			</p>
-		</div>
-	</div>
-	<div class="flex flex-col items-end gap-1">
-		{#if data.me.betLocked}
-			<span class="badge badge-error gap-1"><Lock size={12} /> GESPERRT</span>
-		{:else}
-			<span class="badge badge-success">Aktiv</span>
-		{/if}
-		{#if isHost}
-			<span class="badge badge-primary gap-1"><Crown size={12} /> Host</span>
 		{/if}
 	</div>
+	<span class="badge badge-ghost tabular badge-sm">{data.session.inviteCode}</span>
 </section>
 
 {#if data.me.betLocked}
@@ -275,7 +235,7 @@
 {/if}
 
 <!-- Sound toggle -->
-<section class="mb-24 flex justify-end">
+<section class="flex justify-end">
 	<button
 		class="btn btn-xs btn-ghost gap-1"
 		onclick={toggleSound}
@@ -284,21 +244,3 @@
 		{#if soundOn}<Volume2 size={12} /> Sound an{:else}<VolumeX size={12} /> Sound aus{/if}
 	</button>
 </section>
-
-<!-- BottomDock -->
-<nav
-	class="glass dock-float fixed inset-x-0 bottom-3 mx-auto max-w-md rounded-2xl border border-white/10 px-4 py-3"
-	style="width: calc(100% - 1.5rem);"
->
-	<div class="grid grid-cols-3 gap-2 text-center text-xs">
-		<a href={`/s/${data.session.id}/round`} class="btn btn-sm btn-primary glow-primary gap-1">
-			<Play size={14} /> Runde
-		</a>
-		<a href={`/s/${data.session.id}/drinks`} class="btn btn-sm btn-accent gap-1">
-			<Beer size={14} /> Drinks
-		</a>
-		<a href={`/s/${data.session.id}/stats`} class="btn btn-sm btn-secondary gap-1">
-			<BarChart3 size={14} /> Stats
-		</a>
-	</div>
-</nav>

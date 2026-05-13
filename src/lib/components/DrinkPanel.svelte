@@ -96,14 +96,14 @@
 </script>
 
 <nav class="glass {compact ? 'mb-2' : 'mb-4'} grid {compact ? 'grid-cols-3' : 'grid-cols-4'} gap-1 rounded-2xl p-1">
-	<button class="btn btn-sm" class:btn-primary={tab === 'pending'} onclick={() => (tab = 'pending')}>
-		Offen
-		{#if allPending.length}<span class="badge badge-sm">{allPending.length}</span>{/if}
+	<button class="btn btn-xs sm:btn-sm gap-1 px-1 sm:px-3" class:btn-primary={tab === 'pending'} onclick={() => (tab = 'pending')}>
+		<span class="truncate">Offen</span>
+		{#if allPending.length}<span class="badge badge-xs">{allPending.length}</span>{/if}
 	</button>
-	<button class="btn btn-sm" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Cashout</button>
-	<button class="btn btn-sm" class:btn-primary={tab === 'force'} onclick={() => (tab = 'force')}>Force</button>
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Cashout</button>
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'force'} onclick={() => (tab = 'force')}>Force</button>
 	{#if !compact}
-		<button class="btn btn-sm" class:btn-primary={tab === 'history'} onclick={() => (tab = 'history')}>Verlauf</button>
+		<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'history'} onclick={() => (tab = 'history')}>Verlauf</button>
 	{/if}
 </nav>
 

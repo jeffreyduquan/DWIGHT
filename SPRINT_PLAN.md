@@ -193,6 +193,31 @@ Notes:
 
 ---
 
+## D9 — UX Simplification & Mobile Polish ☑
+**Goal:** Player-first vereinfachte Oberfläche, klares IA, modulares Wetten-Builder (REQ-UI-005, REQ-UI-006).
+
+Done — Phase 1 (Player-Chrome):
+- ☑ Shared chrome: `SessionTopBar` + `BottomDock` extrahiert → `src/lib/components/`; eingehängt via `s/[id]/+layout.svelte` + `s/[id]/+layout.server.ts` (lädt session, me, mode, pending-drinks für Dock-Badge)
+- ☑ Lobby `s/[id]/+page.svelte`: eigener Header / Balance-Hero / Bottom-Nav entfernt — nur noch Domain-Content (Drinks-Embed, Spieler, Entities, GM-Danger-Zone, Sound)
+- ☑ Drinks-Page entschlackt (eigener Header & Coins-Hero raus, kompakter glass-Wrapper um `DrinkPanel`)
+- ☑ Stats-Page entschlackt (eigener Header → schmale `eyebrow`-Zeile)
+- ☑ Round-Page komplett neu (`s/[id]/round/+page.svelte`, ~500 Zeilen): Status-Pille + Märkte (Primary) + per-Trackable Event-Akkordeons + ein einzelner „GM-Werkzeuge"-Disclosure (Lifecycle + Pending-Queue + Counter-Recap). Alle bestehenden `?/` Action-Contracts unverändert.
+
+Done — Phase 2 (Mode-Builder + Mobile-Grids):
+- ☑ ModeForm Wetten-Bausteine: 9-Button-Reihe + langer Erklär-`<ul>` ersetzt durch Lego-Gallery (2-spaltige Karten mit Icon + Label + Beispiel). Single `addTemplate(kind)` Funktion, picker-Toggle. Per-Template Form unverändert.
+- ☑ ModeForm Struktur neu: numerierte Sektionen 1 „Name deinen Mode" / 2 „Wer / Was tritt an?" (Entitäten) / 3 „Was zählen wir mit?" (Trackables) / 4 „Welche Wetten gibt's?" (Lego). Terminology hinter optionalem `<details>`. Geld/Drinks/Bestätigung/Rebuy in einem einzigen „5 — Erweitert" disclosure gesammelt.
+- ☑ Sticky Save-Bar (fixed bottom max-w-md) ersetzt den großen 2-Spalt-Save-Block.
+- ☑ Alle fixed-width grids (`grid-cols-[1fr_5rem_3rem_2.5rem]` Entitäten, `grid-cols-[1fr_7rem_5rem_2.5rem]` Trackables, `grid-cols-3` Terminologie/Drink-Preise, `grid-cols-2` Ökonomie/Bestätigung/Rebuy) → flex-wrap mobile / grid `sm:` breakpoint
+- ☑ DrinkPanel Tabs: `btn-sm` → `btn-xs sm:btn-sm` mit `px-1 sm:px-3` für 360px-Geräte
+- ☑ Layout-CSS: Aurora-Opacity 0.45 → 0.22, Noise-Opacity 0.05 → 0.03, Blur 90 → 110 px (Linear/Vercel-Feel)
+
+Notes:
+- Schema unverändert (Lego-Refactor + Section-Restructure verändern nur UI; alle 9 `kind` Werte, parseForm-Verträge und `?/` Action-Contracts bleiben)
+- BottomDock-Badge nutzt Layout-Loader für Pending-Drink-Zähler (live via SSE)
+- Carry-over: `+page.svelte.new` Workaround beibehalten falls erneut nötig (PowerShell `Move-Item -Force`)
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
