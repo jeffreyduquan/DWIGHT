@@ -39,9 +39,7 @@ export const actions: Actions = {
 		if (next && next.startsWith('/') && !next.startsWith('//')) {
 			throw redirect(303, next);
 		}
-		// Mode-save closes the edit window and returns to the templates list.
-		// (created.id available via flash if needed in future.)
-		void created;
-		throw redirect(303, '/modes');
+		// Land on the new mode's edit page so users see Bet-Graphs discovery + can iterate.
+		throw redirect(303, `/modes/${created.id}`);
 	}
 };

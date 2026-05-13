@@ -53,7 +53,7 @@
 	<header class="head">
 		<a class="back" href="/modes/{data.mode.id}">← {data.mode.name}</a>
 		<h1>Bet-Graphs</h1>
-		<p class="sub">Visueller Wett-Builder. Tippe „+ Node" zum Hinzufügen, Pins zum Verbinden.</p>
+		<p class="sub">Visueller Wett-Builder. Tippe „+ Node", dann ziehe (oder tippe) Output-Pins auf passende Input-Pins um sie zu verbinden.</p>
 	</header>
 
 	<form method="POST" action="?/create" use:enhance class="add">

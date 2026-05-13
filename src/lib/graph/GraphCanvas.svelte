@@ -43,6 +43,9 @@
 	let paletteOpen = $state(false);
 	let selectedEdgeIdx = $state<number | null>(null);
 	let expandedNode = $state<string | null>(null);
+	// Drag-to-connect state: pointer position while dragging from an output pin.
+	let dragPointer = $state<{ x: number; y: number } | null>(null);
+	let didDrag = $state(false);
 
 	// Pin DOM positions for SVG overlay.
 	let canvasEl: HTMLElement;
@@ -126,11 +129,73 @@
 	}
 
 	function onOutputTap(nodeId: string, pin: string, type: PinType) {
+		// If user actually dragged, the pointerup handler already resolved this; skip tap-toggle.
+		if (didDrag) {
+			didDrag = false;
+			return;
+		}
 		if (pendingFrom && pendingFrom.nodeId === nodeId && pendingFrom.pin === pin) {
 			pendingFrom = null;
 			return;
 		}
 		pendingFrom = { nodeId, pin, type };
+	}
+
+	function onOutputPointerDown(ev: PointerEvent, nodeId: string, pin: string, type: PinType) {
+		// Begin a drag-to-connect gesture. Tap-to-connect remains via onclick.
+		pendingFrom = { nodeId, pin, type };
+		didDrag = false;
+		const cr = canvasEl?.getBoundingClientRect();
+		if (cr) dragPointer = { x: ev.clientX - cr.left, y: ev.clientY - cr.top };
+		(ev.target as Element).setPointerCapture?.(ev.pointerId);
+	}
+
+	function onWindowPointerMove(ev: PointerEvent) {
+		if (!pendingFrom || !canvasEl) return;
+		const cr = canvasEl.getBoundingClientRect();
+		dragPointer = { x: ev.clientX - cr.left, y: ev.clientY - cr.top };
+		didDrag = true;
+	}
+
+	function findInputPinAt(clientX: number, clientY: number): { nodeId: string; pin: string } | null {
+		const els = document.elementsFromPoint(clientX, clientY);
+		for (const el of els) {
+			const key = (el as HTMLElement).dataset?.pinKey;
+			if (key && key.startsWith('in:')) {
+				const [, nodeId, pinName] = key.split(':');
+				return { nodeId, pin: pinName };
+			}
+		}
+		return null;
+	}
+
+	function onWindowPointerUp(ev: PointerEvent) {
+		if (!pendingFrom) {
+			dragPointer = null;
+			return;
+		}
+		if (!didDrag) {
+			// No drag happened -- let the onclick tap-toggle path handle it.
+			dragPointer = null;
+			return;
+		}
+		const hit = findInputPinAt(ev.clientX, ev.clientY);
+		if (hit) {
+			// Look up pin spec to know type + multi flag.
+			const targetNode = graph.nodes.find((n) => n.id === hit.nodeId);
+			if (targetNode) {
+				const spec = NODE_CATALOG[targetNode.kind];
+				const pinDef = spec.inputs.find((p) => p.name === hit.pin);
+				if (pinDef) {
+					onInputTap(hit.nodeId, hit.pin, pinDef.type, !!pinDef.multi);
+					dragPointer = null;
+					return;
+				}
+			}
+		}
+		// Drag released over nothing usable -> cancel pending.
+		pendingFrom = null;
+		dragPointer = null;
 	}
 
 	function onInputTap(nodeId: string, pin: string, type: PinType, multi: boolean) {
@@ -201,9 +266,15 @@
 		const ro = new ResizeObserver(() => recomputePinPositions());
 		if (canvasEl) ro.observe(canvasEl);
 		window.addEventListener('resize', recomputePinPositions);
+		window.addEventListener('pointermove', onWindowPointerMove);
+		window.addEventListener('pointerup', onWindowPointerUp);
+		window.addEventListener('pointercancel', onWindowPointerUp);
 		return () => {
 			ro.disconnect();
 			window.removeEventListener('resize', recomputePinPositions);
+			window.removeEventListener('pointermove', onWindowPointerMove);
+			window.removeEventListener('pointerup', onWindowPointerUp);
+			window.removeEventListener('pointercancel', onWindowPointerUp);
 		};
 	});
 
@@ -271,6 +342,19 @@
 					{/if}
 				{/if}
 			{/each}
+
+			{#if pendingFrom && dragPointer}
+				{@const a = pinPositions[pinKey(pendingFrom.nodeId, pendingFrom.pin, 'out')]}
+				{#if a}
+					<path
+						d={`M ${a.x} ${a.y} L ${dragPointer.x} ${dragPointer.y}`}
+						stroke="oklch(60% 0.1 80)"
+						stroke-width="2.5"
+						stroke-dasharray="4 4"
+						fill="none"
+					/>
+				{/if}
+			{/if}
 		</svg>
 
 		{#each ordered as node (node.id)}
@@ -387,6 +471,7 @@
 								data-pin-key={k}
 								title="{p.name} ({p.type})"
 								onclick={() => onOutputTap(node.id, p.name, p.type)}
+								onpointerdown={(ev) => onOutputPointerDown(ev, node.id, p.name, p.type)}
 								style:--pin-color={PIN_COLORS[p.type]}
 							>
 								<span class="lbl">{p.name}</span>

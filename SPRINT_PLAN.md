@@ -299,11 +299,12 @@ Deferred → Phase 7:
 
 Done:
 - ☑ `src/lib/graph/GraphCanvas.svelte` (~530 Zeilen, $state/$derived/$effect): vertikales Auto-Layout (topologische Sortierung), Family-getönte Node-Karten, Pin-Buttons (links Inputs, rechts Outputs), SVG-Edge-Overlay mit kubischen Kurven, Tap-to-Connect mit Pin-Type-Check + Compat-Glow, per-Node Prop-Editor (enum/boolean/number/modeRef-trackable/entity), `×`-Delete pro Node, Edge-Hit-Circles für Edge-Selektion + Delete-Pill, FAB `+` öffnet Bottom-Sheet-Palette gruppiert nach `FAMILY_LABELS`, Live-Validation-Banner + Preview-Satz oben, pin-position ResizeObserver für korrekte SVG-Pfade.
+- ☑ Drag-to-Connect: `pointerdown` auf Output-Pin startet Drag mit gestrichelter Ghost-Line, `pointerup` über kompatiblem Input-Pin (via `document.elementsFromPoint`) erzeugt Edge; Tap-to-Connect bleibt parallel als Fallback für ungenaue Touchscreens.
 - ☑ `/modes/[id]/graphs/+page.svelte`: GraphCanvas in Edit-Form integriert; JSON-Textarea bleibt als `<details>` „Advanced" Fallback mit Live-Parse-Sync.
+- ☑ `/modes/new` redirected nach Save auf `/modes/[id]` statt `/modes`, damit User die neue Mode sofort weiter konfiguriert (inkl. Bet-Graphs-Discovery-Link).
 - ☑ `pnpm check` 0 errors / 15 warnings; vitest 60/60 grün.
 
 Open:
-- ☐ Long-press / Drag-to-Connect Geste (Desktop optional).
 - ☐ Undo/Redo via history-stack in `$state`.
 - ☐ Visual-Editor-E2E-Smoketest (Playwright).
 
