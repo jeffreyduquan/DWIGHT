@@ -20,7 +20,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			terminology: mode.terminology,
 			defaultEntities: mode.defaultEntities,
 			trackables: mode.trackables,
-			marketTemplates: mode.marketTemplates,
 			defaultConfig: mode.defaultConfig
 		}
 	};

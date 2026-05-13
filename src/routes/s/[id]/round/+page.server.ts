@@ -40,7 +40,6 @@ import {
 import { getRoundHistory } from '$lib/server/repos/stats';
 import {
 	createBinaryMarket,
-	instantiateMarketTemplates,
 	instantiateBetGraphs,
 	lockMarket,
 	listMarketsByRound,
@@ -290,27 +289,6 @@ export const actions: Actions = {
 			return fail(403, { error: 'Nur Host darf das' });
 		try {
 			const r = await createRound(params.id);
-			// Auto-instantiate markets from Mode templates.
-			try {
-				const n = await instantiateMarketTemplates({
-					roundId: r.id,
-					sessionId: params.id,
-					createdByUserId: user.id
-				});
-				if (n > 0) emit(params.id, 'market_created', { roundId: r.id, count: n });
-			} catch (e) {
-				const msg = (e as Error).message;
-				if (msg.startsWith('MODE_INVALID:')) {
-					// Roll back the round so the host can fix the mode and try again.
-					try {
-						await cancelRoundWithRefund(r.id);
-					} catch {
-						/* ignore */
-					}
-					return fail(400, { error: friendlyError(msg) });
-				}
-				console.error('instantiateMarketTemplates failed', e);
-			}
 			// Also instantiate markets from bet-graphs (Phase 6, side-by-side).
 			try {
 				const n = await instantiateBetGraphs({

@@ -122,142 +122,6 @@ export type ModeDefaultConfig = {
 	showOdds?: boolean;
 };
 
-/**
- * Market templates defined at the Mode level.
- * Auto-instantiated as concrete betMarkets when a round opens its betting phase.
- *
- * `binary_count` shape: a counter-vs-n market.
- *   - entityScope 'global'  -> one market, predicate uses entityId=null
- *   - entityScope 'each'    -> one market PER session-entity, predicate.entityId=<entity.id>
- *     (`{entity}` placeholder in title is replaced with entity.name)
- *
- * `compare_entities` shape: a many-outcome market "which entity has the highest counter".
- *   - One outcome per session-entity (entity strictly > all others)
- *   - Optional Tie outcome (NOT any-winner) if tieBehavior='tie_outcome';
- *     otherwise a tie causes the market to settle with no winners -> void/refund.
- */
-export type MarketTemplate =
-	| {
-			kind: 'binary_count';
-			id: string;
-			title: string;
-			trackableId: string;
-			entityScope: 'global' | 'each';
-			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-			n: number;
-	  }
-	| {
-			kind: 'compare_entities';
-			id: string;
-			title: string;
-			trackableId: string;
-			tieBehavior: 'tie_outcome' | 'void';
-			/** 'max' = wer hat am meisten (Default). 'min' = wer hat am wenigsten. */
-			direction?: 'max' | 'min';
-	  }
-	| {
-			/**
-			 * Range / "Over-Under-Range" Ja/Nein-Wette:
-			 * counter ∈ [nMin .. nMax] (inklusiv). Scope wie binary_count.
-			 */
-			kind: 'range_count';
-			id: string;
-			title: string;
-			trackableId: string;
-			entityScope: 'global' | 'each';
-			nMin: number;
-			nMax: number;
-	  }
-	| {
-			/**
-			 * Head-to-Head: zwei feste Entities werden direkt verglichen.
-			 * Referenziert per Name (Mode-Definition kennt noch keine Session-Entity-IDs);
-			 * matched zur Round-Time via entity.name. Erzeugt 2 (oder 3 mit Tie) Outcomes.
-			 */
-			kind: 'head_to_head';
-			id: string;
-			title: string;
-			trackableId: string;
-			entityNameA: string;
-			entityNameB: string;
-			tieBehavior: 'tie_outcome' | 'void';
-	  }
-	| {
-			/**
-			 * Top-K Wette: Ein Markt mit einem Outcome pro Entity. Outcome "X" gewinnt,
-			 * wenn X bei den Top-K (bzw. Bottom-K wenn direction='min') landet.
-			 * Mehrere Outcomes können gewinnen → parimutuel verteilt Pot auf alle K Gewinner.
-			 *
-			 * "X in Top-K" wird realisiert als: count_entities_where (über alle anderen)
-			 * "wieviele andere haben echt mehr X? cmp lt k".
-			 */
-			kind: 'top_k';
-			id: string;
-			title: string;
-			trackableId: string;
-			k: number;
-			direction: 'max' | 'min';
-	  }
-	| {
-			/**
-			 * Count-matching: Binärer Ja/Nein Markt. „Mindestens k von N Entities erfüllen
-			 * Bedingung: counter cmp n."
-			 */
-			kind: 'count_matching';
-			id: string;
-			title: string;
-			trackableId: string;
-			/** inner per-entity bedingung */
-			perEntityCmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-			perEntityN: number;
-			/** outer aggregate */
-			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-			k: number;
-	  }
-	| {
-			/**
-			 * Team-Total: Binärer Markt. „Summe von <trackable> über die genannten
-			 * Entities (Team) cmp n". Beispiel: „Team Rot hat zusammen ≥10 Tore".
-			 */
-			kind: 'team_total';
-			id: string;
-			title: string;
-			trackableId: string;
-			/** Namen der Entities, die zum Team gehören (resolviert bei Round-Instanziierung). */
-			entityNames: string[];
-			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-			n: number;
-	  }
-	| {
-			/**
-			 * Spread: Binärer Markt über Differenz zweier benannter Entities.
-			 * „(A.trackable − B.trackable) cmp n". Beispiel: „Marco hat ≥3 Tore
-			 * mehr als Jonas".
-			 */
-			kind: 'spread';
-			id: string;
-			title: string;
-			trackableId: string;
-			entityNameA: string;
-			entityNameB: string;
-			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-			n: number;
-	  }
-	| {
-			/**
-			 * Reihenfolge: Wer wurde als N-ter für dieses Trackable eingetragen?
-			 * position=1 → Erster, position=0 → Letzter (wird bei Instantiierung
-			 * auf ents.length aufgelöst). Settlement basiert auf der Log-Reihenfolge
-			 * (erster CONFIRMED Event pro Entity; Duplikate ignoriert).
-			 */
-			kind: 'ordered_finish';
-			id: string;
-			title: string;
-			trackableId: string;
-			/** 1 = Erster, 2 = Zweiter, …, 0 = Letzter */
-			position: number;
-	  };
-
 export type SessionConfig = ModeDefaultConfig;
 
 /**
@@ -498,7 +362,6 @@ export const modes = pgTable(
 		terminology: jsonb('terminology').$type<ModeTerminology>().notNull(),
 		defaultEntities: jsonb('default_entities').$type<ModeDefaultEntity[]>().notNull(),
 		trackables: jsonb('trackables').$type<Trackable[]>().default([]).notNull(),
-		marketTemplates: jsonb('market_templates').$type<MarketTemplate[]>().default([]).notNull(),
 		defaultConfig: jsonb('default_config').$type<ModeDefaultConfig>().notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 	},
@@ -509,8 +372,6 @@ export const modes = pgTable(
  * Bet-graphs: mode-level visual market definitions.
  * Compiled at round-start into concrete bet_markets + bet_outcomes whose
  * outcomes carry Predicate ASTs (existing evaluator stays untouched).
- *
- * Side-by-side with legacy `modes.marketTemplates` during Phase 6 rollout.
  */
 export const betGraphs = pgTable(
 	'bet_graphs',
@@ -546,7 +407,6 @@ export const sessions = pgTable(
 		// Trackables are snapshotted onto the session at creation, so changes to
 		// the underlying Mode don't retro-affect an active session.
 		trackables: jsonb('trackables').$type<Trackable[]>().default([]).notNull(),
-		marketTemplates: jsonb('market_templates').$type<MarketTemplate[]>().default([]).notNull(),
 		betGraphsSnapshot: jsonb('bet_graphs_snapshot')
 			.$type<SessionBetGraph[]>()
 			.default([])

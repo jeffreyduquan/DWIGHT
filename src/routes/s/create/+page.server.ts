@@ -85,7 +85,6 @@ export const actions: Actions = {
 			name,
 			config,
 			trackables: mode.trackables,
-			marketTemplates: mode.marketTemplates,
 			betGraphsSnapshot: await snapshotForMode(mode.id),
 			defaultEntities: mode.defaultEntities
 		});

@@ -5,49 +5,13 @@
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import {
-		BarChart3,
-		Trophy,
-		Ruler,
-		Swords,
-		Medal,
-		Target,
-		Users,
-		ArrowLeftRight,
-		ListOrdered,
-		X
-	} from '@lucide/svelte';
+	import { X } from '@lucide/svelte';
 	import type {
-		MarketTemplate,
 		ModeDefaultConfig,
 		ModeDefaultEntity,
 		ModeTerminology,
 		Trackable
 	} from '$lib/server/db/schema';
-	import { describeTemplate } from '$lib/predicate-describe';
-
-	const kindIcon: Record<string, typeof BarChart3> = {
-		binary_count: BarChart3,
-		compare_entities: Trophy,
-		range_count: Ruler,
-		head_to_head: Swords,
-		top_k: Medal,
-		count_matching: Target,
-		team_total: Users,
-		spread: ArrowLeftRight,
-		ordered_finish: ListOrdered
-	};
-	const kindLabel: Record<string, string> = {
-		binary_count: 'Menge',
-		compare_entities: 'Vergleich',
-		range_count: 'Bereich',
-		head_to_head: 'Duell',
-		top_k: 'Top-K',
-		count_matching: 'Mind. K',
-		team_total: 'Team-Total',
-		spread: 'Spread',
-		ordered_finish: 'Reihenfolge'
-	};
 
 	type EntityRow = {
 		name: string;
@@ -61,40 +25,6 @@
 		scope: 'global' | 'entity';
 		emoji: string;
 		color: string;
-	};
-
-	type MarketTemplateRow = {
-		kind:
-			| 'binary_count'
-			| 'compare_entities'
-			| 'range_count'
-			| 'head_to_head'
-			| 'top_k'
-			| 'count_matching'
-			| 'team_total'
-			| 'spread'
-			| 'ordered_finish';
-		title: string;
-		trackableId: string;
-		// binary_count
-		entityScope: 'global' | 'each';
-		cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-		n: number;
-		// compare_entities / head_to_head
-		tieBehavior: 'tie_outcome' | 'void';
-		direction: 'max' | 'min';
-		// range_count
-		nMin: number;
-		nMax: number;
-		// head_to_head / spread
-		entityNameA: string;
-		entityNameB: string;
-		// top_k / count_matching
-		k: number;
-		perEntityCmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
-		perEntityN: number;
-		// team_total
-		teamNames: string;
 	};
 
 	let {
@@ -111,7 +41,6 @@
 			terminology: ModeTerminology;
 			defaultEntities: ModeDefaultEntity[];
 			trackables: Trackable[];
-			marketTemplates: MarketTemplate[];
 			defaultConfig: ModeDefaultConfig;
 		};
 		submitLabel?: string;
@@ -191,180 +120,6 @@
 			.normalize('NFKD')
 			.replace(/[^a-z0-9]+/g, '_')
 			.replace(/^_+|_+$/g, '');
-	}
-
-	/**
-	 * Required trackable scope for a given template row.
-	 * Returns 'entity' if the template requires entity-scoped trackables,
-	 * 'global' if it requires global-scoped trackables,
-	 * or 'any' if both are acceptable.
-	 *
-	 * Matrix:
-	 *  - binary_count, range_count: depends on entityScope ('each' → entity, 'global' → global)
-	 *  - all others (compare_entities, head_to_head, top_k, count_matching, team_total, spread): entity only
-	 */
-	function requiredTrackableScope(t: MarketTemplateRow): 'global' | 'entity' | 'any' {
-		if (t.kind === 'binary_count' || t.kind === 'range_count') {
-			return t.entityScope === 'each' ? 'entity' : 'global';
-		}
-		return 'entity';
-	}
-
-	/** Filter trackables list to those allowed for a template row. */
-	function allowedTrackablesFor(t: MarketTemplateRow): TrackableRow[] {
-		const required = requiredTrackableScope(t);
-		return trackables.filter((tr) => {
-			if (!tr.label.trim()) return false;
-			if (required === 'any') return true;
-			return tr.scope === required;
-		});
-	}
-
-	function defaultRow(kind: MarketTemplateRow['kind']): MarketTemplateRow {
-		return {
-			kind,
-			title: '',
-			trackableId: '',
-			entityScope: kind === 'binary_count' || kind === 'range_count' ? 'global' : 'each',
-			cmp: 'gte',
-			n: kind === 'ordered_finish' ? 1 : 1,
-			tieBehavior: 'tie_outcome',
-			direction: 'max',
-			nMin: kind === 'range_count' ? 1 : 0,
-			nMax: kind === 'range_count' ? 3 : 0,
-			entityNameA:
-				kind === 'head_to_head' || kind === 'spread' ? entities[0]?.name ?? '' : '',
-			entityNameB:
-				kind === 'head_to_head' || kind === 'spread' ? entities[1]?.name ?? '' : '',
-			k: kind === 'top_k' ? 3 : kind === 'count_matching' ? 2 : 0,
-			perEntityCmp: 'gte',
-			perEntityN: 1,
-			teamNames:
-				kind === 'team_total'
-					? entities
-							.slice(0, Math.max(1, Math.floor(entities.length / 2)))
-							.map((e) => e.name)
-							.filter(Boolean)
-							.join(',')
-					: ''
-		};
-	}
-
-	let templates = $state<MarketTemplateRow[]>(
-		initial.marketTemplates.map((m) => {
-			const base = defaultRow(m.kind);
-			if (m.kind === 'binary_count') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					entityScope: m.entityScope,
-					cmp: m.cmp,
-					n: m.n
-				};
-			}
-			if (m.kind === 'compare_entities') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					tieBehavior: m.tieBehavior,
-					direction: m.direction ?? 'max'
-				};
-			}
-			if (m.kind === 'range_count') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					entityScope: m.entityScope,
-					nMin: m.nMin,
-					nMax: m.nMax
-				};
-			}
-			if (m.kind === 'head_to_head') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					tieBehavior: m.tieBehavior,
-					entityNameA: m.entityNameA,
-					entityNameB: m.entityNameB
-				};
-			}
-			if (m.kind === 'top_k') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					k: m.k,
-					direction: m.direction
-				};
-			}
-			if (m.kind === 'count_matching') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					k: m.k,
-					cmp: m.cmp,
-					perEntityCmp: m.perEntityCmp,
-					perEntityN: m.perEntityN
-				};
-			}
-			if (m.kind === 'team_total') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					cmp: m.cmp,
-					n: m.n,
-					teamNames: m.entityNames.join(',')
-				};
-			}
-			// spread
-			if (m.kind === 'spread') {
-				return {
-					...base,
-					title: m.title,
-					trackableId: m.trackableId,
-					cmp: m.cmp,
-					n: m.n,
-					entityNameA: m.entityNameA,
-					entityNameB: m.entityNameB
-				};
-			}
-			// ordered_finish
-			return {
-				...base,
-				title: m.title,
-				trackableId: m.trackableId,
-				n: m.position
-			};
-		})
-	);
-
-	let pickerOpen = $state(false);
-
-	type Kind = MarketTemplateRow['kind'];
-	const kindGallery: { kind: Kind; tone: string; example: string }[] = [
-		{ kind: 'binary_count', tone: 'primary', example: 'Mehr als 5 Fouls?' },
-		{ kind: 'compare_entities', tone: 'warning', example: 'Wer macht die meisten Tore?' },
-		{ kind: 'range_count', tone: 'accent', example: '2–4 Tore insgesamt?' },
-		{ kind: 'head_to_head', tone: 'warning', example: 'Anna vs Ben — wer trinkt mehr?' },
-		{ kind: 'top_k', tone: 'success', example: 'Wer landet im Top-3?' },
-		{ kind: 'count_matching', tone: 'info', example: 'Trinken mind. 3 Spieler?' },
-		{ kind: 'team_total', tone: 'neutral', example: 'Team Rot zusammen ≥10?' },
-		{ kind: 'spread', tone: 'error', example: 'A hat ≥3 mehr als B?' },
-		{ kind: 'ordered_finish', tone: 'primary', example: 'Wer ist der/die Erste?' }
-	];
-
-	function addTemplate(kind: Kind) {
-		templates = [...templates, defaultRow(kind)];
-		pickerOpen = false;
-	}
-	function removeTemplate(i: number) {
-		templates = templates.filter((_, idx) => idx !== i);
 	}
 </script>
 

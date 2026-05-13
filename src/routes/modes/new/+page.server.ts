@@ -17,7 +17,6 @@ export const load: PageServerLoad = ({ locals }) => {
 			terminology: { round: 'Runde', entity: 'Entität', startedVerb: 'läuft' },
 			defaultEntities: [],
 			trackables: [],
-			marketTemplates: [],
 			defaultConfig: freshModeDefaultConfig()
 		}
 	};

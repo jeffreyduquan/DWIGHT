@@ -9,7 +9,6 @@ import {
 	sessionPlayers,
 	sessions,
 	type SessionConfig,
-	type MarketTemplate,
 	type ModeDefaultEntity,
 	type SessionBetGraph,
 	type Trackable
@@ -72,7 +71,6 @@ export type CreateSessionInput = {
 	name: string;
 	config: SessionConfig;
 	trackables: Trackable[];
-	marketTemplates: MarketTemplate[];
 	betGraphsSnapshot?: SessionBetGraph[];
 	defaultEntities: ModeDefaultEntity[];
 };
@@ -100,7 +98,6 @@ export async function createSession(input: CreateSessionInput): Promise<DbSessio
 				inviteCode,
 				config: input.config,
 				trackables: input.trackables,
-				marketTemplates: input.marketTemplates,
 				betGraphsSnapshot: input.betGraphsSnapshot ?? []
 			})
 			.returning();
