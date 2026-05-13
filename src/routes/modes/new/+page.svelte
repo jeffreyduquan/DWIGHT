@@ -31,6 +31,14 @@
 			Definiere Spielregeln, Entitäten, Wett-Templates und Drink-Mechanik.
 		</p>
 
+		<div class="border-primary/30 bg-primary/5 mb-4 flex items-start gap-3 rounded-xl border p-3 text-sm">
+			<span class="text-xl" aria-hidden="true">📐</span>
+			<div>
+				<strong>Bet-Graphs (visueller Wett-Builder)</strong> stehen nach dem Speichern
+				bereit -- dann findest du oben auf der Edit-Seite den Button „Bet-Graphs öffnen".
+			</div>
+		</div>
+
 		<ModeForm
 			initial={data.initial}
 			submitLabel="Mode erstellen"

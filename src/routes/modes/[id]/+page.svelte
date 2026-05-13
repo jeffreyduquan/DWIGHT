@@ -36,19 +36,26 @@
 			</div>
 		{/if}
 
+		<a
+			href="/modes/{data.mode.id}/graphs"
+			class="from-primary/20 to-success/20 border-primary/40 mb-4 flex w-full items-center justify-between gap-3 rounded-xl border-2 bg-gradient-to-r p-4 transition hover:shadow-lg"
+		>
+			<div class="flex items-center gap-3">
+				<span class="text-2xl" aria-hidden="true">📐</span>
+				<div class="flex flex-col text-left">
+					<strong class="text-base">Bet-Graphs öffnen</strong>
+					<small class="text-base-content/70">Visueller Wett-Builder (Drag-to-Connect)</small>
+				</div>
+			</div>
+			<span class="text-xl">→</span>
+		</a>
+
 		<ModeForm
 			initial={data.mode}
 			submitLabel="Speichern"
 			action="?/save"
 			error={form && 'error' in form ? form.error : null}
 		/>
-
-		<a
-			href="/modes/{data.mode.id}/graphs"
-			class="btn btn-outline mt-6 w-full justify-start gap-2 rounded-xl text-sm"
-		>
-			<span aria-hidden="true">📐</span> Bet-Graphs (visueller Wett-Builder, Phase 6)
-		</a>
 
 		<form
 			method="POST"
