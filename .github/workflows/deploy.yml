@@ -68,6 +68,20 @@ jobs:
             grep -q '^ADMIN_SECRET=' .env.prod \
               && sed -i "s|^ADMIN_SECRET=.*|ADMIN_SECRET=${ADMIN_SECRET}|" .env.prod \
               || echo "ADMIN_SECRET=${ADMIN_SECRET}" >> .env.prod
+            # Ensure DB is up before running migrations
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d db
+            # Wait until db is healthy
+            for i in $(seq 1 30); do
+              docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T db pg_isready -U "$(grep ^POSTGRES_USER= .env.prod | cut -d= -f2)" >/dev/null 2>&1 && break
+              sleep 1
+            done
+            # Apply pending SQL migrations idempotently (all *.sql in drizzle/, ordered by filename)
+            POSTGRES_USER=$(grep ^POSTGRES_USER= .env.prod | cut -d= -f2)
+            POSTGRES_DB=$(grep ^POSTGRES_DB= .env.prod | cut -d= -f2)
+            for f in $(ls drizzle/*.sql | sort); do
+              echo "Applying migration: $f"
+              docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T db psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$f" || echo "  -> skipped (already applied / non-idempotent)"
+            done
             # Rebuild app image from latest code and restart
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
             # Smoke test
