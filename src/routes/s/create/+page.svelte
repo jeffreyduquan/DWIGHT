@@ -284,7 +284,7 @@
 					</ul>
 				</section>
 			{:else}
-				<div class="text-base-content/50 rounded-xl border border-dashed border-white/10 p-3 text-xs">
+				<div class="text-base-content/50 border-base-300 rounded-xl border border-dashed p-3 text-xs">
 					Dieser Mode hat keine voreingestellten {selectedMode.terminology.entity}n.
 				</div>
 			{/if}

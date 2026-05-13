@@ -604,7 +604,7 @@
 						<button
 							type="button"
 							onclick={() => addTemplate(g.kind)}
-							class="hover:border-primary hover:bg-primary/5 group flex items-start gap-3 rounded-xl border border-white/8 bg-white/3 p-3 text-left transition"
+							class="hover:border-primary hover:bg-primary/5 group border-base-300 flex items-start gap-3 rounded-xl border bg-base-100 p-3 text-left transition"
 						>
 							<span class="bg-{g.tone}/15 text-{g.tone} flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
 								<Icon size={18} />
@@ -1421,7 +1421,7 @@
 		</div>
 	</details>
 
-	<div class="glass fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-md gap-2 rounded-2xl border border-white/10 p-2 shadow-xl">
+	<div class="glass border-base-300 fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-md gap-2 rounded-2xl border p-2 shadow-xl">
 		<a href="/modes" class="btn btn-ghost h-12 flex-1 rounded-xl text-sm">Abbrechen</a>
 		<button type="submit" class="btn btn-primary glow-primary h-12 flex-1 rounded-xl text-sm">
 			{submitLabel}

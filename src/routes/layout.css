@@ -5,41 +5,41 @@
 }
 
 /* ===========================================================================
-   DWIGHT — "Quantum Plasma" theme
-   palette: photon green primary · iris violet secondary · plasma pink accent
-   surfaces: deep void (#050511) → base-300 (#16162E)
+   DWIGHT — "Sage Cream" theme (light, organic, minimal)
+   Single accent: sage. Surfaces: warm cream → off-white.
+   Designed for calm, professional PWA — no gradients, no glow, no glass.
    ========================================================================= */
 @plugin 'daisyui/theme' {
 	name: 'dwight';
 	default: true;
-	prefersdark: true;
-	color-scheme: dark;
+	prefersdark: false;
+	color-scheme: light;
 
 	/* surfaces */
-	--color-base-100: oklch(8% 0.02 280);          /* #050511 deep void */
-	--color-base-200: oklch(12% 0.025 280);        /* #0B0B1F */
-	--color-base-300: oklch(17% 0.03 280);         /* #16162E */
-	--color-base-content: oklch(96% 0.005 280);    /* near-white */
-	--color-neutral: oklch(28% 0.02 280);
-	--color-neutral-content: oklch(96% 0.005 280);
+	--color-base-100: oklch(97% 0.014 92);          /* #FAF7F0 cream */
+	--color-base-200: oklch(94% 0.018 92);          /* #F1ECDF subtle warmth */
+	--color-base-300: oklch(89% 0.022 90);          /* #E5DECD divider */
+	--color-base-content: oklch(22% 0.012 70);      /* warm near-black text */
+	--color-neutral: oklch(46% 0.012 70);
+	--color-neutral-content: oklch(97% 0.014 92);
 
-	/* brand */
-	--color-primary: oklch(86% 0.22 165);          /* #00FFA3 photon green */
-	--color-primary-content: oklch(8% 0.02 280);
-	--color-secondary: oklch(71% 0.16 290);        /* #A78BFA iris violet */
-	--color-secondary-content: oklch(8% 0.02 280);
-	--color-accent: oklch(64% 0.24 15);            /* #FF3D71 plasma pink */
-	--color-accent-content: oklch(98% 0.005 15);
+	/* brand: sage */
+	--color-primary: oklch(60% 0.055 148);          /* #7B9C84 sage */
+	--color-primary-content: oklch(98% 0.005 92);
+	--color-secondary: oklch(46% 0.012 70);         /* warm neutral, used sparingly */
+	--color-secondary-content: oklch(97% 0.014 92);
+	--color-accent: oklch(60% 0.085 32);            /* muted coral for danger/drinks */
+	--color-accent-content: oklch(98% 0.005 92);
 
 	/* semantic */
-	--color-info: oklch(71% 0.16 290);             /* iris violet for info */
-	--color-info-content: oklch(8% 0.02 280);
-	--color-success: oklch(86% 0.22 165);          /* photon green = won */
-	--color-success-content: oklch(8% 0.02 280);
-	--color-warning: oklch(82% 0.16 85);           /* amber for pending drinks */
-	--color-warning-content: oklch(15% 0.02 85);
-	--color-error: oklch(64% 0.24 15);             /* plasma pink = danger */
-	--color-error-content: oklch(98% 0.005 15);
+	--color-info: oklch(60% 0.04 230);              /* soft slate-blue */
+	--color-info-content: oklch(98% 0.005 92);
+	--color-success: oklch(60% 0.055 148);          /* sage */
+	--color-success-content: oklch(98% 0.005 92);
+	--color-warning: oklch(72% 0.085 78);           /* warm amber */
+	--color-warning-content: oklch(22% 0.012 70);
+	--color-error: oklch(56% 0.10 28);              /* muted brick */
+	--color-error-content: oklch(98% 0.005 92);
 
 	--radius-selector: 0.5rem;
 	--radius-field: 0.625rem;
@@ -51,11 +51,16 @@
 
 /* ---------- Typography ---------- */
 :root {
-	--font-display: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+	--font-display: 'Inter', system-ui, -apple-system, sans-serif;
 	--font-body: 'Inter', system-ui, -apple-system, sans-serif;
 	--font-mono: 'Geist Mono', ui-monospace, 'JetBrains Mono', monospace;
 }
-html { font-family: var(--font-body); }
+html {
+	font-family: var(--font-body);
+	color: oklch(22% 0.012 70);
+	background-color: oklch(97% 0.014 92);
+}
+body { background-color: oklch(97% 0.014 92); }
 
 /* Tabular numerals on balance/stake displays */
 .tabular {
@@ -65,364 +70,142 @@ html { font-family: var(--font-body); }
 }
 
 /* ===========================================================================
-   DWIGHT visual system — glass, glow, plasma motion, noise
+   Surface system — clean cards on cream, subtle warm border, no glass blur.
+   .glass / .glass-xl / .glass-2xl kept for compat with existing markup.
    ========================================================================= */
+.glass,
+.glass-xl,
+.glass-2xl {
+	background-color: oklch(99% 0.008 92);
+	border: 1px solid oklch(89% 0.022 90);
+	box-shadow: 0 1px 2px oklch(70% 0.02 80 / 0.05);
+}
+.glass { border-radius: 0.875rem; }
+.glass-xl { border-radius: 1.25rem; }
+.glass-2xl { border-radius: 1.5rem; }
 
-/* Aurora gradient mesh — ambient background; now photon-green + iris-violet */
-.aurora {
-	position: relative;
-	isolation: isolate;
-	overflow: hidden;
-}
-.aurora::before,
-.aurora::after {
-	content: '';
-	position: absolute;
-	border-radius: 9999px;
-	filter: blur(110px);
-	opacity: 0.22;
-	pointer-events: none;
-	z-index: -1;
-	will-change: transform;
-}
-.aurora::before {
-	width: 60vmax;
-	height: 60vmax;
-	left: -20vmax;
-	top: -20vmax;
-	background: radial-gradient(circle, oklch(86% 0.22 165) 0%, transparent 60%);
-	animation: aurora-drift-1 18s ease-in-out infinite alternate;
-}
-.aurora::after {
-	width: 50vmax;
-	height: 50vmax;
-	right: -15vmax;
-	bottom: -15vmax;
-	background: radial-gradient(circle, oklch(71% 0.16 290) 0%, transparent 60%);
-	animation: aurora-drift-2 22s ease-in-out infinite alternate;
-}
-@keyframes aurora-drift-1 {
-	0% { transform: translate3d(0, 0, 0) scale(1); }
-	100% { transform: translate3d(8vw, 6vh, 0) scale(1.15); }
-}
-@keyframes aurora-drift-2 {
-	0% { transform: translate3d(0, 0, 0) scale(1); }
-	100% { transform: translate3d(-6vw, -8vh, 0) scale(1.1); }
-}
-/* legacy alt-tone class kept for compat — now plasma-pink + photon-green */
-.aurora-pink::before {
-	background: radial-gradient(circle, oklch(64% 0.24 15) 0%, transparent 60%);
-}
-.aurora-pink::after {
-	background: radial-gradient(circle, oklch(86% 0.22 165) 0%, transparent 60%);
-}
-
-/* Subtle film-grain noise overlay */
-.noise::after {
-	content: '';
-	position: fixed;
-	inset: 0;
-	pointer-events: none;
-	z-index: 1;
-	opacity: 0.03;
-	mix-blend-mode: overlay;
-	background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-
-/* Glass surface — frosted card with iridescent hairline border */
-.glass {
-	position: relative;
-	background: linear-gradient(
-		180deg,
-		oklch(22% 0.035 280 / 0.92) 0%,
-		oklch(16% 0.03 280 / 0.85) 100%
-	);
-	backdrop-filter: blur(18px) saturate(160%);
-	-webkit-backdrop-filter: blur(18px) saturate(160%);
-	border: 1px solid oklch(58% 0.05 280 / 0.55);
-	border-radius: 0.875rem;
-	box-shadow:
-		0 8px 28px -12px oklch(0% 0 0 / 0.6),
-		inset 0 1px 0 0 oklch(90% 0.04 280 / 0.08);
-}
-.glass::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	padding: 1px;
-	background: linear-gradient(
-		135deg,
-		oklch(86% 0.22 165 / 0.35),
-		transparent 40%,
-		transparent 60%,
-		oklch(71% 0.16 290 / 0.3)
-	);
-	-webkit-mask:
-		linear-gradient(#000 0 0) content-box,
-		linear-gradient(#000 0 0);
-	-webkit-mask-composite: xor;
-	mask-composite: exclude;
-	pointer-events: none;
-}
-
-/* Glass with hover-lift — for clickable cards */
+/* Interactive card: gentle hover-shift */
 .glass-interactive {
-	transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
-		border-color 200ms ease, box-shadow 200ms ease;
+	transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+	cursor: pointer;
 }
 .glass-interactive:hover {
-	transform: translateY(-2px);
-	border-color: oklch(86% 0.22 165 / 0.5);
-	box-shadow:
-		0 8px 24px -8px oklch(60% 0.18 165 / 0.4),
-		0 0 0 1px oklch(86% 0.22 165 / 0.2);
+	border-color: oklch(60% 0.055 148 / 0.4);
+	box-shadow: 0 3px 8px oklch(40% 0.03 80 / 0.06);
 }
-.glass-interactive:active {
-	transform: translateY(0);
+.glass-interactive:active { transform: translateY(1px); }
+
+/* Aurora / noise: kept as no-ops so existing wrapper divs don't add visual weight */
+.aurora, .noise { position: relative; isolation: isolate; }
+.aurora::before, .aurora::after, .noise::after { content: none !important; }
+
+/* Floating dock: clean off-white pill, subtle border, soft drop shadow */
+.dock-float {
+	background-color: oklch(99% 0.008 92);
+	border: 1px solid oklch(89% 0.022 90);
+	box-shadow: 0 4px 14px oklch(40% 0.03 80 / 0.08);
 }
 
-/* Glow buttons — photon-green halo on primary actions */
-.glow-primary {
-	box-shadow:
-		0 0 0 1px oklch(86% 0.22 165 / 0.45) inset,
-		0 6px 24px -6px oklch(70% 0.22 165 / 0.55),
-		0 0 36px -10px oklch(86% 0.22 165 / 0.45);
-	transition: box-shadow 220ms ease, transform 180ms ease;
+/* Glow utilities — neutralized to clean primary button style; no halo */
+.glow-primary, .glow-accent {
+	box-shadow: none;
+	transition: filter 160ms ease, transform 160ms ease;
 }
-.glow-primary:hover {
-	box-shadow:
-		0 0 0 1px oklch(90% 0.22 165 / 0.6) inset,
-		0 8px 32px -6px oklch(70% 0.22 165 / 0.7),
-		0 0 56px -10px oklch(86% 0.22 165 / 0.7);
-	transform: translateY(-1px);
+.glow-primary:hover, .glow-accent:hover { filter: brightness(0.95); }
+.glow-primary:active, .glow-accent:active { transform: translateY(1px); }
+
+/* Typography accents — flat solid color, no gradient */
+.text-gradient-primary {
+	color: oklch(50% 0.06 148); /* sage, slightly darker for legibility */
+	background: none;
+	-webkit-background-clip: initial;
+	background-clip: initial;
 }
-.glow-primary:active {
-	transform: translateY(0);
+.text-gradient-danger {
+	color: oklch(50% 0.10 28);
 }
 
-/* Plasma-pink glow for accent/danger actions (drinks, force-drink) */
-.glow-accent {
-	box-shadow:
-		0 0 0 1px oklch(64% 0.24 15 / 0.45) inset,
-		0 6px 24px -6px oklch(64% 0.24 15 / 0.55),
-		0 0 36px -10px oklch(64% 0.24 15 / 0.45);
-	transition: box-shadow 220ms ease, transform 180ms ease;
-}
-.glow-accent:hover {
-	box-shadow:
-		0 0 0 1px oklch(70% 0.24 15 / 0.6) inset,
-		0 8px 32px -6px oklch(64% 0.24 15 / 0.7),
-		0 0 56px -10px oklch(64% 0.24 15 / 0.7);
-	transform: translateY(-1px);
-}
-
-/* Display-weight typography for hero sections */
+/* Display headings */
 .display {
 	font-family: var(--font-display);
-	font-feature-settings: 'ss01', 'ss02';
-	letter-spacing: -0.03em;
-	line-height: 1.02;
-	font-weight: 700;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
 }
-
-/* Wordmark — extra-tight tracking, geometric */
 .wordmark {
 	font-family: var(--font-display);
 	font-weight: 700;
-	letter-spacing: 0.04em;
+	letter-spacing: -0.01em;
+	text-transform: none;
+}
+
+/* Section eyebrow — small uppercase label */
+.eyebrow {
+	font-size: 0.65rem;
+	letter-spacing: 0.1em;
 	text-transform: uppercase;
+	color: oklch(46% 0.012 70);
+	font-weight: 600;
 }
 
-/* Gradient text accent — photon-green → iris-violet */
-.text-gradient-primary {
-	background: linear-gradient(
-		90deg,
-		oklch(90% 0.22 165) 0%,
-		oklch(78% 0.20 200) 50%,
-		oklch(71% 0.16 290) 100%
-	);
-	-webkit-background-clip: text;
-	background-clip: text;
-	color: transparent;
+/* Hairline divider */
+.divider-soft {
+	height: 1px;
+	background-color: oklch(89% 0.022 90);
 }
 
-/* Danger gradient — plasma pink → iris violet, for drink/error headings */
-.text-gradient-danger {
-	background: linear-gradient(
-		90deg,
-		oklch(70% 0.24 15) 0%,
-		oklch(64% 0.24 15) 50%,
-		oklch(71% 0.16 290) 100%
-	);
-	-webkit-background-clip: text;
-	background-clip: text;
-	color: transparent;
-}
-
-/* Floating dock — rounded pill with backdrop blur */
-.dock-float {
-	background: oklch(10% 0.02 280 / 0.78);
-	backdrop-filter: blur(20px) saturate(170%);
-	-webkit-backdrop-filter: blur(20px) saturate(170%);
-	border: 1px solid oklch(40% 0.04 280 / 0.45);
-	box-shadow:
-		0 12px 32px -10px rgba(0, 0, 0, 0.7),
-		0 0 0 1px oklch(86% 0.22 165 / 0.08) inset;
-}
-
-/* Fade-in on initial mount, super subtle */
-@keyframes fade-up {
-	from { opacity: 0; transform: translateY(6px); }
-	to { opacity: 1; transform: translateY(0); }
-}
-.fade-up {
-	animation: fade-up 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-.fade-up-delay-1 { animation-delay: 60ms; }
-.fade-up-delay-2 { animation-delay: 120ms; }
-.fade-up-delay-3 { animation-delay: 180ms; }
-
-/* Reduced-motion respect */
-@media (prefers-reduced-motion: reduce) {
-	.aurora::before,
-	.aurora::after,
-	.fade-up {
-		animation: none !important;
-	}
-	.fade-up { opacity: 1; transform: none; }
+/* Large tabular numeric for hero stats */
+.stat-hero {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum';
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1;
 }
 
 /* ==========================================================================
- * Aurora-glass system additions (smart-home dashboard inspired)
+ * Icon-bubble system — soft tinted circles, NO inner shadows / glow.
+ * Kept color variants for component compat.
  * ========================================================================== */
-
-/* Larger card radius for hero/section cards (matches reference). */
-/* Note: these classes also apply the full .glass surface so they can be used standalone. */
-.glass-xl {
-position: relative;
-background: linear-gradient(
-180deg,
-oklch(22% 0.035 280 / 0.92) 0%,
-oklch(16% 0.03 280 / 0.85) 100%
-);
-backdrop-filter: blur(18px) saturate(160%);
--webkit-backdrop-filter: blur(18px) saturate(160%);
-border: 1px solid oklch(58% 0.05 280 / 0.55);
-border-radius: 1.5rem; /* 24px */
-box-shadow:
-0 12px 36px -14px oklch(0% 0 0 / 0.65),
-inset 0 1px 0 0 oklch(90% 0.04 280 / 0.1);
-}
-.glass-2xl {
-position: relative;
-background: linear-gradient(
-180deg,
-oklch(22% 0.035 280 / 0.92) 0%,
-oklch(16% 0.03 280 / 0.85) 100%
-);
-backdrop-filter: blur(18px) saturate(160%);
--webkit-backdrop-filter: blur(18px) saturate(160%);
-border: 1px solid oklch(58% 0.05 280 / 0.55);
-border-radius: 2rem; /* 32px */
-box-shadow:
-0 16px 40px -16px oklch(0% 0 0 / 0.7),
-inset 0 1px 0 0 oklch(90% 0.04 280 / 0.1);
-}
-
-/* IconBubble — circular tinted icon container with soft inner glow. */
 .icon-bubble {
-position: relative;
-color: oklch(96% 0.005 280);
-background: linear-gradient(
-160deg,
-oklch(38% 0.07 280 / 0.75) 0%,
-oklch(20% 0.04 280 / 0.7) 100%
-);
-box-shadow:
-inset 0 1px 0 0 oklch(90% 0.04 280 / 0.22),
-inset 0 -1px 0 0 oklch(0% 0 0 / 0.4),
-0 4px 12px -6px oklch(0% 0 0 / 0.55);
-border: 1px solid oklch(62% 0.06 280 / 0.55);
+	color: oklch(46% 0.012 70);
+	background-color: oklch(94% 0.018 92);
+	border: 1px solid oklch(89% 0.022 90);
 }
-.icon-bubble svg {
-display: block;
-}
+.icon-bubble svg { display: block; }
 .icon-bubble-primary {
-color: oklch(92% 0.18 165);
-background: linear-gradient(
-160deg,
-oklch(40% 0.16 165 / 0.45) 0%,
-oklch(18% 0.06 200 / 0.55) 100%
-);
-border-color: oklch(86% 0.22 165 / 0.35);
-box-shadow:
-inset 0 1px 0 0 oklch(95% 0.18 165 / 0.25),
-inset 0 -1px 0 0 oklch(0% 0 0 / 0.4),
-0 4px 16px -6px oklch(70% 0.22 165 / 0.4);
+	color: oklch(50% 0.06 148);
+	background-color: oklch(92% 0.04 148);
+	border-color: oklch(85% 0.05 148);
 }
 .icon-bubble-accent {
-color: oklch(82% 0.22 15);
-background: linear-gradient(
-160deg,
-oklch(40% 0.18 15 / 0.45) 0%,
-oklch(18% 0.06 290 / 0.55) 100%
-);
-border-color: oklch(64% 0.24 15 / 0.4);
-box-shadow:
-inset 0 1px 0 0 oklch(90% 0.18 15 / 0.22),
-inset 0 -1px 0 0 oklch(0% 0 0 / 0.4),
-0 4px 16px -6px oklch(64% 0.24 15 / 0.4);
+	color: oklch(50% 0.10 28);
+	background-color: oklch(93% 0.04 28);
+	border-color: oklch(86% 0.07 28);
 }
 .icon-bubble-warning {
-color: oklch(92% 0.16 85);
-background: linear-gradient(
-160deg,
-oklch(50% 0.16 85 / 0.45) 0%,
-oklch(20% 0.05 60 / 0.55) 100%
-);
-border-color: oklch(82% 0.16 85 / 0.4);
-box-shadow:
-inset 0 1px 0 0 oklch(95% 0.14 85 / 0.22),
-inset 0 -1px 0 0 oklch(0% 0 0 / 0.4),
-0 4px 16px -6px oklch(82% 0.16 85 / 0.4);
+	color: oklch(48% 0.10 78);
+	background-color: oklch(94% 0.05 80);
+	border-color: oklch(86% 0.08 78);
 }
 .icon-bubble-info {
-color: oklch(85% 0.14 290);
-background: linear-gradient(
-160deg,
-oklch(45% 0.16 290 / 0.5) 0%,
-oklch(18% 0.06 280 / 0.55) 100%
-);
-border-color: oklch(71% 0.16 290 / 0.4);
-box-shadow:
-inset 0 1px 0 0 oklch(92% 0.12 290 / 0.22),
-inset 0 -1px 0 0 oklch(0% 0 0 / 0.4),
-0 4px 16px -6px oklch(71% 0.16 290 / 0.4);
+	color: oklch(45% 0.05 230);
+	background-color: oklch(94% 0.025 230);
+	border-color: oklch(86% 0.04 230);
 }
-.icon-bubble-neutral {
-/* default — already set on .icon-bubble */
-}
+.icon-bubble-neutral { /* default */ }
 
-/* Stat card — large tabular numeric display, soft elevation. */
+/* Stat card kept as glass-xl alias */
 .card-stat {
-border-radius: 1.5rem;
-background: linear-gradient(
-180deg,
-oklch(24% 0.04 280 / 0.94) 0%,
-oklch(16% 0.03 280 / 0.88) 100%
-);
-backdrop-filter: blur(20px) saturate(170%);
--webkit-backdrop-filter: blur(20px) saturate(170%);
-border: 1px solid oklch(60% 0.05 280 / 0.55);
-box-shadow:
-0 12px 36px -16px oklch(0% 0 0 / 0.6),
-inset 0 1px 0 0 oklch(90% 0.04 280 / 0.1);
+	background-color: oklch(99% 0.008 92);
+	border: 1px solid oklch(89% 0.022 90);
+	border-radius: 1.25rem;
+	box-shadow: 0 1px 2px oklch(70% 0.02 80 / 0.05);
 }
 
 /* ==========================================================================
- * Form controls — visible defaults on dark glass surfaces.
- * Targets DaisyUI .input / .select / .textarea + native focus states.
+ * Form controls — clean light inputs, sage focus ring.
  * ========================================================================== */
 .input,
 .select,
@@ -430,19 +213,19 @@ inset 0 1px 0 0 oklch(90% 0.04 280 / 0.1);
 input.input-bordered,
 select.select-bordered,
 textarea.textarea-bordered {
-	background-color: oklch(14% 0.03 280 / 0.85);
-	border: 1px solid oklch(58% 0.05 280 / 0.6);
-	color: oklch(96% 0.005 280);
-	transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+	background-color: oklch(99% 0.008 92);
+	border: 1px solid oklch(85% 0.022 90);
+	color: oklch(22% 0.012 70);
+	transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 .input::placeholder,
 .textarea::placeholder {
-	color: oklch(70% 0.02 280 / 0.6);
+	color: oklch(58% 0.014 70);
 }
 .input:hover,
 .select:hover,
 .textarea:hover {
-	border-color: oklch(70% 0.06 280 / 0.75);
+	border-color: oklch(74% 0.025 90);
 }
 .input:focus,
 .input:focus-visible,
@@ -451,46 +234,42 @@ textarea.textarea-bordered {
 .textarea:focus,
 .textarea:focus-visible {
 	outline: none;
-	border-color: oklch(86% 0.22 165 / 0.7);
-	box-shadow: 0 0 0 3px oklch(86% 0.22 165 / 0.18);
-	background-color: oklch(16% 0.03 280 / 0.95);
-}
-/* Inputs nested inside glass surfaces still need crisp borders */
-.glass .input,
-.glass .select,
-.glass .textarea,
-.glass-xl .input,
-.glass-xl .select,
-.glass-xl .textarea {
-	background-color: oklch(10% 0.025 280 / 0.7);
+	border-color: oklch(60% 0.055 148 / 0.7);
+	box-shadow: 0 0 0 3px oklch(60% 0.055 148 / 0.18);
 }
 
-/* Hairline divider — subtle iridescent line between sections. */
-.divider-soft {
-height: 1px;
-background: linear-gradient(
-90deg,
-transparent,
-oklch(60% 0.06 280 / 0.3) 50%,
-transparent
-);
+/* Toggle/Checkbox/Buttons inherit DaisyUI semantic vars (set above). */
+
+/* ==========================================================================
+ * Animations — short, quiet.
+ * ========================================================================== */
+@keyframes fade-up {
+	from { opacity: 0; transform: translateY(4px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+	animation: fade-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.fade-up-delay-1 { animation-delay: 50ms; }
+.fade-up-delay-2 { animation-delay: 100ms; }
+.fade-up-delay-3 { animation-delay: 150ms; }
+
+@media (prefers-reduced-motion: reduce) {
+	.fade-up { animation: none !important; opacity: 1; transform: none; }
 }
 
-/* Section heading — small uppercase eyebrow text. */
-.eyebrow {
-font-size: 0.625rem;
-letter-spacing: 0.12em;
-text-transform: uppercase;
-color: oklch(70% 0.02 280);
-font-weight: 600;
+/* Scrollbars — light, unobtrusive */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+	background-color: oklch(85% 0.022 90);
+	border-radius: 6px;
+	border: 2px solid oklch(97% 0.014 92);
 }
+::-webkit-scrollbar-thumb:hover { background-color: oklch(74% 0.025 90); }
 
-/* Larger tabular numbers for hero stats. */
-.stat-hero {
-font-family: var(--font-display);
-font-feature-settings: 'tnum', 'ss01';
-font-variant-numeric: tabular-nums;
-font-weight: 700;
-letter-spacing: -0.04em;
-line-height: 1;
+/* Selection */
+::selection {
+	background-color: oklch(60% 0.055 148 / 0.25);
+	color: oklch(22% 0.012 70);
 }

@@ -28,10 +28,10 @@
 
 - **REQ-BRAND-001** Product name is `DWIGHT`. Always set in caps in copy and frontend titles.
 - **REQ-BRAND-002** No tagline shipped in V1. Tagline slot reserved for future use.
-- **REQ-BRAND-003** Theme: dark, modern, "Quantum Plasma" — photon green primary, iris violet secondary, plasma pink accent, deep void base. Defined in `layout.css` as DaisyUI theme `dwight`.
-- **REQ-BRAND-004** Type stack: Space Grotesk (display/wordmark), Inter (body), Geist Mono (tabular numerics).
-- **REQ-BRAND-005** Logo mark: hex frame (photon→iris gradient), inner hex outline, plasma core with corner spark. Wordmark in Space Grotesk uppercase, weight 700, tracking 0.04em.
-- **REQ-BRAND-006** Mobile-first PWA: viewport-fit cover, manifest, favicon, theme-color `#050511`, install prompt later.
+- **REQ-BRAND-003** Theme: light, organic, calm — "Sage Cream". Single accent: muted sage. Surfaces: warm cream `#FAF7F0` base → off-white card surface. No gradients, no glassmorphism, no aurora blobs, no glow. Defined in `layout.css` as DaisyUI theme `dwight` (light, prefersdark=false).
+- **REQ-BRAND-004** Type stack: Inter (display + body), Geist Mono (tabular numerics). Display weight 600, near-zero tracking. Wordmark Inter 700.
+- **REQ-BRAND-005** Logo mark: 28×28 sage rounded square (radius 8) with a cream dot center — calm, geometric, scales from 16px favicon to hero. Wordmark in Inter 700, no tracking gimmicks.
+- **REQ-BRAND-006** Mobile-first PWA: viewport-fit cover, manifest, favicon, theme-color `#FAF7F0`, install prompt later.
 - **REQ-BRAND-007** UI language: German (de-DE) for all player-facing copy. Code, comments, docs in English.
 
 ---

@@ -47,7 +47,7 @@
 			method="POST"
 			action="?/delete"
 			use:enhance
-			class="mt-8 border-t border-white/5 pt-4"
+			class="border-base-300 mt-8 border-t pt-4"
 			onsubmit={(e) => {
 				if (!confirm(`Mode "${data.mode.name}" wirklich löschen?`)) e.preventDefault();
 			}}

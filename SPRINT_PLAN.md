@@ -219,6 +219,15 @@ Done — Phase 3 (Radikal-Simplifizierung Player-Inputs, REQ-UI-007/008/009):
 - ☑ Round-Page Bet-UI radikal vereinfacht: `StakePicker` entfernt, ersetzt durch **One-Tap Quick-Stake-Chips** (`Min`/`~25%`/`~50%`/`All-in`, dedupliziert & geclamped). Jeder Chip ist ein Submit-Button mit `name="stake" value={amount}` — kein Stake-Input, kein Expand/Collapse mehr.
 - ☑ Quoten (Multiplikator + Prozent) werden conditional gerendert basierend auf `data.session.config.showOdds`.
 
+Done — Phase 4 (Sage-Cream Theme-Reset, REQ-BRAND-003/004/005/006):
+- ☑ `src/routes/layout.css` komplett neu (~270 Z., war ~496): DaisyUI Theme `dwight` jetzt **light** (`prefersdark: false`), cream Basis `oklch(97% 0.014 92)`, sage `oklch(60% 0.055 148)` als einziger Akzent, muted-coral für `accent` (Drinks/Danger). Keine Aurora, kein Noise, kein Glassmorphism, kein Gradient-Text, kein Glow. `.glass`/`.glass-xl`/`.glass-2xl` jetzt clean weiße Cards mit 1px warmem Border. `.glow-primary`/`.glow-accent` neutralisiert (nur Helligkeits-Hover). `.text-gradient-*` jetzt solide Farbe. Inputs mit sage Focus-Ring.
+- ☑ Inter ersetzt Space Grotesk als Display-Font (Fontsource Imports bleiben, nur CSS-Var auf Inter).
+- ☑ `Logo.svelte` komplett neu: 28×28 sage rounded-square mit cream Dot statt Hex-Frame mit Photon-Glow.
+- ☑ `static/favicon.svg` + `src/lib/assets/favicon.svg` auf neue Mark aktualisiert.
+- ☑ `app.html` `theme-color` `#050511` → `#FAF7F0` (Cream).
+- ☑ Hardcoded `border-white/*` / `bg-white/*` in 4 Stellen (ModeForm, modes/[id], s/create) durch `border-base-300` / `bg-base-100` ersetzt (Light-Theme legibility).
+- ☑ REQUIREMENTS REQ-BRAND-003/004/005/006 entsprechend aktualisiert.
+
 Notes:
 - Schema unverändert (Lego-Refactor + Section-Restructure verändern nur UI; alle 9 `kind` Werte, parseForm-Verträge und `?/` Action-Contracts bleiben)
 - BottomDock-Badge nutzt Layout-Loader für Pending-Drink-Zähler (live via SSE)
