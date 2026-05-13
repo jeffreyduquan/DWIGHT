@@ -5,7 +5,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { roundEvents, rounds, sessions, type Trackable } from '../db/schema';
-import { counterKey, type CounterSnapshot } from '../bets/predicate';
+import { counterKey, firstAtKey, type CounterSnapshot } from '../bets/predicate';
 
 export type DbRoundEvent = typeof roundEvents.$inferSelect;
 
@@ -110,6 +110,14 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 		.from(roundEvents)
 		.where(and(eq(roundEvents.roundId, roundId), eq(roundEvents.status, 'CONFIRMED')));
 
+	// Fetch round.startedAt as the baseline for timestamp expressions.
+	const roundRow = await db
+		.select({ startedAt: rounds.startedAt })
+		.from(rounds)
+		.where(eq(rounds.id, roundId))
+		.limit(1);
+	const startedAtMs = roundRow[0]?.startedAt ? roundRow[0].startedAt.getTime() : null;
+
 	const snap: Record<string, number> = {};
 	for (const row of rows) {
 		const key = counterKey(row.trackableId, row.entityId);
@@ -140,6 +148,22 @@ export async function getCounterSnapshot(roundId: string): Promise<CounterSnapsh
 		sorted.forEach((item, idx) => {
 			snap[`rank:${trackableId}:${item.entityId}`] = idx + 1;
 		});
+	}
+
+	// Compute firstAt timestamps (seconds since round.startedAt) for both
+	// global (entityId null) and entity-scoped trackables.
+	if (startedAtMs != null) {
+		const firstByKey = new Map<string, number>();
+		for (const row of rows) {
+			const at = row.decidedAt ? row.decidedAt.getTime() : null;
+			if (at == null) continue;
+			const k = firstAtKey(row.trackableId, row.entityId);
+			const prev = firstByKey.get(k);
+			if (prev === undefined || at < prev) firstByKey.set(k, at);
+		}
+		for (const [k, atMs] of firstByKey) {
+			snap[k] = Math.max(0, Math.round((atMs - startedAtMs) / 1000));
+		}
 	}
 
 	return snap;

@@ -294,6 +294,22 @@ export type CounterExpr =
 	| { kind: 'mul'; operands: CounterExpr[] }
 	| { kind: 'div'; operands: CounterExpr[] };
 
+/**
+ * TimestampExpr — value of type Timestamp (seconds since round start).
+ *
+ * Forms:
+ *  - `first_occurrence`: time of the first CONFIRMED event for the given
+ *    trackable+entity (entityId null = global counter). Resolves to `null`
+ *    when no such event exists yet — predicates referencing a missing
+ *    timestamp evaluate to `false`.
+ *  - `const_seconds`: literal seconds since round start (e.g. 300 = 5 min).
+ *
+ * Populated in CounterSnapshot under key `firstAt:<trackableId>:<entityId|''>`.
+ */
+export type TimestampExpr =
+	| { kind: 'first_occurrence'; trackableId: string; entityId: string | null }
+	| { kind: 'const_seconds'; value: number };
+
 export type Predicate =
 	| {
 			kind: 'count';
@@ -345,6 +361,17 @@ export type Predicate =
 			trackableId: string;
 			entityId: string;
 			position: number;
+	  }
+	| {
+			/**
+			 * Compare two TimestampExpr values. Used for "X passiert vor Y" or
+			 * "erstes Tor innerhalb 5 Min". If either side resolves to null
+			 * (no event yet), predicate evaluates to `false`.
+			 */
+			kind: 'timestamp_compare';
+			left: TimestampExpr;
+			right: TimestampExpr;
+			cmp: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
 	  };
 
 export type EntityAttributes = {

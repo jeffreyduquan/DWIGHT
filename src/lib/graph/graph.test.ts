@@ -289,6 +289,38 @@ describe('compileGraph', () => {
 		expect(yes.children).toHaveLength(2);
 	});
 
+	it('compiles time_compare with first_occurrence into timestamp_compare (Family F)', () => {
+		const graph = g(
+			[
+				{ id: 'ta', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'ea', kind: 'entity', props: { entityName: 'Mario' } },
+				{ id: 'eb', kind: 'entity', props: { entityName: 'Luigi' } },
+				{ id: 'foA', kind: 'first_occurrence' },
+				{ id: 'foB', kind: 'first_occurrence' },
+				{ id: 'tc', kind: 'time_compare', props: { op: 'lt' } },
+				{ id: 'o', kind: 'boolean_outcome' }
+			],
+			[
+				{ from: { nodeId: 'ta', pin: 'out' }, to: { nodeId: 'foA', pin: 'trackable' } },
+				{ from: { nodeId: 'ea', pin: 'out' }, to: { nodeId: 'foA', pin: 'entity' } },
+				{ from: { nodeId: 'ta', pin: 'out' }, to: { nodeId: 'foB', pin: 'trackable' } },
+				{ from: { nodeId: 'eb', pin: 'out' }, to: { nodeId: 'foB', pin: 'entity' } },
+				{ from: { nodeId: 'foA', pin: 'out' }, to: { nodeId: 'tc', pin: 'a' } },
+				{ from: { nodeId: 'foB', pin: 'out' }, to: { nodeId: 'tc', pin: 'b' } },
+				{ from: { nodeId: 'tc', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('timestamp_compare');
+		if (yes.kind !== 'timestamp_compare') return;
+		expect(yes.left.kind).toBe('first_occurrence');
+		expect(yes.right.kind).toBe('first_occurrence');
+		expect(yes.cmp).toBe('lt');
+	});
+
 	it('returns ok:false for unsupported shapes', () => {
 		const graph = g(
 			[

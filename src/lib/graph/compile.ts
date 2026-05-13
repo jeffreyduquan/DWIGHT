@@ -25,6 +25,7 @@ import type {
 	GraphNode,
 	Predicate,
 	SessionBetGraph,
+	TimestampExpr,
 	Trackable
 } from '$lib/server/db/schema';
 
@@ -314,11 +315,26 @@ function compileBoolean(graph: BetGraph, node: GraphNode, ctx: CompileContext): 
 				ok: false,
 				error: 'entity_equals → Boolean: noch nicht im Compiler unterstützt'
 			};
-		case 'time_compare':
+		case 'time_compare': {
+			const a = inSrc(graph, node.id, 'a');
+			const b = inSrc(graph, node.id, 'b');
+			if (!a || !b) return { ok: false, error: 'time_compare: a oder b nicht verbunden' };
+			const aT = compileTimestampExpr(graph, a, ctx);
+			if (!aT.ok) return { ok: false, error: aT.error };
+			const bT = compileTimestampExpr(graph, b, ctx);
+			if (!bT.ok) return { ok: false, error: bT.error };
+			const op = String((node.props as { op?: string } | undefined)?.op ?? 'lt');
+			const cmp = cmpFromOp(op);
 			return {
-				ok: false,
-				error: 'time_compare: braucht Timestamp-Predicate (Phase 8.5)'
+				ok: true,
+				value: {
+					kind: 'timestamp_compare',
+					left: aT.value,
+					right: bT.value,
+					cmp
+				}
 			};
+		}
 		default:
 			return {
 				ok: false,
@@ -382,6 +398,43 @@ function compileCounterExpr(
 			return {
 				ok: false,
 				error: `compileCounterExpr: Knoten "${node.kind}" liefert keine Zahl`
+			};
+	}
+}
+
+type TsResult = { ok: true; value: TimestampExpr } | { ok: false; error: string };
+
+/**
+ * Compile a node whose output type is `Timestamp` into a `TimestampExpr`.
+ * Supports: first_occurrence, constant (interpreted as seconds since round start).
+ */
+function compileTimestampExpr(
+	graph: BetGraph,
+	node: GraphNode,
+	ctx: CompileContext
+): TsResult {
+	switch (node.kind) {
+		case 'first_occurrence': {
+			const tSrc = inSrc(graph, node.id, 'trackable');
+			const trackableId = resolveTrackableId(graph, tSrc);
+			if (!trackableId) {
+				return { ok: false, error: 'first_occurrence: kein Trackable verbunden' };
+			}
+			const eSrc = inSrc(graph, node.id, 'entity');
+			const entityId = resolveEntityId(eSrc, ctx);
+			return { ok: true, value: { kind: 'first_occurrence', trackableId, entityId } };
+		}
+		case 'constant': {
+			const v = (node.props as { value?: number } | undefined)?.value;
+			if (typeof v !== 'number' || v < 0) {
+				return { ok: false, error: 'constant (Timestamp): nicht-negative Zahl nötig' };
+			}
+			return { ok: true, value: { kind: 'const_seconds', value: v } };
+		}
+		default:
+			return {
+				ok: false,
+				error: `compileTimestampExpr: Knoten "${node.kind}" liefert keinen Timestamp`
 			};
 	}
 }

@@ -305,3 +305,42 @@ describe('evalCounterExpr -- arithmetic', () => {
 		expect(evalPredicate(pred, snap)).toBe(true);
 	});
 });
+
+describe('evalPredicate -- timestamp_compare', () => {
+	// firstAt key format: `firstAt:<trackableId>:<entityId|''>`
+	const snap = {
+		'firstAt:goal:a': 30,
+		'firstAt:goal:b': 90,
+		'firstAt:foul:': 60
+	};
+
+	it('A scores before B', () => {
+		const pred: Predicate = {
+			kind: 'timestamp_compare',
+			left: { kind: 'first_occurrence', trackableId: 'goal', entityId: 'a' },
+			right: { kind: 'first_occurrence', trackableId: 'goal', entityId: 'b' },
+			cmp: 'lt'
+		};
+		expect(evalPredicate(pred, snap)).toBe(true);
+	});
+
+	it('first foul within 120s (const_seconds)', () => {
+		const pred: Predicate = {
+			kind: 'timestamp_compare',
+			left: { kind: 'first_occurrence', trackableId: 'foul', entityId: null },
+			right: { kind: 'const_seconds', value: 120 },
+			cmp: 'lte'
+		};
+		expect(evalPredicate(pred, snap)).toBe(true);
+	});
+
+	it('missing event -> predicate is false (never satisfied)', () => {
+		const pred: Predicate = {
+			kind: 'timestamp_compare',
+			left: { kind: 'first_occurrence', trackableId: 'goal', entityId: 'c' },
+			right: { kind: 'const_seconds', value: 999 },
+			cmp: 'lt'
+		};
+		expect(evalPredicate(pred, snap)).toBe(false);
+	});
+});

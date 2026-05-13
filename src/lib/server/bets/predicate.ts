@@ -3,7 +3,7 @@
  *
  * @implements REQ-TRACK-003, REQ-TRACK-004, REQ-BET-003
  */
-import type { CounterExpr, Predicate } from '../db/schema';
+import type { CounterExpr, Predicate, TimestampExpr } from '../db/schema';
 
 /**
  * Counter snapshot for one round.
@@ -16,6 +16,11 @@ export type CounterSnapshot = Readonly<Record<string, number>>;
 
 export function counterKey(trackableId: string, entityId: string | null): string {
 	return entityId == null ? trackableId : `${trackableId}:${entityId}`;
+}
+
+/** Snapshot key for first-occurrence timestamps (seconds since round start). */
+export function firstAtKey(trackableId: string, entityId: string | null): string {
+	return `firstAt:${trackableId}:${entityId ?? ''}`;
 }
 
 export function getCount(snap: CounterSnapshot, trackableId: string, entityId: string | null): number {
@@ -91,7 +96,24 @@ export function evalPredicate(pred: Predicate, snap: CounterSnapshot): boolean {
 			const rank = snap[`rank:${pred.trackableId}:${pred.entityId}`] ?? 0;
 			return rank === pred.position;
 		}
+		case 'timestamp_compare': {
+			const l = evalTimestampExpr(pred.left, snap);
+			const r = evalTimestampExpr(pred.right, snap);
+			if (l === null || r === null) return false;
+			return cmpInt(l, pred.cmp, r);
+		}
 	}
+}
+
+/**
+ * Resolve a TimestampExpr against the snapshot.
+ * Returns `null` when a `first_occurrence` reference has no recorded event.
+ */
+export function evalTimestampExpr(expr: TimestampExpr, snap: CounterSnapshot): number | null {
+	if (expr.kind === 'const_seconds') return expr.value;
+	// first_occurrence
+	const v = snap[firstAtKey(expr.trackableId, expr.entityId)];
+	return v === undefined ? null : v;
 }
 
 /**
@@ -119,7 +141,21 @@ export function bindSelf(pred: Predicate, eid: string): Predicate {
 			return pred;
 		case 'log_rank':
 			return pred.entityId === '$self' ? { ...pred, entityId: eid } : pred;
+		case 'timestamp_compare':
+			return {
+				kind: 'timestamp_compare',
+				left: bindSelfTimestamp(pred.left, eid),
+				right: bindSelfTimestamp(pred.right, eid),
+				cmp: pred.cmp
+			};
 	}
+}
+
+function bindSelfTimestamp(expr: TimestampExpr, eid: string): TimestampExpr {
+	if (expr.kind === 'first_occurrence' && expr.entityId === '$self') {
+		return { ...expr, entityId: eid };
+	}
+	return expr;
 }
 
 /** Bind `$self` inside a CounterExpr (or legacy ref shape). */
@@ -230,6 +266,14 @@ export function validatePredicate(
 				return `log_rank position must be an integer >= 1`;
 			return null;
 		}
+		case 'timestamp_compare': {
+			if (!VALID_CMP.includes(pred.cmp)) return `Invalid cmp: ${pred.cmp}`;
+			const l = validateTimestampExpr(pred.left, validTrackables, validEntities, allowSelf);
+			if (l) return l;
+			const r = validateTimestampExpr(pred.right, validTrackables, validEntities, allowSelf);
+			if (r) return r;
+			return null;
+		}
 	}
 }
 
@@ -288,4 +332,20 @@ function validateCounterExpr(
 			// Already handled above; defensive
 			return null;
 	}
+}
+
+/** Validate a TimestampExpr. */
+function validateTimestampExpr(
+	expr: TimestampExpr,
+	validTrackables: ReadonlyMap<string, 'global' | 'entity'>,
+	validEntities: ReadonlySet<string>,
+	allowSelf: boolean
+): string | null {
+	if (expr.kind === 'const_seconds') {
+		if (!Number.isFinite(expr.value) || expr.value < 0)
+			return `const_seconds must be a non-negative number`;
+		return null;
+	}
+	// first_occurrence
+	return checkCounterRef(expr.trackableId, expr.entityId, validTrackables, validEntities, allowSelf);
 }
