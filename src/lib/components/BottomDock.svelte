@@ -59,7 +59,7 @@
 			aria-label="Stats"
 		>
 			<BarChart3 size={18} />
-			<span>Stats</span>
+			<span>Statistik</span>
 		</a>
 	</div>
 </nav>

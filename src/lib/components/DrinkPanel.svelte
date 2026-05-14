@@ -148,7 +148,7 @@
 		<span class="truncate">Offen</span>
 		{#if allPending.length}<span class="badge badge-xs">{allPending.length}</span>{/if}
 	</button>
-	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Buy-In</button>
+	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'self'} onclick={() => (tab = 'self')}>Trinken</button>
 	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'force'} onclick={() => (tab = 'force')}>Verteilen</button>
 	<button class="btn btn-xs sm:btn-sm px-1 sm:px-3" class:btn-primary={tab === 'history'} onclick={() => (tab = 'history')}>Verlauf</button>
 </nav>
@@ -222,7 +222,7 @@
 								<span class="text-sm">
 									<strong>{drinkLabel[d.drinkType]}</strong>
 									{#if d.origin === 'FORCE'}
-										<span class="badge badge-warning badge-sm ml-1">FORCE von {d.attackerName}</span>
+										<span class="badge badge-warning badge-sm ml-1">Erzwungen von {d.attackerName}</span>
 									{:else}
 										<span class="badge badge-info badge-sm ml-1">Eigen</span>
 									{/if}
@@ -264,7 +264,7 @@
 								<span class="text-sm">
 									<strong>{d.targetName}</strong> → {drinkLabel[d.drinkType]}
 									{#if d.origin === 'FORCE'}
-										<span class="badge badge-warning badge-sm ml-1">FORCE von {d.attackerName}</span>
+										<span class="badge badge-warning badge-sm ml-1">Erzwungen von {d.attackerName}</span>
 									{:else}
 										<span class="badge badge-info badge-sm ml-1">Eigen</span>
 									{/if}
@@ -307,7 +307,7 @@
 					<span class="min-w-0 truncate">
 						<strong>{d.targetName}</strong> · {drinkLabel[d.drinkType]}
 						{#if d.origin === 'FORCE'}
-							<span class="text-base-content/40 text-xs">· FORCE von {d.attackerName}</span>
+							<span class="text-base-content/40 text-xs">· Erzwungen von {d.attackerName}</span>
 						{/if}
 					</span>
 					<span

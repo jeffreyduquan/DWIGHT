@@ -51,6 +51,7 @@ import { snapshotForMode } from '$lib/server/repos/betGraphs';
 import { settleRound, cancelRoundWithRefund } from '$lib/server/round/lifecycle';
 import { evalPredicate } from '$lib/server/bets/predicate';
 import { emit } from '$lib/server/sse/broadcaster';
+import { applyOverridesToText } from '$lib/entities/names';
 
 function requireUser(locals: App.Locals) {
 	if (!locals.user) throw redirect(303, '/login');
@@ -253,8 +254,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			);
 			return {
 				id: m.id,
-				title: m.title,
-				description: m.description,
+				title: applyOverridesToText(session.config, m.title),
+				description: m.description ? applyOverridesToText(session.config, m.description) : m.description,
 				status: m.status,
 				outcomes: outs.map((o) => {
 					const bs = betsByOutcome[o.id] ?? [];
@@ -264,7 +265,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 					const myPayout = myBets.reduce((s, b) => s + (b.payoutAmount ?? 0), 0);
 					return {
 						id: o.id,
-						label: o.label,
+						label: applyOverridesToText(session.config, o.label),
 						predicate: o.predicate as Predicate,
 						orderIndex: o.orderIndex,
 						isWinner: o.isWinner,

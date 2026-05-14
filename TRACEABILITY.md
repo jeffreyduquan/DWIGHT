@@ -189,7 +189,7 @@
 | REQ-UI-024 | Phase 11 | `src/lib/components/DrinkPanel.svelte` (scrollable Listen, `.drink-mine` Gradient, `Hourglass`-Timer-Pill) | `src/lib/drinks/lock.test.ts` (Timer-Logik) | ☑ |
 | REQ-UI-025 | Phase 11 | `src/routes/s/[id]/settings/+page.{server.ts,svelte}`, `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
 | REQ-SESS-CONFIG-001 | Phase 11 | `src/lib/server/db/schema.ts` (`LockMode`, `ModeDefaultConfig` extensions), `src/lib/server/modes/defaults.ts`, `src/lib/drinks/lock.ts` (`effectiveLockMode` legacy fallback) | `src/lib/drinks/lock.test.ts` | ☑ |
-| REQ-SESS-CONFIG-002 | Phase 11 | `src/routes/s/[id]/{+page,round/+page,info/+page}.server.ts` (entity-name override mapping) | manual | ☑ |
+| REQ-SESS-CONFIG-002 | Phase 11 | `src/routes/s/[id]/{+page,round/+page,info/+page}.server.ts` (entity-name override mapping), `src/lib/entities/names.ts` (`displayEntityName`/`applyOverrides`/`applyOverridesToText`), `src/routes/s/[id]/round/+page.server.ts` (market title + outcome label rewrite via `applyOverridesToText`) | `src/lib/entities/names.test.ts` | ☑ |
 | REQ-SESS-CONFIG-003 | Phase 11 | `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
 
 ## REQ-GM — Game Master Tools

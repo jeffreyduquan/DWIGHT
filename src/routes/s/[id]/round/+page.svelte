@@ -67,6 +67,43 @@
 		return data.counters[key] ?? 0;
 	}
 
+	/**
+	 * Phase 11 ghost-counter: per (trackable, entity) bucket, count
+	 * pending proposals grouped by proposer, then surface
+	 *   - myCount: how many *I* have proposed in this bucket
+	 *   - othersAvg: rounded average across the other distinct proposers
+	 * so the player sees their own progress vs. the crowd at a glance.
+	 */
+	const proposalStats = $derived(
+		(() => {
+			const buckets = new Map<string, Map<string, number>>(); // bucket → proposerId → count
+			for (const ev of pendingEvents) {
+				const key = `${ev.trackableId}:${ev.entityId ?? 'null'}`;
+				let inner = buckets.get(key);
+				if (!inner) {
+					inner = new Map();
+					buckets.set(key, inner);
+				}
+				inner.set(ev.proposedByUserId, (inner.get(ev.proposedByUserId) ?? 0) + 1);
+			}
+			const out = new Map<string, { mine: number; othersAvg: number; othersCount: number }>();
+			for (const [key, inner] of buckets) {
+				const mine = inner.get(data.me.userId) ?? 0;
+				const others = Array.from(inner.entries())
+					.filter(([uid]) => uid !== data.me.userId)
+					.map(([, n]) => n);
+				const othersAvg =
+					others.length === 0 ? 0 : Math.round(others.reduce((a, b) => a + b, 0) / others.length);
+				out.set(key, { mine, othersAvg, othersCount: others.length });
+			}
+			return out;
+		})()
+	);
+
+	function proposalKey(trackableId: string, entityId: string | null): string {
+		return `${trackableId}:${entityId ?? 'null'}`;
+	}
+
 	const orderedMarkets = $derived(
 		[...data.markets].sort((a, b) => {
 			const order = { OPEN: 0, LOCKED: 1, SETTLED: 2, VOID: 3 } as const;
@@ -376,18 +413,33 @@
 					</summary>
 					<div class="border-base-content/10 border-t p-3">
 						{#if t.scope === 'global'}
+							{@const ps = proposalStats.get(proposalKey(t.id, null))}
 							<form method="POST" action="?/proposeEvent" use:enhance>
 								<input type="hidden" name="roundId" value={round.id} />
 								<input type="hidden" name="trackableId" value={t.id} />
 								<input type="hidden" name="entityId" value="null" />
-								<button class="btn btn-sm btn-outline w-full gap-1">
-									<Sparkles size={14} /> +1
-									<span class="text-base-content/40">({counterValue(t.id, null)})</span>
+								<button class="btn btn-sm btn-outline w-full justify-between gap-1">
+									<span class="flex items-center gap-1">
+										<Sparkles size={14} /> +1
+										<span class="text-base-content/40">({counterValue(t.id, null)})</span>
+									</span>
+									{#if ps && (ps.mine > 0 || ps.othersCount > 0)}
+										<span class="flex items-center gap-1 text-[0.65rem] tabular">
+											<span class="text-primary font-semibold">{ps.mine}</span>
+											{#if ps.othersCount > 0}
+												<span class="text-base-content/30">·</span>
+												<span class="text-base-content/35" title="Ø der anderen Spieler"
+													>Ø{ps.othersAvg}</span
+												>
+											{/if}
+										</span>
+									{/if}
 								</button>
 							</form>
 						{:else}
 							<div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
 								{#each data.entities as e (e.id)}
+									{@const ps = proposalStats.get(proposalKey(t.id, e.id))}
 									<form method="POST" action="?/proposeEvent" use:enhance>
 										<input type="hidden" name="roundId" value={round.id} />
 										<input type="hidden" name="trackableId" value={t.id} />
@@ -397,9 +449,17 @@
 											style="border-color: {(e.attributes as { color?: string })?.color ?? undefined}"
 										>
 											<span class="truncate">{e.name}</span>
-											<span class="text-base-content/40 tabular text-[0.65rem]"
-												>+1 ({counterValue(t.id, e.id)})</span
-											>
+											<span class="flex items-center gap-1 tabular text-[0.65rem]">
+												<span class="text-base-content/40">+1 ({counterValue(t.id, e.id)})</span>
+												{#if ps && (ps.mine > 0 || ps.othersCount > 0)}
+													<span class="text-primary font-semibold">{ps.mine}</span>
+													{#if ps.othersCount > 0}
+														<span class="text-base-content/35" title="Ø der anderen Spieler"
+															>Ø{ps.othersAvg}</span
+														>
+													{/if}
+												{/if}
+											</span>
 										</button>
 									</form>
 								{/each}

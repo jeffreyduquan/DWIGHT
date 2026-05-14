@@ -28,7 +28,7 @@
 			<div>
 				<p class="eyebrow">Templates</p>
 				<h1 class="display text-3xl">
-					<span class="text-gradient-primary">Modes</span>
+					<span class="text-gradient-primary">Modi</span>
 				</h1>
 			</div>
 			<a href="/modes/new" class="btn btn-primary btn-sm gap-1 rounded-xl glow-primary">
