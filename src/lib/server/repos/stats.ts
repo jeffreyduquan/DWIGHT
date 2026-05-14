@@ -31,6 +31,7 @@ export type LeaderboardRow = {
 	drinksSelf: number;
 	drinksReceivedForce: number;
 	drinksDealtForce: number;
+	drinksByType: { SCHLUCK: number; KURZER: number; BIER_EXEN: number };
 	pnl: number; // moneyBalance - startingMoney
 };
 
@@ -92,7 +93,10 @@ export async function getSessionLeaderboard(
 		.select({
 			userId: drinks.targetUserId,
 			drinksSelf: sql<number>`sum(case when ${drinks.origin}='SELF' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`,
-			drinksReceivedForce: sql<number>`sum(case when ${drinks.origin}='FORCE' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`
+			drinksReceivedForce: sql<number>`sum(case when ${drinks.origin}='FORCE' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`,
+			schluck: sql<number>`sum(case when ${drinks.drinkType}='SCHLUCK' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`,
+			kurzer: sql<number>`sum(case when ${drinks.drinkType}='KURZER' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`,
+			bierExen: sql<number>`sum(case when ${drinks.drinkType}='BIER_EXEN' and ${drinks.status}='CONFIRMED' then 1 else 0 end)::int`
 		})
 		.from(drinks)
 		.where(eq(drinks.sessionId, sessionId))
@@ -124,6 +128,11 @@ export async function getSessionLeaderboard(
 			drinksSelf: d?.drinksSelf ?? 0,
 			drinksReceivedForce: d?.drinksReceivedForce ?? 0,
 			drinksDealtForce: dealtMap.get(p.userId) ?? 0,
+			drinksByType: {
+				SCHLUCK: d?.schluck ?? 0,
+				KURZER: d?.kurzer ?? 0,
+				BIER_EXEN: d?.bierExen ?? 0
+			},
 			pnl: p.moneyBalance - startingMoney
 		};
 	});

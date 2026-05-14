@@ -188,6 +188,10 @@
 | REQ-UI-023 (Phase 11) | Phase 11 | `src/lib/components/QrCode.svelte`, `src/routes/s/[id]/+page.svelte` (QR-Sektion), `src/routes/s/join/+page.server.ts` (`?code=` prefill) | manual visual | ☑ |
 | REQ-UI-024 | Phase 11 | `src/lib/components/DrinkPanel.svelte` (scrollable Listen, `.drink-mine` Gradient, `Hourglass`-Timer-Pill) | `src/lib/drinks/lock.test.ts` (Timer-Logik) | ☑ |
 | REQ-UI-025 | Phase 11 | `src/routes/s/[id]/settings/+page.{server.ts,svelte}`, `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
+| REQ-UI-026 | Phase 12 | `src/routes/s/[id]/+page.svelte` (`showQr` state + Toggle-Button neben Sound) | manual visual | ☑ |
+| REQ-UI-027 | Phase 12 | `src/routes/s/create/+page.{svelte,server.ts}` (per-Entity `entityOverride__*` Inputs + Mapping in `default` Action) | manual | ☑ |
+| REQ-UI-028 | Phase 12 | `src/lib/components/DrinkPanel.svelte` (3-Tab-Nav, `STACKABLE` Map, `pendingGroups` + `historyGroups` Derived, `expandedGroups` Toggle) | manual | ☑ |
+| REQ-UI-029 | Phase 12 | `src/routes/s/[id]/round/+page.{svelte,server.ts}` (Settle-Modal, `settleBuckets` derived, `?/decideAndSettle` Action) | manual | ☑ |
 | REQ-SESS-CONFIG-001 | Phase 11 | `src/lib/server/db/schema.ts` (`LockMode`, `ModeDefaultConfig` extensions), `src/lib/server/modes/defaults.ts`, `src/lib/drinks/lock.ts` (`effectiveLockMode` legacy fallback) | `src/lib/drinks/lock.test.ts` | ☑ |
 | REQ-SESS-CONFIG-002 | Phase 11 | `src/routes/s/[id]/{+page,round/+page,info/+page}.server.ts` (entity-name override mapping), `src/lib/entities/names.ts` (`displayEntityName`/`applyOverrides`/`applyOverridesToText`), `src/routes/s/[id]/round/+page.server.ts` (market title + outcome label rewrite via `applyOverridesToText`) | `src/lib/entities/names.test.ts` | ☑ |
 | REQ-SESS-CONFIG-003 | Phase 11 | `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
@@ -208,6 +212,7 @@
 | REQ-STAT-001 | D5 | `repos/stats.ts:getSessionLeaderboard` + `/stats` podium | manual | ☑ |
 | REQ-STAT-002 | D5 | `getMySessionStats` (ROI, hit-rate, drinks) | manual | ☑ |
 | REQ-STAT-003 | D5 | `getRoundHistory` + history list in UI | manual | ☑ |
+| REQ-STAT-004 | Phase 12 | `src/lib/server/repos/stats.ts` (`drinksByType` SQL aggregate), `src/routes/s/[id]/stats/+page.svelte` (3-col Tile Schlücke/Shots/Exen) | manual | ☑ |
 
 ## REQ-DATA — Data
 

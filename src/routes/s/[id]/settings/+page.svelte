@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { ArrowLeft, Save, Settings, Lock, CircleCheck, RefreshCcw, Tag } from '@lucide/svelte';
+	import { ArrowLeft, Save, Settings, Lock, CircleCheck, RefreshCcw, Tag, Coins } from '@lucide/svelte';
 	import IconBubble from '$lib/components/IconBubble.svelte';
 
 	let { data, form } = $props();
@@ -38,6 +38,30 @@
 {/if}
 
 <form method="POST" use:enhance class="space-y-5">
+	<!-- Economy -->
+	<section class="glass glass-xl space-y-3 p-5">
+		<h2 class="text-base-content/60 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest">
+			<Coins size={12} /> Ökonomie
+		</h2>
+		<div class="grid grid-cols-2 gap-2">
+			<label class="glass space-y-1 rounded-lg p-2">
+				<span class="text-base-content/50 text-xs">Startgeld</span>
+				<input type="number" name="startingMoney" value={cfg.startingMoney} min="100" step="50" class="tabular w-full bg-transparent outline-none" />
+			</label>
+			<label class="glass space-y-1 rounded-lg p-2">
+				<span class="text-base-content/50 text-xs">Mindesteinsatz</span>
+				<input type="number" name="minStake" value={cfg.minStake} min="1" class="tabular w-full bg-transparent outline-none" />
+			</label>
+		</div>
+		<label class="glass flex items-center justify-between rounded-xl p-3">
+			<span class="space-y-1">
+				<span class="block text-sm font-medium">Quoten anzeigen</span>
+				<span class="text-base-content/40 block text-xs">Multiplikator + Prozent neben jedem Outcome.</span>
+			</span>
+			<input type="checkbox" name="showOdds" class="toggle toggle-primary" checked={cfg.showOdds !== false} />
+		</label>
+	</section>
+
 	<!-- Drink prices -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<h2 class="text-base-content/60 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest">

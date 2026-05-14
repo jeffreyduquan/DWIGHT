@@ -295,11 +295,11 @@
 				</label>
 			</fieldset>
 
-			<!-- Entity preview -->
+			<!-- Entity preview + rename -->
 			{#if selectedMode.defaultEntities.length > 0}
 				<section class="space-y-2">
 					<span class="eyebrow inline-flex items-center gap-1.5">
-						<Sparkles size={12} /> {selectedMode.terminology.entity}n
+						<Sparkles size={12} /> {selectedMode.terminology.entity}n (umbenennen optional)
 					</span>
 					<ul class="glass space-y-2 rounded-xl p-3 text-sm">
 						{#each selectedMode.defaultEntities as e (e.name)}
@@ -308,15 +308,24 @@
 									class="inline-block h-3 w-3 shrink-0 rounded-full"
 									style="background: {(e.attributes as { color?: string })?.color ?? '#888'}"
 								></span>
-								<span>{e.name}</span>
+								<input
+									type="text"
+									name={`entityOverride__${e.name}`}
+									placeholder={e.name}
+									maxlength="32"
+									class="flex-1 bg-transparent outline-none placeholder:text-base-content/30"
+								/>
 								{#if (e.attributes as { emoji?: string })?.emoji}
-									<span class="ml-auto text-base">
+									<span class="text-base">
 										{(e.attributes as { emoji?: string }).emoji}
 									</span>
 								{/if}
 							</li>
 						{/each}
 					</ul>
+					<p class="text-base-content/45 text-xs">
+						Leer lassen = Originalname verwenden ({selectedMode.defaultEntities.map((e) => e.name).join(', ')}).
+					</p>
 				</section>
 			{:else}
 				<div class="text-base-content/50 border-base-300 rounded-xl border border-dashed p-3 text-xs">

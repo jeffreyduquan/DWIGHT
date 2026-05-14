@@ -19,12 +19,10 @@
 		Lock,
 		CircleCheck,
 		X,
-		Save,
 		Undo2,
 		Crown,
 		ChevronDown,
 		Sparkles,
-		Activity,
 		Play,
 		RotateCcw
 	} from '@lucide/svelte';
@@ -43,20 +41,6 @@
 	const pendingEvents = $derived(data.events.filter((e) => e.status === 'PENDING'));
 	const myPendingEvents = $derived(
 		pendingEvents.filter((e) => e.proposedByUserId === data.me.userId)
-	);
-
-	type PendingEvent = (typeof pendingEvents)[number];
-	const pendingByProposer = $derived(
-		(() => {
-			const m = new Map<string, { userId: string; name: string; events: PendingEvent[] }>();
-			for (const ev of pendingEvents) {
-				const key = ev.proposedByUserId;
-				if (!m.has(key))
-					m.set(key, { userId: ev.proposedByUserId, name: ev.proposedBy, events: [] });
-				m.get(key)!.events.push(ev);
-			}
-			return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name));
-		})()
 	);
 
 	const trackableById = $derived(new Map(data.session.trackables.map((t) => [t.id, t])));
@@ -117,6 +101,66 @@
 	// Stake accumulator per market — each chip tap adds its value to a running
 	// total. "Setzen" submits the accumulated amount. Reset zeros it.
 	const stakeTotals = $state<Record<string, number>>({});
+
+	// Phase 12 ghost-workflow settle modal.
+	let showSettleModal = $state(false);
+	const settleChoices = $state<Record<string, 'mine' | 'others'>>({});
+
+	type SettleBucket = {
+		key: string;
+		trackableLabel: string;
+		entityName: string | null;
+		mineCount: number;
+		othersCount: number;
+		othersAvg: number;
+		auto: 'mine' | 'others' | null;
+	};
+
+	const settleBuckets = $derived(
+		(() => {
+			const buckets = new Map<string, { trackableId: string; entityId: string | null; mine: number; others: Map<string, number> }>();
+			for (const ev of pendingEvents) {
+				const key = `${ev.trackableId}__${ev.entityId ?? 'null'}`;
+				let b = buckets.get(key);
+				if (!b) {
+					b = { trackableId: ev.trackableId, entityId: ev.entityId, mine: 0, others: new Map() };
+					buckets.set(key, b);
+				}
+				if (ev.proposedByUserId === data.me.userId) b.mine += 1;
+				else b.others.set(ev.proposedByUserId, (b.others.get(ev.proposedByUserId) ?? 0) + 1);
+			}
+			const out: SettleBucket[] = [];
+			for (const [key, b] of buckets) {
+				const othersTotal = Array.from(b.others.values()).reduce((s, n) => s + n, 0);
+				const othersAvg = b.others.size === 0 ? 0 : Math.round(othersTotal / b.others.size);
+				let auto: 'mine' | 'others' | null = null;
+				if (b.mine > 0 && b.others.size === 0) auto = 'mine';
+				else if (b.others.size > 0 && b.mine === 0) auto = 'others';
+				out.push({
+					key,
+					trackableLabel: trackableById.get(b.trackableId)?.label ?? b.trackableId,
+					entityName: b.entityId ? (entityById.get(b.entityId)?.name ?? null) : null,
+					mineCount: b.mine,
+					othersCount: b.others.size,
+					othersAvg,
+					auto
+				});
+			}
+			return out.sort((a, b) => a.trackableLabel.localeCompare(b.trackableLabel));
+		})()
+	);
+
+	const ambiguousBuckets = $derived(settleBuckets.filter((b) => b.auto === null));
+	const allChoicesMade = $derived(
+		ambiguousBuckets.every((b) => settleChoices[b.key] === 'mine' || settleChoices[b.key] === 'others')
+	);
+
+	function openSettle() {
+		showSettleModal = true;
+	}
+	function closeSettle() {
+		showSettleModal = false;
+	}
 
 	const startingMoney = $derived(data.session.config.startingMoney ?? 1000);
 	const minStake = $derived(data.session.config.minStake ?? 1);
@@ -505,128 +549,138 @@
 					</button>
 				</form>
 			{:else if isLive || isResolving}
-				<form method="POST" action="?/settle" use:enhance>
-					<input type="hidden" name="roundId" value={round.id} />
-					<button class="btn btn-success h-12 w-full gap-2 text-base font-semibold">
-						<CircleCheck size={16} /> Abrechnen
-					</button>
-				</form>
+				<button
+					type="button"
+					class="btn btn-success h-12 w-full gap-2 text-base font-semibold"
+					onclick={openSettle}
+				>
+					<CircleCheck size={16} /> Ergebnisse anzeigen
+				</button>
 			{/if}
 
-			{#if pendingEvents.length > 0 || isLive || isOpen}
-				<details class="glass overflow-hidden rounded-2xl group">
-					<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
-						<Crown size={14} class="text-primary" />
-						<span class="font-medium">GM</span>
-						{#if pendingEvents.length > 0}
-							<span class="badge badge-warning badge-sm ml-auto">
-								{pendingEvents.length} prüfen
-							</span>
-						{:else}
-							<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
-						{/if}
-					</summary>
-					<div class="border-base-content/10 space-y-3 border-t p-3">
-						<form method="POST" action="?/cancel" use:enhance>
-							<input type="hidden" name="roundId" value={round.id} />
-							<button class="btn btn-xs btn-error btn-outline w-full">Abbrechen</button>
-						</form>
-
-						{#if pendingEvents.length > 0}
-							<div class="border-base-content/10 space-y-2 border-t pt-3">
-								<p class="eyebrow flex items-center gap-2">
-									<Activity size={12} /> Buffer prüfen ({pendingEvents.length})
-								</p>
-								{#each pendingByProposer as group (group.userId)}
-									<details class="bg-base-100/40 rounded-xl">
-										<summary
-											class="flex cursor-pointer items-center justify-between gap-2 p-2 text-xs"
-										>
-											<span class="flex items-center gap-2">
-												<span class="badge badge-xs badge-neutral">{group.events.length}</span>
-												<span class="font-medium">{group.name}</span>
-											</span>
-											<span
-												class="flex items-center gap-1"
-												onclick={(e) => e.stopPropagation()}
-												role="group"
-											>
-												<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-													<input type="hidden" name="roundId" value={round.id} />
-													<input type="hidden" name="proposerUserId" value={group.userId} />
-													<input type="hidden" name="decision" value="CONFIRMED" />
-													<button class="btn btn-xs btn-success" title="Alle akzeptieren">
-														<CircleCheck size={11} />
-													</button>
-												</form>
-												<form method="POST" action="?/bulkDecideByProposer" use:enhance>
-													<input type="hidden" name="roundId" value={round.id} />
-													<input type="hidden" name="proposerUserId" value={group.userId} />
-													<input type="hidden" name="decision" value="CANCELLED" />
-													<button class="btn btn-xs btn-error btn-outline" title="Alle ablehnen">
-														<X size={11} />
-													</button>
-												</form>
-											</span>
-										</summary>
-										<div class="border-base-content/10 space-y-1.5 border-t p-2">
-											{#each group.events as ev (ev.id)}
-												<div class="flex flex-wrap items-center justify-between gap-2">
-													<span class="text-xs">
-														<span class="font-medium">
-															{trackableById.get(ev.trackableId)?.label ?? ev.trackableId}
-														</span>
-														{#if ev.entityId}→ {entityById.get(ev.entityId)?.name}{/if}
-													</span>
-													<div class="flex items-center gap-1">
-														<form
-															method="POST"
-															action="?/editEventDelta"
-															use:enhance
-															class="flex items-center gap-1"
-														>
-															<input type="hidden" name="eventId" value={ev.id} />
-															<input
-																type="number"
-																name="delta"
-																value={ev.delta}
-																step="1"
-																class="input input-xs w-14"
-																title="Wert"
-															/>
-															<button
-																class="btn btn-xs btn-ghost"
-																type="submit"
-																title="Speichern"
-															>
-																<Save size={11} />
-															</button>
-														</form>
-														<form method="POST" action="?/confirmEvent" use:enhance>
-															<input type="hidden" name="eventId" value={ev.id} />
-															<button class="btn btn-xs btn-success" title="OK">
-																<CircleCheck size={11} />
-															</button>
-														</form>
-														<form method="POST" action="?/cancelEvent" use:enhance>
-															<input type="hidden" name="eventId" value={ev.id} />
-															<button class="btn btn-xs btn-error btn-outline" title="Nein">
-																<X size={11} />
-															</button>
-														</form>
-													</div>
-												</div>
-											{/each}
-										</div>
-									</details>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</details>
-			{/if}
+			<details class="glass overflow-hidden rounded-2xl group">
+				<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
+					<Crown size={14} class="text-primary" />
+					<span class="font-medium">GM</span>
+					<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
+				</summary>
+				<div class="border-base-content/10 space-y-3 border-t p-3">
+					<form method="POST" action="?/cancel" use:enhance>
+						<input type="hidden" name="roundId" value={round.id} />
+						<button class="btn btn-xs btn-error btn-outline w-full">Runde abbrechen</button>
+					</form>
+				</div>
+			</details>
 		</section>
 	{/if}
+{/if}
+
+{#if isHost && showSettleModal && round}
+	<div
+		class="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-3 sm:items-center"
+		role="dialog"
+		aria-modal="true"
+	>
+		<div class="glass glass-xl w-full max-w-md space-y-4 rounded-2xl p-5">
+			<header class="flex items-center justify-between">
+				<div>
+					<p class="eyebrow">Ergebnisse bestätigen</p>
+					<h2 class="display text-xl">Werte wählen</h2>
+				</div>
+				<button type="button" class="btn btn-ghost btn-sm" onclick={closeSettle} aria-label="Schließen">
+					<X size={16} />
+				</button>
+			</header>
+
+			{#if settleBuckets.length === 0}
+				<p class="text-base-content/55 text-sm">
+					Keine Spieler-Meldungen vorhanden — direkt abrechnen?
+				</p>
+			{:else}
+				<div class="space-y-3">
+					{#each settleBuckets as b (b.key)}
+						<div class="glass rounded-xl p-3">
+							<div class="mb-2 text-sm font-medium">
+								{b.trackableLabel}
+								{#if b.entityName}
+									<span class="text-base-content/50">→ {b.entityName}</span>
+								{/if}
+							</div>
+							{#if b.auto === 'mine'}
+								<p class="text-base-content/60 text-xs">
+									Nur GM-Werte ({b.mineCount}) — wird übernommen.
+								</p>
+							{:else if b.auto === 'others'}
+								<p class="text-base-content/60 text-xs">
+									Nur Ghost-Werte (Ø {b.othersAvg}, {b.othersCount} Spieler) — wird übernommen.
+								</p>
+							{:else}
+								<div class="grid grid-cols-2 gap-2">
+									<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs"
+										class:ring-2={settleChoices[b.key] === 'mine'}>
+										<input
+											type="radio"
+											name="choice_{b.key}"
+											value="mine"
+											bind:group={settleChoices[b.key]}
+											class="radio radio-xs radio-primary"
+										/>
+										<span class="flex-1">
+											<span class="block font-medium">GM: {b.mineCount}</span>
+											<span class="text-base-content/50 block">eigene Werte</span>
+										</span>
+									</label>
+									<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs"
+										class:ring-2={settleChoices[b.key] === 'others'}>
+										<input
+											type="radio"
+											name="choice_{b.key}"
+											value="others"
+											bind:group={settleChoices[b.key]}
+											class="radio radio-xs radio-primary"
+										/>
+										<span class="flex-1">
+											<span class="block font-medium">Ghost: Ø {b.othersAvg}</span>
+											<span class="text-base-content/50 block">{b.othersCount} Spieler</span>
+										</span>
+									</label>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/decideAndSettle"
+				use:enhance={() => {
+					return async ({ update }) => {
+						await update();
+						showSettleModal = false;
+					};
+				}}
+				class="space-y-2"
+			>
+				<input type="hidden" name="roundId" value={round.id} />
+				{#each ambiguousBuckets as b (b.key)}
+					{#if settleChoices[b.key]}
+						<input type="hidden" name="choice__{b.key}" value={settleChoices[b.key]} />
+					{/if}
+				{/each}
+				<button
+					type="submit"
+					class="btn btn-success h-12 w-full gap-2 text-sm font-semibold"
+					disabled={!allChoicesMade}
+				>
+					<CircleCheck size={16} /> Abrechnen
+				</button>
+				<button type="button" class="btn btn-ghost h-10 w-full text-xs" onclick={closeSettle}>
+					Abbrechen
+				</button>
+			</form>
+		</div>
+	</div>
 {/if}
 
 <style>

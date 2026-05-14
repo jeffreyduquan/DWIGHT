@@ -160,7 +160,20 @@
 					<IconBubble tone="warning" size="sm"><Beer size={14} /></IconBubble>
 					<p class="eyebrow">Eigene Drinks</p>
 				</div>
-				<p class="stat-hero mt-1 text-2xl">{data.myStats.drinksSelf}</p>
+				<div class="mt-1 grid grid-cols-3 gap-1.5 text-center">
+					<div>
+						<p class="stat-hero text-lg leading-tight">{data.myStats.drinksByType.SCHLUCK}</p>
+						<p class="text-base-content/45 text-[10px] uppercase tracking-wider">Schlücke</p>
+					</div>
+					<div>
+						<p class="stat-hero text-lg leading-tight">{data.myStats.drinksByType.KURZER}</p>
+						<p class="text-base-content/45 text-[10px] uppercase tracking-wider">Shots</p>
+					</div>
+					<div>
+						<p class="stat-hero text-lg leading-tight">{data.myStats.drinksByType.BIER_EXEN}</p>
+						<p class="text-base-content/45 text-[10px] uppercase tracking-wider">Exen</p>
+					</div>
+				</div>
 			</div>
 
 			<div class="card-stat p-3">

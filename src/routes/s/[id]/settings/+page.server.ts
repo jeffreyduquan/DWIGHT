@@ -73,6 +73,10 @@ export const actions: Actions = {
 			BIER_EXEN: Math.max(0, toInt(form.get('priceBier'), cfg.drinkPrices.BIER_EXEN))
 		};
 
+		const startingMoney = Math.max(100, toInt(form.get('startingMoney'), cfg.startingMoney));
+		const minStake = Math.max(1, toInt(form.get('minStake'), cfg.minStake));
+		const showOdds = form.get('showOdds') === 'on';
+
 		const rebuyDrinkRaw = toStr(form.get('rebuyDrinkType'));
 		const rebuyDrinkType: DrinkType = (DRINK_TYPES as string[]).includes(rebuyDrinkRaw)
 			? (rebuyDrinkRaw as DrinkType)
@@ -98,6 +102,9 @@ export const actions: Actions = {
 				lockMode,
 				lockTimerSeconds,
 				drinkPrices,
+				startingMoney,
+				minStake,
+				showOdds,
 				rebuy,
 				entityOverrides,
 				autoLockOnDrink: undefined

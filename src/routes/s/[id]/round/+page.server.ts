@@ -494,6 +494,62 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
+	/**
+	 * Phase 12 ghost-workflow settle: GM submits per-bucket choices (mine vs others)
+	 * for each (trackable, entity) where both sources have proposed events.
+	 * Buckets with only one source are auto-decided. Then settles the round.
+	 *
+	 * Form fields:
+	 *   - roundId
+	 *   - choice__<trackableId>__<entityIdOrNull> = "mine" | "others"
+	 */
+	decideAndSettle: async ({ locals, params, request }) => {
+		const user = requireUser(locals);
+		if ((await getRole(params.id, user.id)) !== 'HOST') return fail(403, { error: 'Nur Host' });
+		const fd = await request.formData();
+		const roundId = String(fd.get('roundId') ?? '');
+		const r = await getRound(roundId);
+		if (!r) return fail(404, { error: 'Runde nicht gefunden' });
+		if (r.status === 'SETUP') {
+			return fail(400, { error: 'Runde noch nicht gestartet.' });
+		}
+		try {
+			const allEvs = await listEvents(roundId);
+			const pending = allEvs.filter((e) => e.status === 'PENDING');
+			// Group by bucket.
+			const buckets = new Map<string, typeof pending>();
+			for (const ev of pending) {
+				const key = `${ev.trackableId}__${ev.entityId ?? 'null'}`;
+				const arr = buckets.get(key) ?? [];
+				arr.push(ev);
+				buckets.set(key, arr);
+			}
+			for (const [key, evs] of buckets) {
+				const mine = evs.filter((e) => e.proposedByUserId === user.id);
+				const others = evs.filter((e) => e.proposedByUserId !== user.id);
+				let pick: 'mine' | 'others';
+				if (mine.length > 0 && others.length === 0) pick = 'mine';
+				else if (others.length > 0 && mine.length === 0) pick = 'others';
+				else {
+					const raw = String(fd.get(`choice__${key}`) ?? '');
+					if (raw !== 'mine' && raw !== 'others') {
+						return fail(400, { error: `Auswahl fehlt für ${key}` });
+					}
+					pick = raw;
+				}
+				const toConfirm = pick === 'mine' ? mine : others;
+				const toCancel = pick === 'mine' ? others : mine;
+				for (const ev of toConfirm) await confirmEvent(ev.id, user.id);
+				for (const ev of toCancel) await cancelEvent(ev.id, user.id);
+			}
+			await settleRound(roundId);
+			emit(params.id, 'round_settled', { roundId });
+		} catch (e) {
+			return fail(400, { error: friendlyError((e as Error).message) });
+		}
+		return { ok: true };
+	},
+
 	syncBetGraphs: async ({ locals, params }) => {
 		const user = requireUser(locals);
 		if ((await getRole(params.id, user.id)) !== 'HOST') return fail(403, { error: 'Nur Host' });

@@ -384,6 +384,23 @@ Tasks:
 
 ---
 
+## Phase 12 — UX-Refactor (User-Feedback) ☑
+**Goal:** 6 konkrete Verbesserungen aus User-Feedback umsetzen.
+
+Tasks:
+- ☑ **#1 QR-Toggle (REQ-UI-026):** Lobby-QR hinter kleinem `QR`-Button neben Sound-Toggle versteckt; Panel mit Schließen-Button.
+- ☑ **#2 Entity-Rename @create (REQ-UI-027):** `/s/create` rendert pro Default-Entity ein `<input>` (`entityOverride__<name>`); leere Werte = Original, gesetzte landen in `config.entityOverrides`.
+- ☑ **#3+#4+#5 Drinks-Liste (REQ-UI-028):** `DrinkPanel.svelte` zu 3-Tab-Nav (Du / Andere / Drinks) umgebaut. "Drinks"-Tab merged Pending+History in einer Liste. Schlücke/Shots stacken pro `(targetUserId, drinkType)` mit `n×` Präfix + Click-to-Expand; Bier-Exen nie. Verlauf gruppiert ebenfalls per Bucket.
+- ☑ **Session-Settings-Parität (REQ-UI-025 update):** `/s/[id]/settings` ergänzt um `startingMoney`, `minStake`, `showOdds`. Mode-Form Header "Erweitert" → "Standard Session-Einstellungen".
+- ☑ **#7+#8 Ghost-Workflow (REQ-UI-029):** Round-Page: "Abrechnen" → **"Ergebnisse anzeigen"** öffnet Modal. Pro `(trackable, entity)` Bucket: Auto-Übernahme wenn nur eine Quelle Werte hat, sonst Radio-Pick `GM: n` vs `Ghost: Ø n (m Spieler)`. Neue Action `?/decideAndSettle` bestätigt gewählte Seite + cancelt andere + settled in einem Rutsch. Alter GM-Buffer-Panel entfernt.
+- ☑ **#9 Statistik per Drink-Typ (REQ-STAT-004):** `stats.ts` liefert `drinksByType: {SCHLUCK,KURZER,BIER_EXEN}`. `/s/[id]/stats` Tile "Eigene Drinks" zeigt 3-Spalten-Grid Schlücke / Shots / Exen.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 13 Warnings (alle pre-existing).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

@@ -356,7 +356,7 @@
 	<details class="glass glass-xl rounded-2xl">
 		<summary class="flex cursor-pointer items-center gap-2 p-4 text-sm font-medium">
 			<span class="bg-base-content/10 inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">5</span>
-			<span class="flex-1">Erweitert <span class="text-base-content/45 text-[0.7rem]">— Geld, Quoten, Drinks, Bestätigung, Rebuy</span></span>
+			<span class="flex-1">Standard Session-Einstellungen <span class="text-base-content/45 text-[0.7rem]">— Geld, Quoten, Drinks, Bestätigung, Rebuy</span></span>
 			<span class="text-base-content/40 text-xs">▾</span>
 		</summary>
 		<div class="space-y-4 p-4 pt-0">

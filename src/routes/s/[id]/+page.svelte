@@ -34,6 +34,11 @@
 		setSoundEnabled(soundOn);
 	}
 
+	let showQr = $state(false);
+	function toggleQr() {
+		showQr = !showQr;
+	}
+
 	let es: EventSource | null = null;
 	onMount(() => {
 		es = new EventSource(`/s/${data.session.id}/stream`);
@@ -53,17 +58,21 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- Invite code + QR -->
-<section class="mb-4">
-	<div class="glass glass-xl flex flex-col items-center gap-3 p-4">
-		<div class="flex items-center gap-2">
-			<QrCodeIcon size={14} class="text-base-content/50" />
-			<span class="eyebrow">Mit Code beitreten</span>
+<!-- Invite code + QR (collapsed by default; toggled from footer bar) -->
+{#if showQr}
+	<section class="mb-4">
+		<div class="glass glass-xl flex flex-col items-center gap-3 p-4">
+			<div class="flex w-full items-center justify-between">
+				<span class="eyebrow inline-flex items-center gap-1.5">
+					<QrCodeIcon size={14} /> Mit Code beitreten
+				</span>
+				<button class="btn btn-xs btn-ghost" onclick={toggleQr} aria-label="QR schließen">Schließen</button>
+			</div>
+			<QrCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/join?code=${data.session.inviteCode}`} size={180} />
+			<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
 		</div>
-		<QrCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/join?code=${data.session.inviteCode}`} size={180} />
-		<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
-	</div>
-</section>
+	</section>
+{/if}
 
 {#if data.me.betLocked}
 	<section
@@ -178,7 +187,15 @@
 	</section>
 {/if}
 
-<section class="flex justify-end">
+<section class="flex justify-end gap-1">
+	<button
+		class="btn btn-xs btn-ghost gap-1"
+		class:btn-active={showQr}
+		onclick={toggleQr}
+		aria-label="QR-Code anzeigen"
+	>
+		<QrCodeIcon size={12} /> QR
+	</button>
 	<button
 		class="btn btn-xs btn-ghost gap-1"
 		onclick={toggleSound}

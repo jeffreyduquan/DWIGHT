@@ -11,7 +11,7 @@ import type { ConfirmationMode, DrinkType, SessionConfig } from '$lib/server/db/
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
-	if (!locals.isAdmin) throw error(403, 'Nur Admins dürfen Sessions erstellen');
+	// Phase 11: any logged-in user can create a session and becomes GM.
 	const modes = await listAvailableForUser(locals.user.id);
 	return {
 		modes: modes.map((m) => ({
@@ -65,6 +65,15 @@ export const actions: Actions = {
 		const mode = await findModeById(modeId);
 		if (!mode) throw error(404, 'Mode nicht gefunden');
 
+		// Phase 12: entity-rename at session-create. Form fields are
+		// `entityOverride__<originalName>`.
+		const entityOverrides: Record<string, string> = { ...(mode.defaultConfig.entityOverrides ?? {}) };
+		for (const e of mode.defaultEntities) {
+			const v = String(form.get(`entityOverride__${e.name}`) ?? '').trim();
+			if (v && v !== e.name) entityOverrides[e.name] = v;
+			else delete entityOverrides[e.name];
+		}
+
 		const config: SessionConfig = {
 			...mode.defaultConfig,
 			startingMoney,
@@ -82,7 +91,7 @@ export const actions: Actions = {
 			lockMode: lockModeRaw as (typeof LOCK_MODES)[number],
 			lockTimerSeconds,
 			autoLockOnDrink: undefined,
-			entityOverrides: mode.defaultConfig.entityOverrides ?? {}
+			entityOverrides
 		};
 
 		const session = await createSession({
