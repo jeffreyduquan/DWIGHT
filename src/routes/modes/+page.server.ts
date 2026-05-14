@@ -13,9 +13,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			id: m.id,
 			slug: m.slug,
 			name: m.name,
-			description: m.description,
-			entityCount: m.defaultEntities.length,
-			terminology: m.terminology
+			entityCount: m.defaultEntities.length
 		}))
 	};
 };

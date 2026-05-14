@@ -7,20 +7,16 @@ import type { Actions, PageServerLoad } from './$types';
 import { listAvailableForUser, findById as findModeById } from '$lib/server/repos/modes';
 import { createSession } from '$lib/server/repos/sessions';
 import { snapshotForMode } from '$lib/server/repos/betGraphs';
+import { freshModeDefaultConfig } from '$lib/server/modes/defaults';
 import type { ConfirmationMode, DrinkType, SessionConfig } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
-	// Phase 11: any logged-in user can create a session and becomes GM.
 	const modes = await listAvailableForUser(locals.user.id);
 	return {
 		modes: modes.map((m) => ({
 			id: m.id,
-			slug: m.slug,
 			name: m.name,
-			description: m.description,
-			terminology: m.terminology,
-			defaultConfig: m.defaultConfig,
 			defaultEntities: m.defaultEntities
 		}))
 	};
@@ -69,32 +65,32 @@ export const actions: Actions = {
 		const mode = await findModeById(modeId);
 		if (!mode) throw error(404, 'Mode nicht gefunden');
 
-		// Phase 12: entity-rename at session-create. Form fields are
-		// `entityOverride__<originalName>`.
-		const entityOverrides: Record<string, string> = { ...(mode.defaultConfig.entityOverrides ?? {}) };
+		// Phase 17: Mode no longer carries session defaults — fall back to factory.
+		const baseDefaults = freshModeDefaultConfig();
+
+		const entityOverrides: Record<string, string> = {};
 		for (const e of mode.defaultEntities) {
 			const v = String(form.get(`entityOverride__${e.name}`) ?? '').trim();
 			if (v && v !== e.name) entityOverrides[e.name] = v;
-			else delete entityOverrides[e.name];
 		}
 
 		const config: SessionConfig = {
-			...mode.defaultConfig,
+			...baseDefaults,
 			startingMoney,
 			minStake: Math.max(1, minStake),
 			showOdds,
 			maxStakePctOfStart,
 			drinkPrices: {
-				SCHLUCK: priceSchluck > 0 ? priceSchluck : mode.defaultConfig.drinkPrices.SCHLUCK,
-				KURZER: priceKurzer > 0 ? priceKurzer : mode.defaultConfig.drinkPrices.KURZER,
-				BIER_EXEN: priceBier > 0 ? priceBier : mode.defaultConfig.drinkPrices.BIER_EXEN
+				SCHLUCK: priceSchluck > 0 ? priceSchluck : baseDefaults.drinkPrices.SCHLUCK,
+				KURZER: priceKurzer > 0 ? priceKurzer : baseDefaults.drinkPrices.KURZER,
+				BIER_EXEN: priceBier > 0 ? priceBier : baseDefaults.drinkPrices.BIER_EXEN
 			},
 			confirmationMode: confirmationModeRaw as ConfirmationMode,
 			peerConfirmationsRequired,
 			rebuy: {
 				enabled: rebuyEnabled,
 				drinkType: rebuyDrinkRaw as DrinkType,
-				amount: rebuyEnabled ? rebuyAmount : mode.defaultConfig.rebuy.amount
+				amount: rebuyEnabled ? rebuyAmount : baseDefaults.rebuy.amount
 			},
 			lockMode: lockModeRaw as (typeof LOCK_MODES)[number],
 			lockTimerSeconds,

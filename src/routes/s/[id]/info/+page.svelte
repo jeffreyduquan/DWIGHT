@@ -10,7 +10,7 @@
 
 	let { data } = $props();
 
-	const entityLabel = $derived(data.mode?.terminology.entity ?? 'Entitäten');
+	const entityLabel = $derived('Spieler');
 </script>
 
 <section class="mb-4">

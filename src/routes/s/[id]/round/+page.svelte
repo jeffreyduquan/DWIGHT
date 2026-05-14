@@ -700,20 +700,6 @@
 		color: oklch(22% 0 0);
 		letter-spacing: -0.01em;
 	}
-	.stake-row {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		flex-wrap: wrap;
-	}
-	.stake-label {
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: oklch(50% 0.006 90);
-		margin-right: 0.2rem;
-	}
 	.stake-chip {
 		min-width: 2.6rem;
 		height: 1.9rem;
@@ -745,38 +731,19 @@
 			inset 1.5px 1.5px 3px oklch(40% 0.05 148 / 0.18),
 			inset -1.5px -1.5px 3px oklch(100% 0 0 / 0.78);
 	}
-	.stake-chip-active {
-		background-color: oklch(88% 0.06 148);
-		color: oklch(30% 0.06 148);
-		border-color: oklch(72% 0.06 148 / 0.7);
-		box-shadow:
-			inset 1.5px 1.5px 3px oklch(40% 0.06 148 / 0.18),
-			inset -1.5px -1.5px 3px oklch(100% 0 0 / 0.78);
-	}
 	.stake-reset {
 		color: oklch(48% 0.10 28);
 	}
 	.stake-number {
 		text-align: center;
+		appearance: textfield;
+		-moz-appearance: textfield;
 	}
 	.stake-number::-webkit-inner-spin-button,
 	.stake-number::-webkit-outer-spin-button {
 		appearance: none;
+		-webkit-appearance: none;
 		margin: 0;
-	}
-	.stake-number {
-		-moz-appearance: textfield;
-	}
-	.stake-running {
-		margin-left: auto;
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: oklch(38% 0.05 148);
-		padding: 0 0.4rem;
-	}
-	.stake-label {
-		color: oklch(45% 0.006 90);
-		font-weight: 700;
 	}
 	.outcome-row {
 		padding: 0.65rem 0.75rem;

@@ -1,17 +1,14 @@
 <!--
-	@file ModeForm.svelte — full Mode definition form used by /modes/new and /modes/[id].
-	D3: bet templates + multipliers replaced by a generic Trackables section.
-	Bets are now built per-Session as predicates over these counters.
+	@file ModeForm.svelte — minimal Mode definition form (Phase 17 simplified).
+	Phase 17: Slug/Beschreibung/Terminologie + alle Session-Settings entfernt.
+	Modes definieren nur noch: Name, Spieler (Entitäten), Trackables, Bet-Graphs.
+	Session-Settings werden ausschließlich in `/s/[id]/settings` (oder beim Erstellen)
+	gesetzt; Mode liefert nur noch generische Defaults via `freshModeDefaultConfig()`.
 -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { X } from '@lucide/svelte';
-	import type {
-		ModeDefaultConfig,
-		ModeDefaultEntity,
-		ModeTerminology,
-		Trackable
-	} from '$lib/server/db/schema';
+	import type { ModeDefaultEntity, Trackable } from '$lib/server/db/schema';
 
 	type EntityRow = {
 		name: string;
@@ -36,22 +33,14 @@
 	}: {
 		initial: {
 			name: string;
-			slug: string;
-			description: string;
-			terminology: ModeTerminology;
 			defaultEntities: ModeDefaultEntity[];
 			trackables: Trackable[];
-			defaultConfig: ModeDefaultConfig;
 		};
 		submitLabel?: string;
 		error?: string | null;
 		action?: string;
 		modeId?: string;
 	} = $props();
-
-	let confirmationMode = $state<'GM' | 'PEERS'>(
-		initial.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'
-	);
 
 	let entities = $state<EntityRow[]>(
 		(initial.defaultEntities.length > 0
@@ -85,18 +74,9 @@
 		if (entities.length === 0) addEntity();
 	}
 
-	// Deterministic palette — picks a stable color per entity/trackable name.
 	const PALETTE = [
-		'#A78BFA',
-		'#7DD3FC',
-		'#FBBF24',
-		'#FB7185',
-		'#34D399',
-		'#F472B6',
-		'#60A5FA',
-		'#FCD34D',
-		'#C084FC',
-		'#4ADE80'
+		'#A78BFA', '#7DD3FC', '#FBBF24', '#FB7185', '#34D399',
+		'#F472B6', '#60A5FA', '#FCD34D', '#C084FC', '#4ADE80'
 	];
 	function colorFor(label: string, idx: number, fallback?: string): string {
 		if (fallback && fallback !== '#A78BFA' && fallback !== '#7DD3FC' && fallback !== '#7c7c7c') return fallback;
@@ -116,15 +96,6 @@
 	function removeTrackable(i: number) {
 		trackables = trackables.filter((_, idx) => idx !== i);
 	}
-
-	// Map trackable label → stable id (slugified). Mirrors server-side slugifyTrackableId.
-	function trackableIdFor(label: string): string {
-		return (label || '')
-			.toLowerCase()
-			.normalize('NFKD')
-			.replace(/[^a-z0-9]+/g, '_')
-			.replace(/^_+|_+$/g, '');
-	}
 </script>
 
 {#if error}
@@ -132,15 +103,13 @@
 {/if}
 
 <form method="POST" {action} use:enhance class="space-y-5 pb-24">
-	<!-- Basics -->
+	<!-- 1 — Name -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-primary/15 text-primary inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">1</span>
-			<h2 class="text-base font-semibold">Name deinen Mode</h2>
+			<h2 class="text-base font-semibold">Name</h2>
 		</header>
-
 		<label class="block space-y-1">
-			<span class="text-sm">Name</span>
 			<input
 				type="text"
 				name="name"
@@ -149,77 +118,20 @@
 				minlength="2"
 				maxlength="64"
 				class="input input-bordered glass h-12 w-full rounded-xl"
-				placeholder="z.B. Murmelrennen — Standard"
+				placeholder="z.B. Murmelrennen"
 			/>
-		</label>
-
-		<label class="block space-y-1">
-			<span class="text-sm">Slug <span class="text-base-content/40">(leer = aus Name)</span></span>
-			<input
-				type="text"
-				name="slug"
-				value={initial.slug}
-				class="input input-bordered glass tabular h-12 w-full rounded-xl lowercase"
-				placeholder="murmelrennen-standard"
-			/>
-		</label>
-
-		<label class="block space-y-1">
-			<span class="text-sm">Beschreibung</span>
-			<textarea
-				name="description"
-				rows="2"
-				maxlength="500"
-				class="textarea textarea-bordered glass w-full rounded-xl"
-				placeholder="Ein Satz, der den Mode beschreibt.">{initial.description}</textarea>
 		</label>
 	</section>
 
-	<!-- Terminology (optional) -->
-	<details class="glass glass-xl rounded-2xl">
-		<summary class="flex cursor-pointer items-center gap-2 p-4 text-xs">
-			<span class="text-base-content/55 flex-1 font-medium uppercase tracking-widest">Terminologie <span class="text-base-content/35 normal-case tracking-normal">(optional)</span></span>
-			<span class="text-base-content/40">▾</span>
-		</summary>
-		<div class="space-y-3 p-4 pt-0">
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Runde heißt</span>
-				<input
-					name="term_round"
-					value={initial.terminology.round}
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Entität heißt</span>
-				<input
-					name="term_entity"
-					value={initial.terminology.entity}
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Start-Verb</span>
-				<input
-					name="term_startedVerb"
-					value={initial.terminology.startedVerb}
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-		</div>
-		</div>
-	</details>
-
-	<!-- Entities -->
+	<!-- 2 — Spieler / Entitäten -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-secondary/15 text-secondary inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">2</span>
-			<h2 class="flex-1 text-base font-semibold">Wer / Was tritt an?</h2>
+			<h2 class="flex-1 text-base font-semibold">Spieler</h2>
 			<button type="button" onclick={addEntity} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
 		</header>
 		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
-			Entitäten sind die Mitspieler*innen, Murmeln, Teams o.ä. — alles, worauf gewettet wird.
+			Wer tritt an? Spieler*innen, Murmeln, Teams — alles worauf gewettet wird.
 		</p>
 		<ul class="space-y-2">
 			{#each entities as e, i (i)}
@@ -234,7 +146,7 @@
 					<input
 						type="text"
 						bind:value={e.name}
-						placeholder="Name (z.B. Anna)"
+						placeholder="Name"
 						class="input input-bordered input-sm flex-1"
 					/>
 					<button
@@ -245,7 +157,6 @@
 					>
 						<X size={14} />
 					</button>
-					<!-- Hidden form fields preserve parseForm contract -->
 					<input type="hidden" name="entityName" value={e.name} />
 					<input type="hidden" name="entityKind" value="entity" />
 					<input type="hidden" name="entityColor" value={eColor} />
@@ -255,7 +166,7 @@
 		</ul>
 	</section>
 
-	<!-- Trackables -->
+	<!-- 3 — Trackables -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-accent/15 text-accent inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">3</span>
@@ -263,7 +174,7 @@
 			<button type="button" onclick={addTrackable} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
 		</header>
 		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
-			Zählbare Events während einer Runde (z.B. „Foul“, „Überholen“, „Crash“).
+			Zählbare Events während einer Runde (z.B. „Foul“, „Tor“, „Crash“).
 			Wetten werden später als logische Bedingungen über diese Counter gebaut.
 		</p>
 		{#if trackables.length === 0}
@@ -294,7 +205,7 @@
 							type="button"
 							class="btn btn-xs join-item {t.scope === 'entity' ? 'btn-primary' : 'btn-ghost'}"
 							onclick={() => (t.scope = 'entity')}
-							title="Zähler pro Entität (z.B. jeder Spieler eigene Tore)"
+							title="Zähler pro Spieler (z.B. jeder Spieler eigene Tore)"
 						>
 							pro
 						</button>
@@ -315,7 +226,6 @@
 					>
 						<X size={14} />
 					</button>
-					<!-- Hidden form fields preserve parseForm contract -->
 					<input type="hidden" name="trackableLabel" value={t.label} />
 					<input type="hidden" name="trackableScope" value={t.scope} />
 					<input type="hidden" name="trackableColor" value={tColor} />
@@ -325,7 +235,7 @@
 		</ul>
 	</section>
 
-	<!-- Bet-Graphs (replaces legacy Market-Templates UI) -->
+	<!-- 4 — Bet-Graphs -->
 	<section class="glass glass-xl space-y-3 p-4 sm:p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-warning/15 text-warning inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">4</span>
@@ -355,243 +265,6 @@
 			</div>
 		{/if}
 	</section>
-
-	<!-- Advanced settings (Terminology + Economy + Drinks + Confirmation + Rebuy) -->
-	<details class="glass glass-xl rounded-2xl">
-		<summary class="flex cursor-pointer items-center gap-2 p-4 text-sm font-medium">
-			<span class="bg-base-content/10 inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">5</span>
-			<span class="flex-1">Standard Session-Einstellungen <span class="text-base-content/45 text-[0.7rem]">— Geld, Quoten, Drinks, Bestätigung, Rebuy</span></span>
-			<span class="text-base-content/40 text-xs">▾</span>
-		</summary>
-		<div class="space-y-4 p-4 pt-0">
-
-	<!-- Economy -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Ökonomie</h2>
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Startgeld</span>
-				<input
-					type="number"
-					name="startingMoney"
-					value={initial.defaultConfig.startingMoney}
-					min="100"
-					step="50"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Mindesteinsatz</span>
-				<input
-					type="number"
-					name="minStake"
-					value={initial.defaultConfig.minStake}
-					min="1"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-		</div>
-		<label class="glass flex items-center justify-between rounded-xl p-3">
-			<span class="space-y-1">
-				<span class="block text-sm font-medium">Quoten anzeigen</span>
-				<span class="text-base-content/40 block text-xs">
-					Multiplikator (1.82×) + Prozent neben jedem Outcome. Aus = nur Outcome &amp; eigener Einsatz.
-				</span>
-			</span>
-			<input
-				type="checkbox"
-				name="showOdds"
-				class="toggle toggle-primary"
-				checked={initial.defaultConfig.showOdds !== false}
-			/>
-		</label>
-		<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
-			<span class="space-y-0.5">
-				<span class="block text-sm font-medium text-base-content">Max % vom Startgeld pro Wette</span>
-				<span class="text-base-content/40 block">Bremst Einzelwetten relativ zum Startguthaben.</span>
-			</span>
-			<input
-				type="number"
-				name="maxStakePctOfStart"
-				value={initial.defaultConfig.maxStakePctOfStart ?? 50}
-				min="1"
-				max="100"
-				class="tabular w-16 bg-transparent text-right outline-none"
-			/>
-		</label>
-	</section>
-
-	<!-- Drinks -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">Drink-Preise</h2>
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Schluck</span>
-				<input
-					type="number"
-					name="priceSchluck"
-					value={initial.defaultConfig.drinkPrices.SCHLUCK}
-					min="0"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Kurzer</span>
-				<input
-					type="number"
-					name="priceKurzer"
-					value={initial.defaultConfig.drinkPrices.KURZER}
-					min="0"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Bier exen</span>
-				<input
-					type="number"
-					name="priceBier"
-					value={initial.defaultConfig.drinkPrices.BIER_EXEN}
-					min="0"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-		</div>
-	</section>
-
-	<!-- Confirmation -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
-			Drink-Bestätigung
-		</h2>
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Modus</span>
-				<select
-					name="confirmationMode"
-					bind:value={confirmationMode}
-					class="select select-bordered select-sm w-full"
-				>
-					<option value="GM">Nur GM</option>
-					<option value="PEERS">Peers (GM zählt mit)</option>
-				</select>
-			</label>
-			{#if confirmationMode === 'PEERS'}
-				<label class="glass space-y-1 rounded-lg p-2">
-					<span class="text-base-content/50 text-xs">Peer-Anzahl</span>
-					<input
-						type="number"
-						name="peerConfirmationsRequired"
-						value={initial.defaultConfig.peerConfirmationsRequired}
-						min="1"
-						max="10"
-						class="tabular w-full bg-transparent text-sm outline-none"
-					/>
-				</label>
-			{/if}
-		</div>
-		<p class="text-base-content/40 text-xs">
-			GM bestätigt allein, oder N Peers bestätigen. GM-Bestätigungen zählen immer als Peer.
-		</p>
-	</section>
-
-	<!-- Lock policy -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
-			Sperre bei offenem Drink
-		</h2>
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
-				<input
-					type="radio"
-					name="lockMode"
-					value="TIMER_LOCK"
-					checked={(initial.defaultConfig.lockMode ?? 'TIMER_LOCK') === 'TIMER_LOCK'}
-					class="radio radio-xs radio-primary"
-				/>
-				<span>Timer + Sperre</span>
-			</label>
-			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
-				<input
-					type="radio"
-					name="lockMode"
-					value="LOCK"
-					checked={initial.defaultConfig.lockMode === 'LOCK'}
-					class="radio radio-xs radio-primary"
-				/>
-				<span>Nur Sperre</span>
-			</label>
-			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
-				<input
-					type="radio"
-					name="lockMode"
-					value="NONE"
-					checked={initial.defaultConfig.lockMode === 'NONE'}
-					class="radio radio-xs radio-primary"
-				/>
-				<span>Keine Sperre</span>
-			</label>
-		</div>
-		<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
-			<span class="text-base-content/50">Timer-Dauer (Sekunden)</span>
-			<input
-				type="number"
-				name="lockTimerSeconds"
-				value={initial.defaultConfig.lockTimerSeconds ?? 600}
-				min="30"
-				class="tabular w-24 bg-transparent text-right outline-none"
-			/>
-		</label>
-		<p class="text-base-content/40 text-xs">
-			Standard: Timer + Sperre, 10 Minuten. Spieler können während des Timers weiter wetten und den Drink bestätigen lassen.
-		</p>
-	</section>
-
-	<!-- Rebuy -->
-	<section class="glass glass-xl space-y-3 p-5">
-		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
-			Rebuy (Pleite → Trinken → Geld)
-		</h2>
-		<label class="glass flex items-center justify-between rounded-xl p-3">
-			<span class="space-y-1">
-				<span class="block text-sm font-medium">Rebuy erlauben</span>
-				<span class="text-base-content/40 block text-xs">
-					Pleite-Spieler können einen Drink kippen, um wieder Geld zu bekommen.
-				</span>
-			</span>
-			<input
-				type="checkbox"
-				name="rebuyEnabled"
-				class="toggle toggle-primary"
-				checked={initial.defaultConfig.rebuy.enabled}
-			/>
-		</label>
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Rebuy-Drink</span>
-				<select
-					name="rebuyDrinkType"
-					value={initial.defaultConfig.rebuy.drinkType}
-					class="select select-bordered select-sm w-full"
-				>
-					<option value="SCHLUCK">Schluck</option>
-					<option value="KURZER">Kurzer</option>
-					<option value="BIER_EXEN">Bier exen</option>
-				</select>
-			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Rebuy-Betrag</span>
-				<input
-					type="number"
-					name="rebuyAmount"
-					value={initial.defaultConfig.rebuy.amount}
-					min="1"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
-		</div>
-	</section>
-		</div>
-	</details>
 
 	<div class="glass border-base-300 fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-md gap-2 rounded-2xl border p-2 shadow-xl">
 		<a href="/modes" class="btn btn-ghost h-12 flex-1 rounded-xl text-sm">Abbrechen</a>

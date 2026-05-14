@@ -56,15 +56,11 @@
 								<a href="/modes/{m.id}" class="block font-medium hover:underline truncate"
 									>{m.name}</a
 								>
-								<p class="tabular text-base-content/40 text-xs">{m.slug}</p>
 							</div>
 						</div>
-						{#if m.description}
-							<p class="text-base-content/60 mb-3 text-xs">{m.description}</p>
-						{/if}
 						<div class="flex items-center justify-between text-xs">
 							<span class="text-base-content/40">
-								{m.entityCount} {m.terminology.entity}n
+								{m.entityCount} Spieler
 							</span>
 							<div class="flex items-center gap-3">
 								<a

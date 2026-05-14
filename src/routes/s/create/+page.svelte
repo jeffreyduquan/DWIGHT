@@ -22,19 +22,27 @@
 
 	let { data, form } = $props();
 
+	// Phase 17: Mode no longer carries session defaults. All numeric prefills come
+	// from a single in-file constant block so the create form is the canonical
+	// default source for new sessions.
+	const SESSION_DEFAULTS = {
+		startingMoney: 2000,
+		minStake: 10,
+		showOdds: true,
+		maxStakePctOfStart: 50,
+		drinkPrices: { SCHLUCK: 50, KURZER: 150, BIER_EXEN: 500 },
+		confirmationMode: 'PEERS' as 'GM' | 'PEERS',
+		peerConfirmationsRequired: 1,
+		lockMode: 'TIMER_LOCK' as 'TIMER_LOCK' | 'LOCK' | 'NONE',
+		lockTimerSeconds: 600,
+		rebuy: { enabled: true, drinkType: 'BIER_EXEN' as const, amount: 1500 }
+	};
+
 	let selectedModeId = $state<string>(data.modes[0]?.id ?? '');
 	const selectedMode = $derived(data.modes.find((m) => m.id === selectedModeId) ?? null);
 
-	let rebuyEnabled = $state(selectedMode?.defaultConfig.rebuy.enabled ?? true);
-	let confirmationMode = $state<'GM' | 'PEERS'>(
-		selectedMode?.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'
-	);
-	$effect(() => {
-		if (selectedMode) {
-			rebuyEnabled = selectedMode.defaultConfig.rebuy.enabled;
-			confirmationMode = selectedMode.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS';
-		}
-	});
+	let rebuyEnabled = $state(SESSION_DEFAULTS.rebuy.enabled);
+	let confirmationMode = $state<'GM' | 'PEERS'>(SESSION_DEFAULTS.confirmationMode);
 
 	const formError = $derived(form && 'error' in form ? (form.error as string) : null);
 </script>
@@ -100,12 +108,9 @@
 						<div class="flex items-baseline justify-between">
 							<span class="font-medium">{m.name}</span>
 							<span class="tabular text-base-content/40 text-xs">
-								{m.defaultEntities.length} {m.terminology.entity}n
+								{m.defaultEntities.length} Spieler
 							</span>
 						</div>
-						{#if m.description}
-							<p class="text-base-content/60 text-xs">{m.description}</p>
-						{/if}
 					</label>
 				{/each}
 			</div>
@@ -138,7 +143,7 @@
 					<input
 						type="number"
 						name="startingMoney"
-						value={selectedMode.defaultConfig.startingMoney}
+						value={SESSION_DEFAULTS.startingMoney}
 						min="100"
 						step="50"
 						class="input input-bordered glass tabular h-12 w-full rounded-xl"
@@ -152,7 +157,7 @@
 					<input
 						type="number"
 						name="minStake"
-						value={selectedMode.defaultConfig.minStake}
+						value={SESSION_DEFAULTS.minStake}
 						min="1"
 						class="input input-bordered glass tabular h-12 w-full rounded-xl"
 						required
@@ -171,7 +176,7 @@
 					type="checkbox"
 					name="showOdds"
 					class="toggle toggle-primary"
-					checked={selectedMode.defaultConfig.showOdds !== false}
+					checked={SESSION_DEFAULTS.showOdds}
 				/>
 			</label>
 
@@ -183,7 +188,7 @@
 				<input
 					type="number"
 					name="maxStakePctOfStart"
-					value={selectedMode.defaultConfig.maxStakePctOfStart ?? 50}
+					value={SESSION_DEFAULTS.maxStakePctOfStart}
 					min="1"
 					max="100"
 					class="tabular w-16 bg-transparent text-right outline-none"
@@ -201,7 +206,7 @@
 						<input
 							type="number"
 							name="priceSchluck"
-							value={selectedMode.defaultConfig.drinkPrices.SCHLUCK}
+							value={SESSION_DEFAULTS.drinkPrices.SCHLUCK}
 							min="0"
 							class="tabular w-full bg-transparent text-base outline-none"
 						/>
@@ -211,7 +216,7 @@
 						<input
 							type="number"
 							name="priceKurzer"
-							value={selectedMode.defaultConfig.drinkPrices.KURZER}
+							value={SESSION_DEFAULTS.drinkPrices.KURZER}
 							min="0"
 							class="tabular w-full bg-transparent text-base outline-none"
 						/>
@@ -221,7 +226,7 @@
 						<input
 							type="number"
 							name="priceBier"
-							value={selectedMode.defaultConfig.drinkPrices.BIER_EXEN}
+							value={SESSION_DEFAULTS.drinkPrices.BIER_EXEN}
 							min="0"
 							class="tabular w-full bg-transparent text-base outline-none"
 						/>
@@ -252,7 +257,7 @@
 					<input
 						type="number"
 						name="peerConfirmationsRequired"
-						value={selectedMode.defaultConfig.peerConfirmationsRequired}
+						value={SESSION_DEFAULTS.peerConfirmationsRequired}
 						min="1"
 						max="10"
 						class="tabular w-full bg-transparent text-base outline-none"
@@ -284,7 +289,7 @@
 						<span class="text-base-content/50 text-xs">Rebuy-Drink</span>
 						<select
 							name="rebuyDrinkType"
-							value={selectedMode.defaultConfig.rebuy.drinkType}
+							value={SESSION_DEFAULTS.rebuy.drinkType}
 							disabled={!rebuyEnabled}
 							class="select select-bordered select-sm w-full"
 						>
@@ -298,7 +303,7 @@
 						<input
 							type="number"
 							name="rebuyAmount"
-							value={selectedMode.defaultConfig.rebuy.amount}
+							value={SESSION_DEFAULTS.rebuy.amount}
 							min="1"
 							disabled={!rebuyEnabled}
 							class="tabular w-full bg-transparent text-base outline-none"
@@ -315,7 +320,7 @@
 								type="radio"
 								name="lockMode"
 								value="TIMER_LOCK"
-								checked={(selectedMode.defaultConfig.lockMode ?? 'TIMER_LOCK') === 'TIMER_LOCK'}
+								checked={SESSION_DEFAULTS.lockMode === 'TIMER_LOCK'}
 								class="radio radio-xs radio-primary"
 							/>
 							<span>Timer + Sperre</span>
@@ -325,7 +330,7 @@
 								type="radio"
 								name="lockMode"
 								value="LOCK"
-								checked={selectedMode.defaultConfig.lockMode === 'LOCK'}
+								checked={SESSION_DEFAULTS.lockMode === 'LOCK'}
 								class="radio radio-xs radio-primary"
 							/>
 							<span>Nur Sperre</span>
@@ -335,7 +340,7 @@
 								type="radio"
 								name="lockMode"
 								value="NONE"
-								checked={selectedMode.defaultConfig.lockMode === 'NONE'}
+								checked={SESSION_DEFAULTS.lockMode === 'NONE'}
 								class="radio radio-xs radio-primary"
 							/>
 							<span>Keine Sperre</span>
@@ -346,7 +351,7 @@
 						<input
 							type="number"
 							name="lockTimerSeconds"
-							value={selectedMode.defaultConfig.lockTimerSeconds ?? 600}
+							value={SESSION_DEFAULTS.lockTimerSeconds}
 							min="30"
 							class="tabular w-20 bg-transparent text-right outline-none"
 						/>
@@ -361,7 +366,7 @@
 			{#if selectedMode.defaultEntities.length > 0}
 				<section class="space-y-2">
 					<span class="eyebrow inline-flex items-center gap-1.5">
-						<Sparkles size={12} /> {selectedMode.terminology.entity}n (umbenennen optional)
+						<Sparkles size={12} /> Spieler (umbenennen optional)
 					</span>
 					<ul class="glass space-y-2 rounded-xl p-3 text-sm">
 						{#each selectedMode.defaultEntities as e (e.name)}
@@ -391,7 +396,7 @@
 				</section>
 			{:else}
 				<div class="text-base-content/50 border-base-300 rounded-xl border border-dashed p-3 text-xs">
-					Dieser Mode hat keine voreingestellten {selectedMode.terminology.entity}n.
+					Dieser Mode hat keine voreingestellten Spieler.
 				</div>
 			{/if}
 		{/if}

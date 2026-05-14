@@ -464,6 +464,22 @@ Acceptance:
 
 ---
 
+## Phase 17 — Mode-Vereinfachung ☑
+**Goal:** Mode-Form radikal eindampfen. Slug, Beschreibung, Terminologie und alle Session-Defaults verschwinden aus der Mode-UI. Terminologie wird hart auf "Spieler"/"Runde"/"läuft" gesetzt. CSS-Reste aus Phase 16 entsorgen.
+
+Tasks:
+- ☑ **#1 Mode form vereinfacht (REQ-MODE-011):** `ModeForm.svelte` zeigt nur noch `Name`, `Spieler/Entities`, `Trackables`, `Bet-Graphs`-Link. Slug-Input, Description-Textarea, Terminologie-Sektion und sämtliche Session-Settings (Ökonomie, Drinks, Confirmation, Lock, Rebuy) entfernt. Slug wird in `parseModeForm` aus dem Namen via `slugify(name)` abgeleitet; bei Kollision automatisch suffixiert. DB-Spalten bleiben unverändert (description/terminology/defaultConfig werden mit Defaults gefüllt).
+- ☑ **#2 Terminologie hardcoded (REQ-UI-041):** Alle UI-Stellen mit `mode.terminology.entity` → Literal `Spieler`. Loader in `/modes`, `/modes/[id]`, `/s/create`, `/s/[id]/info` geben `terminology` nicht mehr aus. `DEFAULT_TERMINOLOGY` Konstante in `parseForm.ts` füllt die DB.
+- ☑ **#3 Session-Defaults in /s/create (REQ-MODE-012):** `SESSION_DEFAULTS` Konstante in `+page.svelte` ersetzt alle `selectedMode.defaultConfig.X` Zugriffe. Server-Action fällt auf `freshModeDefaultConfig()` zurück; `mode.defaultConfig` wird nicht mehr konsultiert.
+- ☑ **#4 CSS-Cleanup:** Ungenutzte Selektoren `.stake-row`/`.stake-label`/`.stake-chip-active`/`.stake-running` aus `s/[id]/round/+page.svelte` entfernt.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 12 Warnings (war 21, -9 weil viele waren auf entfernten Settings-Sections in ModeForm).
+- ☑ Mode neu anlegen, speichern, Session daraus erstellen funktioniert ohne UI-Regression.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

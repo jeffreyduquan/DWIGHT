@@ -14,13 +14,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	return {
 		mode: {
 			id: mode.id,
-			slug: mode.slug,
 			name: mode.name,
-			description: mode.description,
-			terminology: mode.terminology,
 			defaultEntities: mode.defaultEntities,
-			trackables: mode.trackables,
-			defaultConfig: mode.defaultConfig
+			trackables: mode.trackables
 		}
 	};
 };
@@ -32,12 +28,15 @@ export const actions: Actions = {
 		const parsed = parseModeForm(form);
 		if (!parsed.ok) return fail(400, { error: parsed.error });
 
-		const conflict = await findBySlug(parsed.data.slug);
-		if (conflict && conflict.id !== params.id) {
-			return fail(409, { error: `Slug "${parsed.data.slug}" ist schon vergeben` });
+		// Auto-suffix slug if collision (and not against the same mode).
+		let slug = parsed.data.slug;
+		for (let i = 2; i < 100; i++) {
+			const c = await findBySlug(slug);
+			if (!c || c.id === params.id) break;
+			slug = `${parsed.data.slug}-${i}`;
 		}
 
-		const updated = await updateMode(params.id, locals.user.id, parsed.data);
+		const updated = await updateMode(params.id, locals.user.id, { ...parsed.data, slug });
 		if (!updated) return fail(404, { error: 'Mode nicht gefunden' });
 		const next = url.searchParams.get('next');
 		if (next && next.startsWith('/') && !next.startsWith('//')) {

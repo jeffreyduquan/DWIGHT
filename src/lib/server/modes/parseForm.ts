@@ -1,16 +1,16 @@
 /**
- * @file modes/parseForm.ts — parse FormData → Mode payload (with validation).
- * Used by both /modes/new and /modes/[id] edit actions.
+ * @file modes/parseForm.ts — parse FormData → Mode payload.
+ * Phase 17: Slug auto-derived from name; description, terminology, defaultConfig
+ * filled with safe defaults so the existing DB columns remain populated even
+ * though the Mode UI no longer exposes them.
  */
 import type {
-	ConfirmationMode,
-	DrinkType,
 	ModeDefaultConfig,
 	ModeDefaultEntity,
 	ModeTerminology,
 	Trackable
 } from '../db/schema';
-import { slugify, slugifyTrackableId } from './defaults';
+import { freshModeDefaultConfig, slugify, slugifyTrackableId } from './defaults';
 
 export type ParsedModeForm = {
 	slug: string;
@@ -24,19 +24,21 @@ export type ParsedModeForm = {
 
 export type ParseResult = { ok: true; data: ParsedModeForm } | { ok: false; error: string };
 
-function toInt(v: FormDataEntryValue | null, fallback: number): number {
-	if (v == null) return fallback;
-	const n = Number(v);
-	return Number.isFinite(n) ? Math.trunc(n) : fallback;
-}
 function toStr(v: FormDataEntryValue | null): string {
 	return v == null ? '' : String(v).trim();
 }
 
-const DRINK_TYPES: DrinkType[] = ['SCHLUCK', 'KURZER', 'BIER_EXEN'];
-const CONFIRMATION_MODES: ConfirmationMode[] = ['GM', 'PEERS'];
-const LOCK_MODES = ['TIMER_LOCK', 'LOCK', 'NONE'] as const;
 const TRACKABLE_SCOPES = ['global', 'entity'] as const;
+
+/**
+ * Fixed terminology used as DB filler since Phase 17 (mode form no longer
+ * exposes a terminology editor). UI now uses hardcoded German labels.
+ */
+export const DEFAULT_TERMINOLOGY: ModeTerminology = {
+	round: 'Runde',
+	entity: 'Spieler',
+	startedVerb: 'läuft'
+};
 
 export function parseModeForm(form: FormData): ParseResult {
 	const name = toStr(form.get('name'));
@@ -44,18 +46,9 @@ export function parseModeForm(form: FormData): ParseResult {
 		return { ok: false, error: 'Name muss 2-64 Zeichen lang sein' };
 	}
 
-	const slug = slugify(toStr(form.get('slug')) || name);
-	if (slug.length < 2) return { ok: false, error: 'Slug ungültig' };
+	const slug = slugify(name);
+	if (slug.length < 2) return { ok: false, error: 'Name ergibt keinen gültigen Slug' };
 
-	const description = toStr(form.get('description')).slice(0, 500);
-
-	const terminology: ModeTerminology = {
-		round: toStr(form.get('term_round')) || 'Runde',
-		entity: toStr(form.get('term_entity')) || 'Entität',
-		startedVerb: toStr(form.get('term_startedVerb')) || 'läuft'
-	};
-
-	// Entities: form has entityName[], entityKind[], entityColor[], entityEmoji[]
 	const names = form.getAll('entityName').map(String);
 	const kinds = form.getAll('entityKind').map(String);
 	const colors = form.getAll('entityColor').map(String);
@@ -74,7 +67,6 @@ export function parseModeForm(form: FormData): ParseResult {
 		});
 	}
 
-	// Trackables: form has trackableLabel[], trackableScope[], trackableEmoji[], trackableColor[]
 	const tLabels = form.getAll('trackableLabel').map(String);
 	const tScopes = form.getAll('trackableScope').map(String);
 	const tEmojis = form.getAll('trackableEmoji').map(String);
@@ -103,63 +95,16 @@ export function parseModeForm(form: FormData): ParseResult {
 		});
 	}
 
-	const confirmationModeRaw = toStr(form.get('confirmationMode'));
-	const confirmationMode: ConfirmationMode = (CONFIRMATION_MODES as string[]).includes(
-		confirmationModeRaw
-	)
-		? (confirmationModeRaw as ConfirmationMode)
-		: 'PEERS';
-
-	const lockModeRaw = toStr(form.get('lockMode'));
-	const lockMode = (LOCK_MODES as readonly string[]).includes(lockModeRaw)
-		? (lockModeRaw as (typeof LOCK_MODES)[number])
-		: 'TIMER_LOCK';
-	const lockTimerSeconds = Math.max(30, toInt(form.get('lockTimerSeconds'), 600));
-
-	const rebuyDrinkRaw = toStr(form.get('rebuyDrinkType'));
-	const rebuyDrinkType: DrinkType = (DRINK_TYPES as string[]).includes(rebuyDrinkRaw)
-		? (rebuyDrinkRaw as DrinkType)
-		: 'BIER_EXEN';
-
-	const defaultConfig: ModeDefaultConfig = {
-		startingMoney: toInt(form.get('startingMoney'), 2000),
-		minStake: toInt(form.get('minStake'), 10),
-		drinkPrices: {
-			SCHLUCK: toInt(form.get('priceSchluck'), 50),
-			KURZER: toInt(form.get('priceKurzer'), 150),
-			BIER_EXEN: toInt(form.get('priceBier'), 500)
-		},
-		confirmationMode,
-		peerConfirmationsRequired: toInt(form.get('peerConfirmationsRequired'), 2),
-		forceDrinkTypesAllowed: ['SCHLUCK', 'KURZER', 'BIER_EXEN'],
-		rebuy: {
-			enabled: form.get('rebuyEnabled') === 'on',
-			drinkType: rebuyDrinkType,
-			amount: toInt(form.get('rebuyAmount'), 1500)
-		},
-		lockMode,
-		lockTimerSeconds,
-		showOdds: form.get('showOdds') === 'on',
-		maxStakePctOfStart: Math.max(1, Math.min(100, toInt(form.get('maxStakePctOfStart'), 50)))
-	};
-
-	if (defaultConfig.startingMoney <= 0) {
-		return { ok: false, error: 'Startgeld muss > 0 sein' };
-	}
-	if (defaultConfig.minStake < 1) {
-		return { ok: false, error: 'Mindesteinsatz muss ≥ 1 sein' };
-	}
-
 	return {
 		ok: true,
 		data: {
 			slug,
 			name,
-			description,
-			terminology,
+			description: '',
+			terminology: { ...DEFAULT_TERMINOLOGY },
 			defaultEntities,
 			trackables,
-			defaultConfig
+			defaultConfig: freshModeDefaultConfig()
 		}
 	};
 }

@@ -232,6 +232,9 @@
 | REQ-UI-040 | Phase 16 | `src/routes/s/[id]/round/+page.svelte` (Quick-Set-Buttons entfernt, `.stake-number text-center`) | manual | ☑ |
 | REQ-MODE-010 | Phase 16 | `drizzle/0008_bump_mode_defaults.sql`, `drizzle/meta/_journal.json`, `src/lib/server/modes/parseForm.ts` | manual | ☑ |
 | REQ-DRINKS-008 | Phase 16 | `src/routes/s/[id]/+page.svelte`, `src/routes/s/[id]/round/+page.svelte` (`drink_initiated` → `navigator.vibrate(2000)` wenn `targetUserId === me.userId`) | manual | ☑ |
+| REQ-MODE-011 | Phase 17 | `src/lib/components/ModeForm.svelte` (rewrite: name+entities+trackables only), `src/lib/server/modes/parseForm.ts` (auto-slug, defaults), `src/routes/modes/new/+page.server.ts` + `src/routes/modes/[id]/+page.server.ts` (auto-suffix on slug collision) | manual | ☑ |
+| REQ-UI-041 | Phase 17 | `src/routes/modes/+page.svelte`, `src/routes/s/create/+page.svelte`, `src/routes/s/[id]/info/+page.svelte` (Literal `Spieler`), `src/lib/server/modes/parseForm.ts` (`DEFAULT_TERMINOLOGY`) | manual | ☑ |
+| REQ-MODE-012 | Phase 17 | `src/routes/s/create/+page.svelte` (`SESSION_DEFAULTS` const), `src/routes/s/create/+page.server.ts` (`freshModeDefaultConfig()` fallback, kein `mode.defaultConfig` mehr konsultiert) | manual | ☑ |
 
 ## REQ-DATA — Data
 
