@@ -169,9 +169,12 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
-		background: var(--surface-soft, #ece9e3);
-		padding: 0.75rem;
-		border-radius: 12px;
+		background: linear-gradient(135deg, oklch(96% 0.01 100), oklch(94% 0.01 100));
+		padding: 0.85rem;
+		border-radius: 14px;
+		box-shadow:
+			0 1px 2px oklch(20% 0.02 220 / 0.04),
+			inset 0 1px 0 white;
 	}
 	.add input {
 		flex: 1;
@@ -194,17 +197,29 @@
 		gap: 0.6rem;
 	}
 	.row {
-		background: var(--surface-soft, #ece9e3);
-		border-radius: 12px;
-		padding: 0.75rem;
+		background: white;
+		border-radius: 14px;
+		padding: 0.85rem 1rem;
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		gap: 0.75rem;
+		box-shadow:
+			0 1px 2px oklch(20% 0.02 220 / 0.05),
+			0 4px 12px oklch(20% 0.02 220 / 0.06);
+		border: 1px solid oklch(94% 0.01 100);
+		transition: box-shadow 0.15s, transform 0.15s;
+	}
+	.row:not(.editing):hover {
+		transform: translateY(-1px);
+		box-shadow:
+			0 2px 4px oklch(20% 0.02 220 / 0.06),
+			0 8px 20px oklch(20% 0.02 220 / 0.1);
 	}
 	.row.editing {
 		flex-direction: column;
 		align-items: stretch;
+		background: linear-gradient(180deg, white 0%, oklch(98% 0.005 100) 100%);
 	}
 	.row .info {
 		display: flex;

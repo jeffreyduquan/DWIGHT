@@ -48,8 +48,54 @@
 	let canvasEl: HTMLElement;
 	let pinPositions = $state<Record<string, { x: number; y: number }>>({});
 
+	// Drag-to-connect (from output pin -> input pin).
+	type DragState = { fromNodeId: string; fromPin: string; type: PinType; x: number; y: number };
+	let drag = $state<DragState | null>(null);
+
 	const validation = $derived(validateGraph(graph));
 	const preview = $derived(previewSentence(graph));
+
+	const errorsByNode = $derived.by(() => {
+		const map = new Map<string, string[]>();
+		for (const err of validation.errors) {
+			if (!err.nodeId) continue;
+			const arr = map.get(err.nodeId) ?? [];
+			arr.push(err.message);
+			map.set(err.nodeId, arr);
+		}
+		return map;
+	});
+
+	function nodeExample(node: GraphNode, spec: NodeSpec): string | null {
+		switch (node.kind) {
+			case 'count': {
+				const t = (node.props?.trackableId as string) || 'trackable';
+				return `z. B. count(${t}) = 3`;
+			}
+			case 'sum':
+				return 'z. B. sum_over(scope) = 12';
+			case 'constant':
+				return `Konstante ${node.props?.value ?? 0}`;
+			case 'compare': {
+				const op = (node.props?.op as string) ?? '>=';
+				return `wenn a ${op} b`;
+			}
+			case 'and':
+				return 'A ∧ B';
+			case 'or':
+				return 'A ∨ B';
+			case 'not':
+				return '¬ X';
+			case 'now':
+				return 'aktuelle Zeit in Sekunden';
+			case 'first_occurrence':
+				return 't_first(trackable, entity)';
+			case 'rank':
+				return `Top-${node.props?.topK ?? 'all'} sortiert ${node.props?.direction ?? 'desc'}`;
+			default:
+				return spec.description ?? null;
+		}
+	}
 
 	const FAMILY_BG: Record<NodeFamily, string> = {
 		source: 'oklch(94% 0.03 220)',
@@ -289,6 +335,64 @@
 		return pin ? PIN_COLORS[pin.type] : 'oklch(70% 0.04 220)';
 	}
 
+	// ---- Drag-to-connect handlers (pointer events, fingers-friendly) ----
+	function onOutputPinPointerDown(ev: PointerEvent, nodeId: string, pin: string, type: PinType) {
+		if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+		(ev.currentTarget as HTMLElement).setPointerCapture?.(ev.pointerId);
+		const cr = canvasEl.getBoundingClientRect();
+		drag = {
+			fromNodeId: nodeId,
+			fromPin: pin,
+			type,
+			x: ev.clientX - cr.left,
+			y: ev.clientY - cr.top
+		};
+	}
+
+	function onCanvasPointerMove(ev: PointerEvent) {
+		if (!drag) return;
+		const cr = canvasEl.getBoundingClientRect();
+		drag = { ...drag, x: ev.clientX - cr.left, y: ev.clientY - cr.top };
+	}
+
+	function onCanvasPointerUp(ev: PointerEvent) {
+		if (!drag) return;
+		const target = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+		const pinEl = target?.closest<HTMLElement>('[data-pin-key]');
+		if (pinEl) {
+			const key = pinEl.dataset.pinKey!;
+			const [side, nodeId, pin] = key.split(':') as ['in' | 'out', string, string];
+			if (side === 'in' && nodeId !== drag.fromNodeId) {
+				const spec = NODE_CATALOG[graph.nodes.find((n) => n.id === nodeId)!.kind];
+				const pinDef = spec.inputs.find((p) => p.name === pin);
+				if (pinDef && pinDef.type === drag.type) {
+					let newEdges = graph.edges;
+					if (!pinDef.multi) {
+						newEdges = newEdges.filter((e) => !(e.to.nodeId === nodeId && e.to.pin === pin));
+					}
+					graph = {
+						...graph,
+						edges: [
+							...newEdges,
+							{
+								from: { nodeId: drag.fromNodeId, pin: drag.fromPin },
+								to: { nodeId, pin }
+							}
+						]
+					};
+				}
+			}
+		}
+		drag = null;
+	}
+
+	function ghostPath(d: DragState): string {
+		const a = pinPositions[pinKey(d.fromNodeId, d.fromPin, 'out')];
+		if (!a) return '';
+		const dy = Math.max(30, (d.y - a.y) * 0.5);
+		return `M ${a.x} ${a.y} C ${a.x} ${a.y + dy}, ${d.x} ${d.y - dy}, ${d.x} ${d.y}`;
+	}
+
 	const ENTITY_OPTIONS = $derived(mode.defaultEntities.map((e) => e.name));
 	const TRACKABLE_OPTIONS = $derived(mode.trackables.map((t) => t.id));
 
@@ -305,7 +409,13 @@
 		{/if}
 	</header>
 
-	<div class="canvas" bind:this={canvasEl}>
+	<div
+		class="canvas"
+		bind:this={canvasEl}
+		onpointermove={onCanvasPointerMove}
+		onpointerup={onCanvasPointerUp}
+		onpointercancel={() => (drag = null)}
+	>
 		<svg class="edges" aria-hidden="true">
 			{#each graph.edges as e, i (i)}
 				<path
@@ -316,6 +426,17 @@
 					stroke-linecap="round"
 				/>
 			{/each}
+			{#if drag}
+				<path
+					d={ghostPath(drag)}
+					stroke={PIN_COLORS[drag.type]}
+					stroke-width="3"
+					fill="none"
+					stroke-linecap="round"
+					stroke-dasharray="6 5"
+					opacity="0.85"
+				/>
+			{/if}
 			{#each graph.edges as e, i (i)}
 				{@const m = edgeMid(e)}
 				{#if m}
@@ -349,16 +470,18 @@
 				{#each row.nodes as node (node.id)}
 					{@const spec = NODE_CATALOG[node.kind]}
 					{@const isExpanded = expandedNode === node.id}
-					<article class="node" style:--family-bg={FAMILY_BG[spec.family]}>
+					{@const nodeErrs = errorsByNode.get(node.id) ?? []}
+					<article class="node" class:has-error={nodeErrs.length > 0} style:--family-bg={FAMILY_BG[spec.family]}>
 						{#if spec.inputs.length > 0}
 							<div class="pins-top">
 								{#each spec.inputs as p (p.name)}
 									{@const k = pinKey(node.id, p.name, 'in')}
 									{@const connected = pinIsConnected(node.id, p.name, 'in')}
 									{@const compat =
-										pendingSlot?.side === 'output' &&
-										pendingSlot?.type === p.type &&
-										pendingSlot?.nodeId !== node.id}
+										(pendingSlot?.side === 'output' &&
+											pendingSlot?.type === p.type &&
+											pendingSlot?.nodeId !== node.id) ||
+										(drag !== null && drag.type === p.type && drag.fromNodeId !== node.id)}
 									<button
 										type="button"
 										class="pin pin-in"
@@ -386,8 +509,25 @@
 						>
 							<span class="fam">{FAMILY_LABELS[spec.family]}</span>
 							<strong>{spec.label}</strong>
-							{#if spec.macro}<span class="macro">M</span>{/if}
+							<div class="badges">
+								{#if spec.macro}<span class="macro">M</span>{/if}
+								{#if nodeErrs.length > 0}
+									<span class="err-badge" title={nodeErrs.join('\n')}>⚠ {nodeErrs.length}</span>
+								{/if}
+							</div>
 						</button>
+
+						{#if !isExpanded && nodeExample(node, spec)}
+							<small class="example">{nodeExample(node, spec)}</small>
+						{/if}
+
+						{#if isExpanded && nodeErrs.length > 0}
+							<ul class="node-errs">
+								{#each nodeErrs as msg (msg)}
+									<li>{msg}</li>
+								{/each}
+							</ul>
+						{/if}
 
 						{#if isExpanded}
 							<div class="props">
@@ -484,6 +624,7 @@
 										data-pin-key={k}
 										title={p.name + ' (' + p.type + ')'}
 										onclick={() => onPinTap(node.id, p.name, 'output', p.type)}
+										onpointerdown={(ev) => onOutputPinPointerDown(ev, node.id, p.name, p.type)}
 										style:--pin-color={PIN_COLORS[p.type]}
 										aria-label="Output {p.name}"
 									>
@@ -658,8 +799,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2.5rem;
-		padding: 1rem 0;
-		min-height: 200px;
+		padding: 1.25rem 0;
+		min-height: 220px;
+		background-color: oklch(98.5% 0.005 100);
+		background-image:
+			radial-gradient(circle at 1px 1px, oklch(85% 0.01 100) 1px, transparent 1.5px);
+		background-size: 20px 20px;
+		border-radius: 12px;
+		touch-action: none;
 	}
 	.edges {
 		position: absolute;
@@ -694,16 +841,32 @@
 		z-index: 1;
 	}
 	.node {
-		background: var(--family-bg, white);
-		border-radius: 10px;
-		padding: 0.25rem 0.3rem;
+		background: linear-gradient(180deg, var(--family-bg, white) 0%, white 100%);
+		border-radius: 14px;
+		padding: 0.3rem 0.35rem;
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
 		gap: 0.25rem;
-		min-width: 130px;
-		max-width: 170px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+		min-width: 140px;
+		max-width: 180px;
+		box-shadow:
+			0 1px 2px oklch(20% 0.02 220 / 0.06),
+			0 4px 12px oklch(20% 0.02 220 / 0.08);
+		border: 1px solid oklch(90% 0.01 100);
+		transition: box-shadow 0.15s, transform 0.15s;
+	}
+	.node:hover {
+		box-shadow:
+			0 2px 4px oklch(20% 0.02 220 / 0.08),
+			0 8px 20px oklch(20% 0.02 220 / 0.12);
+		transform: translateY(-1px);
+	}
+	.node.has-error {
+		border-color: oklch(70% 0.12 25);
+		box-shadow:
+			0 0 0 1px oklch(70% 0.12 25 / 0.3),
+			0 4px 12px oklch(70% 0.12 25 / 0.15);
 	}
 	.pins-top,
 	.pins-bottom {
@@ -724,48 +887,88 @@
 		text-align: left;
 		display: flex;
 		flex-direction: column;
-		gap: 0.05rem;
-		padding: 0.2rem 0.35rem;
+		gap: 0.1rem;
+		padding: 0.25rem 0.4rem;
 		cursor: pointer;
 	}
 	.fam {
-		font-size: 0.6rem;
-		opacity: 0.55;
+		font-size: 0.58rem;
+		opacity: 0.45;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
+		font-weight: 600;
 	}
 	.body strong {
-		font-size: 0.85rem;
-		line-height: 1.15;
+		font-size: 0.88rem;
+		line-height: 1.2;
+		font-weight: 600;
+		letter-spacing: -0.005em;
+	}
+	.badges {
+		display: flex;
+		gap: 0.2rem;
+		margin-top: 0.15rem;
 	}
 	.macro {
 		font-size: 0.6rem;
 		background: oklch(40% 0.07 148);
 		color: white;
-		padding: 0.05rem 0.25rem;
-		border-radius: 3px;
-		align-self: flex-start;
-		margin-top: 0.1rem;
+		padding: 0.05rem 0.3rem;
+		border-radius: 4px;
+	}
+	.err-badge {
+		font-size: 0.6rem;
+		background: oklch(60% 0.15 25);
+		color: white;
+		padding: 0.05rem 0.35rem;
+		border-radius: 4px;
+		font-weight: 600;
+		cursor: help;
+	}
+	.example {
+		font-size: 0.65rem;
+		opacity: 0.55;
+		font-style: italic;
+		padding: 0 0.45rem 0.2rem;
+		line-height: 1.25;
+	}
+	.node-errs {
+		margin: 0 0.4rem 0.3rem;
+		padding: 0.35rem 0.5rem;
+		background: oklch(96% 0.03 25);
+		border-left: 2.5px solid oklch(60% 0.15 25);
+		border-radius: 4px;
+		list-style: none;
+		font-size: 0.65rem;
+		color: oklch(40% 0.1 25);
+	}
+	.node-errs li {
+		margin: 0.1rem 0;
 	}
 	.pin {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.18rem;
-		padding: 0.15rem 0.4rem;
+		gap: 0.2rem;
+		padding: 0.2rem 0.5rem;
 		font-size: 0.65rem;
 		cursor: pointer;
-		border: 1px solid rgba(0, 0, 0, 0.15);
+		border: 1px solid oklch(85% 0.01 100);
 		min-height: 22px;
 		line-height: 1;
+		background: white;
+		box-shadow: 0 1px 2px oklch(20% 0.02 220 / 0.06);
+		transition: transform 0.1s, box-shadow 0.1s;
+	}
+	.pin:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 2px 4px oklch(20% 0.02 220 / 0.1);
 	}
 	.pin-in {
-		background: white;
-		border-radius: 0 0 12px 12px;
+		border-radius: 2px 2px 14px 14px;
 		border-top: none;
 	}
 	.pin-out {
-		background: white;
-		border-radius: 12px 12px 0 0;
+		border-radius: 14px 14px 2px 2px;
 		border-bottom: none;
 	}
 	.pin .dot {
