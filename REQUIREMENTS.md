@@ -259,7 +259,7 @@
 - **REQ-UI-032** **Phase 13 conditional peer-count.** The `peerConfirmationsRequired` input is only rendered when `confirmationMode === 'PEERS'`. Applies in `ModeForm.svelte`, `/s/[id]/settings`, and `/s/create`.
 - **REQ-UI-033** **Phase 13 QR-Panel below.** On `/s/[id]` (lobby), the QR/Invite panel renders BELOW the footer button row (toggled via the QR button), not above the header.
 - **REQ-MODE-007** **Phase 13 mode defaults.** `freshModeDefaultConfig()` returns `peerConfirmationsRequired: 1` and `rebuy.amount: 1500` by default.
-- **REQ-MODE-008** **Phase 14 mode delete.** `deleteMode` translates Postgres FK errors (`23503`) into a typed `ModeInUseError` so the UI surfaces a friendly 409 instead of a 500. A Mode that is still referenced by any Session cannot be deleted.
+- **REQ-MODE-008** **Phase 14 mode delete.** `deleteMode` translates Postgres FK errors (`23503`) into a typed `ModeInUseError` so the UI surfaces a friendly 409 instead of a 500. A Mode that is still referenced by any Session cannot be deleted. Phase 15: error now includes the blocking session list (`{ id, name, status }`) and the edit page renders it under the delete button (REQ-UI-038).
 - **REQ-MODE-009** **Phase 14 startgeld default.** `freshModeDefaultConfig()` returns `startingMoney: 2000`.
 - **REQ-ECON-002** **Phase 14 max stake per bet.** `SessionConfig.maxStakePctOfStart` (1–100, default 50) caps the stake of any single bet to `floor(startingMoney * pct / 100)`. Enforced server-side in `placeBet` (error `STAKE_ABOVE_MAX`). Default Mode value 50. Configurable in Mode form, `/s/create` and `/s/[id]/settings`.
 - **REQ-UI-034** **Phase 14 unified drinks list.** `DrinkPanel.svelte` `list` tab merges my-pending + others-pending + history into one scrollable `<ul>` (`max-h-[28rem]`). Pending entries remain click-to-expand; history rows are flat, faded, with status badge.
@@ -272,6 +272,10 @@
   - Reset button (restored),
   - "Setzen · {N}" submits the chosen stake.
   `maxStakeAllowed = min(moneyBalance, floor(startingMoney * maxStakePctOfStart / 100))`.
+- **REQ-UI-038** **Phase 15 mode-in-use UX.** When a Mode delete returns 409 (`ModeInUseError`), the edit page lists the blocking sessions (status badge + clickable name) so the user can navigate and resolve them.
+- **REQ-DRINKS-007** **Phase 15 timer stays.** `timerSecondsRemaining` now uses the OLDEST pending drink's age. New drinks added later do NOT reset the running timer for that player. Test updated accordingly.
+- **REQ-UI-039** **Phase 15 stake-slider snap.** Range slider uses `step = max(1, round(startingMoney / 100))` (i.e. 1% of starting money) so values snap to clean amounts independent of `maxStakeAllowed`.
+- **REQ-RT-005** **Phase 15 lobby SSE.** Lobby (`/s/[id]`) invalidates on `round_opened`, `round_live`, `round_settled`, `round_cancelled` so the bet-state badge updates live.
 
 ---
 

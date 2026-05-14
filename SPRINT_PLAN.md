@@ -435,6 +435,21 @@ Acceptance:
 
 ---
 
+## Phase 15 — Polish 3 (User-Feedback) ☑
+**Goal:** Drink-Timer Fix + 3 UX-Verfeinerungen.
+
+Tasks:
+- ☑ **#1 Drink-Timer hält (REQ-DRINKS-007):** `timerSecondsRemaining` rechnet jetzt mit dem ÄLTESTEN pending Drink — neue Drinks lassen den Timer weiterlaufen. Test angepasst (10s statt 30s erwartet).
+- ☑ **#2 Stake-Slider Snap (REQ-UI-039):** Slider-step = `max(1, round(startingMoney / 100))` ≈ 1% vom Startgeld, unabhängig von `maxStakeAllowed`.
+- ☑ **#3 Lobby Bet-Badge live (REQ-RT-005):** Lobby invalidiert auf `round_opened|round_live|round_settled|round_cancelled` → Badge updated automatisch.
+- ☑ **#4 Bessere Mode-In-Use UX (REQ-UI-038):** `ModeInUseError.blockers` listet referenzierende Sessions (id+name+status). Edit-Page rendert sie als klickbare Liste.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 18 Warnings (unverändert).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

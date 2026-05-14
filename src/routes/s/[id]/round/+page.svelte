@@ -361,7 +361,7 @@
 								class="range range-xs range-primary flex-1"
 								min="0"
 								max={maxStakeAllowed}
-								step={Math.max(1, Math.round(maxStakeAllowed / 100))}
+								step={Math.max(1, Math.round(startingMoney / 100))}
 								value={stakeTotal}
 								oninput={(e) => setStake(m.id, Number((e.target as HTMLInputElement).value))}
 							/>

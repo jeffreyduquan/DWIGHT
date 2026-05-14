@@ -52,7 +52,8 @@ export const actions: Actions = {
 		} catch (err) {
 			if (err instanceof ModeInUseError) {
 				return fail(409, {
-					error: 'Mode wird von bestehenden Sessions verwendet. Lösche zuerst alle Sessions mit diesem Mode.'
+					error: 'Mode wird von bestehenden Sessions verwendet. Lösche oder beende zuerst diese Sessions.',
+					blockers: err.blockers
 				});
 			}
 			throw err;

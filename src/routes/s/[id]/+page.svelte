@@ -73,6 +73,9 @@
 		es.addEventListener('balance_updated', h);
 		es.addEventListener('player_joined', h);
 		es.addEventListener('round_opened', h);
+		es.addEventListener('round_live', h);
+		es.addEventListener('round_settled', h);
+		es.addEventListener('round_cancelled', h);
 		es.addEventListener('session_ended', h);
 	});
 	onDestroy(() => es?.close());

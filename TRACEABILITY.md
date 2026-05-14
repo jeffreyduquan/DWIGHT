@@ -225,6 +225,10 @@
 | REQ-UI-035 | Phase 14 | `src/routes/s/[id]/+page.svelte` (Settings-Toggle im Footer neben QR/Sound) | manual | ☑ |
 | REQ-UI-036 | Phase 14 | `src/routes/s/[id]/+page.svelte` (StateBadge), `src/routes/s/[id]/+page.server.ts` (`currentRound` im Load) | manual | ☑ |
 | REQ-UI-037 | Phase 14 | `src/routes/s/[id]/round/+page.svelte` (setStake, Number-Input, Slider, Reset, 2/5/25% Quick-Set-Buttons, maxStakeAllowed) | manual | ☑ |
+| REQ-UI-038 | Phase 15 | `src/lib/server/repos/modes.ts` (`listSessionsUsingMode`, blockers on `ModeInUseError`), `src/routes/modes/[id]/+page.{server.ts,svelte}` (blocker list rendered) | manual | ☑ |
+| REQ-UI-039 | Phase 15 | `src/routes/s/[id]/round/+page.svelte` (slider `step=max(1,round(startingMoney/100))`) | manual | ☑ |
+| REQ-DRINKS-007 | Phase 15 | `src/lib/drinks/lock.ts` (oldestAge), `src/lib/drinks/lock.test.ts` (10 statt 30) | vitest | ☑ |
+| REQ-RT-005 | Phase 15 | `src/routes/s/[id]/+page.svelte` (zusätzliche SSE-Listener `round_live`/`round_settled`/`round_cancelled`) | manual | ☑ |
 
 ## REQ-DATA — Data
 

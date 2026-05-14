@@ -60,9 +60,9 @@ describe('timerSecondsRemaining', () => {
 		expect(timerSecondsRemaining({ lockMode: 'LOCK' }, [SECS_AGO(10)], NOW)).toBeNull();
 		expect(timerSecondsRemaining({ lockMode: 'NONE' }, [SECS_AGO(10)], NOW)).toBeNull();
 	});
-	it('counts down the youngest pending drink', () => {
+	it('counts down based on the oldest pending drink (new drinks do not reset)', () => {
 		const cfg = { lockMode: 'TIMER_LOCK' as const, lockTimerSeconds: 60 };
-		expect(timerSecondsRemaining(cfg, [SECS_AGO(30), SECS_AGO(50)], NOW)).toBe(30);
+		expect(timerSecondsRemaining(cfg, [SECS_AGO(30), SECS_AGO(50)], NOW)).toBe(10);
 		expect(timerSecondsRemaining(cfg, [SECS_AGO(60)], NOW)).toBe(0);
 	});
 });

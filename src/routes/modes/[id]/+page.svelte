@@ -57,5 +57,19 @@
 				<Trash2 size={14} /> Mode löschen
 			</button>
 		</form>
+
+		{#if form && 'blockers' in form && Array.isArray(form.blockers) && form.blockers.length > 0}
+			<div class="alert alert-warning mt-4 flex-col items-start gap-2 text-xs">
+				<p class="font-semibold">Diese Sessions blockieren das Löschen:</p>
+				<ul class="space-y-1">
+					{#each form.blockers as b}
+						<li class="flex items-center gap-2">
+							<span class="badge badge-xs">{b.status}</span>
+							<a href={`/s/${b.id}`} class="link link-hover">{b.name}</a>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 	</div>
 </main>

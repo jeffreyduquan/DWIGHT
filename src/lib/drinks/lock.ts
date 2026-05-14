@@ -60,12 +60,14 @@ export function timerSecondsRemaining(
 	const mode = effectiveLockMode(config);
 	if (mode !== 'TIMER_LOCK' || pendingDrinkCreatedAts.length === 0) return null;
 	const timerMs = effectiveLockTimerSeconds(config) * 1000;
-	let oldest = Infinity;
+	// Use the OLDEST drink's age (largest age) so new drinks do not reset the
+	// timer for a player — the countdown keeps running based on the first drink.
+	let oldestAge = -Infinity;
 	for (const t of pendingDrinkCreatedAts) {
 		const created = typeof t === 'string' ? new Date(t) : t;
 		const age = now.getTime() - created.getTime();
-		if (age < oldest) oldest = age;
+		if (age > oldestAge) oldestAge = age;
 	}
-	if (!isFinite(oldest)) return null;
-	return Math.max(0, Math.ceil((timerMs - oldest) / 1000));
+	if (!isFinite(oldestAge)) return null;
+	return Math.max(0, Math.ceil((timerMs - oldestAge) / 1000));
 }

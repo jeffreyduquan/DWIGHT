@@ -6,6 +6,7 @@ import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../db';
 import {
 	modes,
+	sessions,
 	type ModeDefaultConfig,
 	type ModeDefaultEntity,
 	type ModeTerminology,
@@ -81,15 +82,30 @@ export async function deleteMode(id: string, userId: string): Promise<boolean> {
 	} catch (err: unknown) {
 		// FK violation: sessions still reference this Mode → re-throw a typed error.
 		const code = (err as { code?: string })?.code;
-		if (code === '23503') throw new ModeInUseError();
+		if (code === '23503') {
+			const blockers = await listSessionsUsingMode(id);
+			throw new ModeInUseError(blockers);
+		}
 		throw err;
 	}
 }
 
+/** Sessions (any status) that still reference the Mode — used to explain delete failures. */
+export async function listSessionsUsingMode(
+	modeId: string
+): Promise<Array<{ id: string; name: string; status: string }>> {
+	return db
+		.select({ id: sessions.id, name: sessions.name, status: sessions.status })
+		.from(sessions)
+		.where(eq(sessions.modeId, modeId));
+}
+
 export class ModeInUseError extends Error {
-	constructor() {
+	readonly blockers: Array<{ id: string; name: string; status: string }>;
+	constructor(blockers: Array<{ id: string; name: string; status: string }> = []) {
 		super('Mode wird von bestehenden Sessions verwendet');
 		this.name = 'ModeInUseError';
+		this.blockers = blockers;
 	}
 }
 
