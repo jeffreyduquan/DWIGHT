@@ -8,7 +8,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { findById as findModeById } from '$lib/server/repos/modes';
 import { createBetGraph } from '$lib/server/repos/betGraphs';
-import { TEMPLATES, buildGraph, findTemplate, type TemplateId, type TemplateParams } from '$lib/graph/templates';
+import { buildGraph, findTemplate, type TemplateId, type TemplateParams } from '$lib/graph/templates';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!locals.user) throw redirect(303, '/login');
@@ -18,9 +18,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	return {
 		modeId: mode.id,
 		modeName: mode.name,
-		trackables: mode.trackables.map((t) => ({ id: t.id, label: t.label, emoji: t.emoji, color: t.color })),
-		entities: mode.defaultEntities.map((e) => ({ name: e.name })),
-		templates: TEMPLATES
+		trackables: mode.trackables.map((t) => ({ id: t.id, label: t.label, emoji: t.emoji ?? null, color: t.color ?? null })),
+		entities: mode.defaultEntities.map((e) => ({ name: e.name }))
 	};
 };
 

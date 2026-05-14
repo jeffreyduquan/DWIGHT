@@ -7,6 +7,7 @@
 	import { enhance } from '$app/forms';
 	import Logo from '$lib/components/Logo.svelte';
 	import IconBubble from '$lib/components/IconBubble.svelte';
+	import { TEMPLATES } from '$lib/graph/templates';
 	import {
 		ArrowLeft,
 		AlertCircle,
@@ -25,7 +26,7 @@
 	const ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer } as const;
 
 	let selectedId = $state<string | null>(null);
-	const selected = $derived(data.templates.find((t) => t.id === selectedId) ?? null);
+	const selected = $derived(TEMPLATES.find((t) => t.id === selectedId) ?? null);
 
 	const formError = $derived(form && 'error' in form ? (form.error as string) : null);
 </script>
@@ -54,7 +55,7 @@
 
 {#if !selectedId}
 	<ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-		{#each data.templates as t (t.id)}
+		{#each TEMPLATES as t (t.id)}
 			{@const Icon = ICONS[t.icon]}
 			<li>
 				<button
