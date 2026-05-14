@@ -1,8 +1,7 @@
 /**
  * @file modes/parseForm.ts — parse FormData → Mode payload.
- * Phase 17: Slug auto-derived from name; description, terminology, defaultConfig
- * filled with safe defaults so the existing DB columns remain populated even
- * though the Mode UI no longer exposes them.
+ * Phase 18a: slug column removed; description/terminology/defaultConfig kept
+ * with hardcoded defaults so existing DB columns stay valid.
  */
 import type {
 	ModeDefaultConfig,
@@ -10,10 +9,9 @@ import type {
 	ModeTerminology,
 	Trackable
 } from '../db/schema';
-import { freshModeDefaultConfig, slugify, slugifyTrackableId } from './defaults';
+import { freshModeDefaultConfig, slugifyTrackableId } from './defaults';
 
 export type ParsedModeForm = {
-	slug: string;
 	name: string;
 	description: string;
 	terminology: ModeTerminology;
@@ -45,9 +43,6 @@ export function parseModeForm(form: FormData): ParseResult {
 	if (name.length < 2 || name.length > 64) {
 		return { ok: false, error: 'Name muss 2-64 Zeichen lang sein' };
 	}
-
-	const slug = slugify(name);
-	if (slug.length < 2) return { ok: false, error: 'Name ergibt keinen gültigen Slug' };
 
 	const names = form.getAll('entityName').map(String);
 	const kinds = form.getAll('entityKind').map(String);
@@ -98,7 +93,6 @@ export function parseModeForm(form: FormData): ParseResult {
 	return {
 		ok: true,
 		data: {
-			slug,
 			name,
 			description: '',
 			terminology: { ...DEFAULT_TERMINOLOGY },

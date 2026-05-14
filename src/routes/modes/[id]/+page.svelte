@@ -5,7 +5,7 @@
 	import { enhance } from '$app/forms';
 	import ModeForm from '$lib/components/ModeForm.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import { ArrowLeft, Trash2, CheckCircle2 } from '@lucide/svelte';
+	import { ArrowLeft, Trash2, CheckCircle2, Sparkles, Pencil, Plus, Wand2 } from '@lucide/svelte';
 
 	let { data, form } = $props();
 </script>
@@ -43,6 +43,75 @@
 			action="?/save"
 			error={form && 'error' in form ? form.error : null}
 		/>
+
+		<section class="mt-8 space-y-3">
+			<div class="flex items-end justify-between">
+				<div>
+					<p class="eyebrow">Wetten</p>
+					<h2 class="text-xl font-medium">
+						<Sparkles size={18} class="inline-block align-text-bottom" /> Wetten dieses Modes
+					</h2>
+				</div>
+				<span class="text-base-content/40 text-xs tabular">{data.graphs.length}</span>
+			</div>
+
+			{#if data.graphs.length === 0}
+				<p class="text-base-content/50 text-sm">Noch keine Wetten angelegt.</p>
+			{:else}
+				<ul class="space-y-2">
+					{#each data.graphs as g (g.id)}
+						<li class="glass flex items-start gap-3 rounded-xl p-3">
+							<div class="flex-1 min-w-0">
+								<p class="font-medium text-sm truncate">{g.name}</p>
+								{#if g.preview}
+									<p class="text-base-content/50 mt-0.5 text-xs">{g.preview}</p>
+								{/if}
+							</div>
+							<a
+								href="/modes/{data.mode.id}/graphs"
+								class="text-primary inline-flex items-center gap-1 text-xs hover:underline"
+								title="Im Graph-Editor bearbeiten"
+							>
+								<Pencil size={12} /> bearbeiten
+							</a>
+							<form
+								method="POST"
+								action="?/deleteGraph"
+								use:enhance
+								class="inline"
+								onsubmit={(e) => {
+									if (!confirm(`Wette "${g.name}" wirklich löschen?`)) e.preventDefault();
+								}}
+							>
+								<input type="hidden" name="graphId" value={g.id} />
+								<button
+									type="submit"
+									class="text-error/70 hover:text-error inline-flex items-center gap-1 text-xs"
+									title="Wette löschen"
+								>
+									<Trash2 size={12} />
+								</button>
+							</form>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+
+			<div class="flex flex-col gap-2 sm:flex-row">
+				<a
+					href="/modes/{data.mode.id}/graphs/new"
+					class="btn btn-primary flex-1 gap-2 rounded-xl"
+				>
+					<Wand2 size={14} /> Wette aus Vorlage
+				</a>
+				<a
+					href="/modes/{data.mode.id}/graphs"
+					class="btn btn-ghost flex-1 gap-2 rounded-xl text-sm"
+				>
+					<Plus size={14} /> Frei zeichnen (Erweitert)
+				</a>
+			</div>
+		</section>
 
 		<form
 			method="POST"

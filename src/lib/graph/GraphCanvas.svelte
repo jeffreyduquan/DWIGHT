@@ -16,6 +16,7 @@
 		NODE_CATALOG,
 		FAMILY_LABELS,
 		PIN_COLORS,
+		enumLabel,
 		type NodeFamily,
 		type PinType,
 		type NodeSpec
@@ -42,6 +43,7 @@
 		| { side: 'output'; nodeId: string; pin: string; type: PinType };
 	let pendingSlot = $state<PendingSlot | null>(null);
 	let sourcePickerOpen = $state(false);
+	let showAdvanced = $state(false);
 	let expandedNode = $state<string | null>(null);
 	let selectedEdgeIdx = $state<number | null>(null);
 
@@ -183,6 +185,7 @@
 	function suggestionsForInput(type: PinType): Suggestion[] {
 		const out: Suggestion[] = [];
 		for (const spec of Object.values(NODE_CATALOG)) {
+			if (spec.advanced && !showAdvanced) continue;
 			for (const p of spec.outputs) {
 				if (p.type === type) out.push({ spec, pin: p.name });
 			}
@@ -193,6 +196,7 @@
 	function suggestionsForOutput(type: PinType): Suggestion[] {
 		const out: Suggestion[] = [];
 		for (const spec of Object.values(NODE_CATALOG)) {
+			if (spec.advanced && !showAdvanced) continue;
 			for (const p of spec.inputs) {
 				if (p.type === type) out.push({ spec, pin: p.name });
 			}
@@ -396,7 +400,11 @@
 	const ENTITY_OPTIONS = $derived(mode.defaultEntities.map((e) => e.name));
 	const TRACKABLE_OPTIONS = $derived(mode.trackables.map((t) => t.id));
 
-	const SOURCE_NODES = Object.values(NODE_CATALOG).filter((s) => s.family === 'source');
+	const SOURCE_NODES = $derived(
+		Object.values(NODE_CATALOG).filter(
+			(s) => s.family === 'source' && (showAdvanced || !s.advanced)
+		)
+	);
 </script>
 
 <div class="wrap">
@@ -541,7 +549,7 @@
 													setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
 											>
 												{#each p.enumValues ?? [] as v (v)}
-													<option value={v}>{v}</option>
+													<option value={v}>{enumLabel(p.name, v)}</option>
 												{/each}
 											</select>
 										{:else if p.kind === 'boolean'}
@@ -685,6 +693,9 @@
 							>{pendingSlot.type}</span
 						>
 					</strong>
+					<label class="adv-toggle">
+						<input type="checkbox" bind:checked={showAdvanced} /> Erweitert
+					</label>
 					<button
 						type="button"
 						class="close"
@@ -734,6 +745,9 @@
 			<div class="sheet-inner">
 				<header class="sheet-head">
 					<strong>Quell-Node wählen</strong>
+					<label class="adv-toggle">
+						<input type="checkbox" bind:checked={showAdvanced} /> Erweitert
+					</label>
 					<button
 						type="button"
 						class="close"
@@ -1128,9 +1142,23 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 0.5rem;
 		padding-bottom: 0.5rem;
 		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 		margin-bottom: 0.5rem;
+	}
+	.adv-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-size: 0.7rem;
+		color: oklch(45% 0.02 220);
+		margin-left: auto;
+		cursor: pointer;
+		user-select: none;
+	}
+	.adv-toggle input {
+		accent-color: oklch(60% 0.055 148);
 	}
 	.type-pill {
 		display: inline-flex;

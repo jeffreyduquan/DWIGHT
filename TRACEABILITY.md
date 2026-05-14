@@ -235,6 +235,14 @@
 | REQ-MODE-011 | Phase 17 | `src/lib/components/ModeForm.svelte` (rewrite: name+entities+trackables only), `src/lib/server/modes/parseForm.ts` (auto-slug, defaults), `src/routes/modes/new/+page.server.ts` + `src/routes/modes/[id]/+page.server.ts` (auto-suffix on slug collision) | manual | ☑ |
 | REQ-UI-041 | Phase 17 | `src/routes/modes/+page.svelte`, `src/routes/s/create/+page.svelte`, `src/routes/s/[id]/info/+page.svelte` (Literal `Spieler`), `src/lib/server/modes/parseForm.ts` (`DEFAULT_TERMINOLOGY`) | manual | ☑ |
 | REQ-MODE-012 | Phase 17 | `src/routes/s/create/+page.svelte` (`SESSION_DEFAULTS` const), `src/routes/s/create/+page.server.ts` (`freshModeDefaultConfig()` fallback, kein `mode.defaultConfig` mehr konsultiert) | manual | ☑ |
+| REQ-MODE-013 | Phase 18a | `drizzle/0009_drop_mode_slug.sql`, `drizzle/meta/_journal.json`, `src/lib/server/db/schema.ts` (slug-Spalte + uniqueIndex entfernt), `src/lib/server/repos/modes.ts` (`findBySlug` entfernt, `duplicateMode` ohne Slug-Suffix), `src/lib/server/modes/parseForm.ts` (kein Slug-Feld mehr), `src/routes/modes/new/+page.server.ts`, `src/routes/modes/[id]/+page.server.ts`, `src/routes/modes/+page.server.ts` | manual | ☑ |
+| REQ-BET-020 | Phase 18b | `src/lib/graph/templates.ts` (7 Templates + `buildGraph` + `findTemplate`), `src/lib/graph/templates.test.ts` (8 Smoke-Tests) | vitest | ☑ |
+| REQ-BET-021 | Phase 18b | `src/lib/graph/compile.ts` (`buildRaceOutcomes` mit N>1 Pfad), `src/lib/graph/graph.test.ts` (Test "race_to_threshold N>1") | vitest | ☑ |
+| REQ-BET-022 | Phase 18b | `src/lib/graph/validate.ts` (`isNumberToTime` Coercion-Exception) | vitest (templates.test.ts) | ☑ |
+| REQ-UI-042 | Phase 18b | `src/routes/modes/[id]/graphs/new/+page.server.ts`, `src/routes/modes/[id]/graphs/new/+page.svelte` (Lucide-Cards + dynamisches Form) | manual | ☑ |
+| REQ-UI-043 | Phase 18c | `src/routes/modes/[id]/+page.server.ts` (lädt `listByMode`, `deleteGraph`-Action), `src/routes/modes/[id]/+page.svelte` (Wetten-Section + CTAs) | manual | ☑ |
+| REQ-UI-044 | Phase 18d | `src/lib/graph/catalog.ts` (`ENUM_LABELS` + `enumLabel()`), `src/lib/graph/GraphCanvas.svelte` (`enumLabel(p.name, v)` in enum-Options) | manual | ☑ |
+| REQ-UI-045 | Phase 18e | `src/lib/graph/catalog.ts` (`advanced?` Flag auf `now`/`first_occurrence`/`delta`/`between`/`time_compare`/`not`/`if_then`/`sequence_match`), `src/lib/graph/GraphCanvas.svelte` (`showAdvanced` State + Filter in `suggestionsForInput`/`suggestionsForOutput`/`SOURCE_NODES` + Checkbox in beiden Sheet-Headern) | manual | ☑ |
 
 ## REQ-DATA — Data
 

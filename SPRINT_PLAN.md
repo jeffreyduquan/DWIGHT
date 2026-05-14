@@ -480,6 +480,24 @@ Acceptance:
 
 ---
 
+## Phase 18 — Mode/Bet-Graph Vereinfachung ☑
+**Goal:** Den Mode/Bet-Graph-Workflow vom Coder-Tool zum normalen Form-UI machen. Slug ganz raus, Wetten aus 7 Vorlagen generieren statt frei zeichnen, Wetten in den Mode-Editor inline, Graph-Editor mit deutschen Labels und Operator-Symbolen, seltene Nodes hinter "Erweitert"-Toggle.
+
+Tasks:
+- ☑ **18a Slug-Cleanup (REQ-MODE-013):** Migration `0009_drop_mode_slug.sql` droppt `modes.slug` + `modes_slug_uniq`. Aus `schema.ts`, `repos/modes.ts` (`findBySlug` entfernt), `parseForm.ts`, `/modes/new` und `/modes/[id]` ist Slug komplett raus. Modes nur noch per UUID adressiert.
+- ☑ **18b Wett-Vorlagen (REQ-BET-020, REQ-BET-021, REQ-BET-022, REQ-UI-042):** Neues Modul `src/lib/graph/templates.ts` mit 7 Templates (`race`, `champion`, `loser`, `will_player`, `will_happen`, `podium`, `race_vs_time`) als `TemplateSpec` mit Lucide-Icon-Namen, Feldern und German sentence-Preview. `buildGraph()` emittiert valides BetGraph-JSON. Compiler erweitert für `race_to_threshold` mit N>1 (per-Entity `count(gte,N)` Predicates + `OnFirstSatisfied`). Validator erlaubt einseitige Number→Timestamp Coercion. Neue Route `/modes/[id]/graphs/new` mit Karten-Picker und dynamischem Form pro Template.
+- ☑ **18c One-Page Mode-Editor (REQ-UI-043):** `/modes/[id]/+page.server.ts` lädt Bet-Graphs des Modes mit. `/modes/[id]/+page.svelte` zeigt Wettenliste inline (Name + Preview + Bearbeiten-Link + Delete) und 2 CTAs: "+ Wette aus Vorlage" / "+ Frei zeichnen". Eigene `deleteGraph`-Action.
+- ☑ **18d Graph-Editor Polish (REQ-UI-044):** `catalog.ts` exportiert `enumLabel()` + `ENUM_LABELS`-Map mit Operator-Symbolen (`=`/`≠`/`>`/`<`/`≥`/`≤`), DE-Labels für Trigger (`Am Ende`/`Sobald erfüllt`), Direction (`↑ hoch`/`↓ runter`) und Delta-Mode. `GraphCanvas.svelte` zeigt diese Labels in allen enum-Dropdowns.
+- ☑ **18e Catalog-Triage (REQ-UI-045):** `NodeSpec.advanced` Flag. Markiert: `now`, `first_occurrence`, `delta`, `between`, `time_compare`, `not`, `if_then`, `sequence_match`. Beide Picker-Sheets (Source-Picker + Pin-Picker) bekommen "Erweitert"-Checkbox; default versteckt sind Advanced-Nodes.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 102/102 (93 + 1 race-N>1 + 8 templates).
+- ☑ `pnpm check`: 0 Errors, 12 Warnings.
+- ☑ Alle 7 Templates: `buildGraph → validateGraph.ok → compileGraph.ok` (Smoke-Test pro Template).
+- ☑ Mode-Editor zeigt Wettenliste inline; Delete-Action funktioniert.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

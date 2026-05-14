@@ -144,6 +144,36 @@ describe('compileGraph', () => {
 		}
 	});
 
+	it('compiles race_to_threshold with N>1 to per-entity count(gte,N) outcomes', () => {
+		const graph = g(
+			[
+				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
+				{ id: 'a', kind: 'all_entities' },
+				{ id: 'n', kind: 'constant', props: { value: 3 } },
+				{ id: 'r', kind: 'race_to_threshold' },
+				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Drei Tore' } }
+			],
+			[
+				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'r', pin: 'trackable' } },
+				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'r', pin: 'scope' } },
+				{ from: { nodeId: 'n', pin: 'out' }, to: { nodeId: 'r', pin: 'threshold' } },
+				{ from: { nodeId: 'r', pin: 'winner' }, to: { nodeId: 'o', pin: 'result' } }
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		expect(res.market.outcomes).toHaveLength(3);
+		for (const o of res.market.outcomes) {
+			expect(o.predicate.kind).toBe('count');
+			if (o.predicate.kind === 'count') {
+				expect(o.predicate.cmp).toBe('gte');
+				expect(o.predicate.n).toBe(3);
+				expect(o.predicate.trackableId).toBe('goal');
+			}
+		}
+	});
+
 	it('compiles sum + compare(>N) + boolean_outcome to compare_counters sum predicate', () => {
 		const graph = g(
 			[

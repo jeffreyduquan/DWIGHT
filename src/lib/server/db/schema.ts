@@ -382,7 +382,6 @@ export const modes = pgTable(
 	'modes',
 	{
 		id: uuid('id').primaryKey().defaultRandom(),
-		slug: text('slug').notNull(),
 		name: text('name').notNull(),
 		description: text('description').notNull(),
 		ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'cascade' }),
@@ -391,8 +390,7 @@ export const modes = pgTable(
 		trackables: jsonb('trackables').$type<Trackable[]>().default([]).notNull(),
 		defaultConfig: jsonb('default_config').$type<ModeDefaultConfig>().notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
-	},
-	(t) => [uniqueIndex('modes_slug_uniq').on(t.slug)]
+	}
 );
 
 /**

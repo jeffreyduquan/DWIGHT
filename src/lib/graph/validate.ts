@@ -115,12 +115,17 @@ export function validateGraph(graph: BetGraph): ValidationResult {
 			continue;
 		}
 		if (fromPin.type !== toPin.type) {
-			errors.push({
-				code: 'TYPE_MISMATCH',
-				message: `Typ-Konflikt: ${from.kind}.${fromPin.name} (${fromPin.type}) -> ${to.kind}.${toPin.name} (${toPin.type})`,
-				nodeId: to.id
-			});
-			continue;
+			// Phase 18b: timestamps are seconds-since-round-start numbers
+			// internally, so Number→Timestamp is a legal coercion.
+			const isNumberToTime = fromPin.type === 'Number' && toPin.type === 'Timestamp';
+			if (!isNumberToTime) {
+				errors.push({
+					code: 'TYPE_MISMATCH',
+					message: `Typ-Konflikt: ${from.kind}.${fromPin.name} (${fromPin.type}) -> ${to.kind}.${toPin.name} (${toPin.type})`,
+					nodeId: to.id
+				});
+				continue;
+			}
 		}
 		const set = connectedInputs.get(to.id);
 		if (set) {

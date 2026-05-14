@@ -48,6 +48,8 @@ export type NodeSpec = {
 	props: PropDef[];
 	/** Macro nodes get a small "M" badge in the editor. */
 	macro?: boolean;
+	/** Advanced nodes are hidden behind the "Erweitert"-toggle (Phase 18e). */
+	advanced?: boolean;
 };
 
 const CMP_OPS = ['eq', 'neq', 'gt', 'lt', 'gte', 'lte'] as const;
@@ -58,6 +60,36 @@ export type TimeOp = (typeof TIME_OPS)[number];
 
 const TRIGGERS = ['OnRoundEnd', 'OnFirstSatisfied'] as const;
 export type Trigger = (typeof TRIGGERS)[number];
+
+/** Human-readable symbols / words for enum prop values (Phase 18d). */
+export const ENUM_LABELS: Record<string, Record<string, string>> = {
+	op: {
+		eq: '=',
+		neq: '≠',
+		gt: '>',
+		lt: '<',
+		gte: '≥',
+		lte: '≤'
+	},
+	trigger: {
+		OnRoundEnd: 'Am Ende',
+		OnFirstSatisfied: 'Sobald erfüllt'
+	},
+	direction: {
+		up: '↑ hoch',
+		down: '↓ runter',
+		asc: '↑ aufsteigend',
+		desc: '↓ absteigend'
+	},
+	mode: {
+		signed: 'mit Vorzeichen',
+		abs: 'absolut'
+	}
+};
+
+export function enumLabel(propName: string, value: string): string {
+	return ENUM_LABELS[propName]?.[value] ?? value;
+}
 
 /** Full node catalogue. Indexed by `kind`. */
 export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
@@ -103,6 +135,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	now: {
 		kind: 'now',
 		family: 'source',
+		advanced: true,
 		label: 'Jetzt',
 		description: 'Zeitpunkt der Auswertung (Sekunden seit Rundenstart).',
 		inputs: [],
@@ -182,6 +215,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	first_occurrence: {
 		kind: 'first_occurrence',
 		family: 'compute',
+		advanced: true,
 		label: 'Erstes Vorkommen',
 		description: 'Zeitpunkt des ersten Events, optional pro Entity.',
 		inputs: [
@@ -194,6 +228,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	delta: {
 		kind: 'delta',
 		family: 'compute',
+		advanced: true,
 		label: 'Differenz',
 		description: 'Differenz zweier Zahlen.',
 		inputs: [
@@ -260,6 +295,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	between: {
 		kind: 'between',
 		family: 'logic',
+		advanced: true,
 		label: 'Zwischen',
 		description: 'value ∈ [min..max].',
 		inputs: [
@@ -285,6 +321,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	time_compare: {
 		kind: 'time_compare',
 		family: 'logic',
+		advanced: true,
 		label: 'Zeitvergleich',
 		description: 't1 OP t2 (Timestamps).',
 		inputs: [
@@ -323,6 +360,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	not: {
 		kind: 'not',
 		family: 'logic',
+		advanced: true,
 		label: 'NICHT',
 		description: 'Negation.',
 		inputs: [{ name: 'in', type: 'Boolean', required: true }],
@@ -332,6 +370,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 	if_then: {
 		kind: 'if_then',
 		family: 'logic',
+		advanced: true,
 		label: 'Wenn-Dann',
 		description: 'cond -> then (entspricht ¬cond ∨ then).',
 		inputs: [
@@ -345,6 +384,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 		kind: 'sequence_match',
 		family: 'logic',
 		macro: true,
+		advanced: true,
 		label: 'Reihenfolgenmuster',
 		description: 'Muster aus Trackable-Events in Reihenfolge.',
 		inputs: [{ name: 'steps', type: 'Trackable', multi: true, required: true }],

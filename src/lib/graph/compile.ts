@@ -209,19 +209,46 @@ function buildRaceOutcomes(
 	if (!trackableId) return { ok: false, error: 'race: kein Trackable verbunden' };
 	const thresholdSrc = inSrc(graph, raceNode.id, 'threshold');
 	const threshold = resolveNumber(graph, thresholdSrc);
-	if (threshold !== 1) {
+	if (threshold == null || threshold < 1) {
+		return { ok: false, error: 'race_to_threshold: Schwelle fehlt oder < 1' };
+	}
+	const direction = (raceNode.props as { direction?: string } | undefined)?.direction ?? 'up';
+	if (direction !== 'up') {
+		return { ok: false, error: 'race_to_threshold: nur direction="up" wird kompiliert' };
+	}
+	// N=1: classic log_rank position 1 path (kept for backward-compat snapshots).
+	if (threshold === 1) {
+		const outcomes: CompiledOutcome[] = ctx.entities.map((self, idx) => ({
+			label: self.name,
+			predicate: {
+				kind: 'log_rank',
+				trackableId,
+				entityId: self.id,
+				position: 1
+			},
+			orderIndex: idx
+		}));
 		return {
-			ok: false,
-			error: 'race_to_threshold ist im Phase-6-Compiler nur für N=1 unterstützt.'
+			ok: true,
+			market: {
+				title: String(
+					(outcome.props as { marketTitle?: string } | undefined)?.marketTitle ?? 'Erster'
+				),
+				outcomes
+			}
 		};
 	}
+	// N>1: per-entity `count(trackable, entity, gte, N)`. Together with the
+	// `OnFirstSatisfied` trigger the engine picks the first entity to cross
+	// the threshold.
 	const outcomes: CompiledOutcome[] = ctx.entities.map((self, idx) => ({
 		label: self.name,
 		predicate: {
-			kind: 'log_rank',
+			kind: 'count',
 			trackableId,
 			entityId: self.id,
-			position: 1
+			cmp: 'gte',
+			n: threshold
 		},
 		orderIndex: idx
 	}));

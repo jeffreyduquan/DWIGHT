@@ -33,14 +33,8 @@ export async function findById(id: string): Promise<DbMode | null> {
 	return rows[0] ?? null;
 }
 
-export async function findBySlug(slug: string): Promise<DbMode | null> {
-	const rows = await db.select().from(modes).where(eq(modes.slug, slug)).limit(1);
-	return rows[0] ?? null;
-}
-
 export type CreateModeInput = {
 	ownerUserId: string;
-	slug: string;
 	name: string;
 	description: string;
 	terminology: ModeTerminology;
@@ -54,9 +48,7 @@ export async function createMode(input: CreateModeInput): Promise<DbMode> {
 	return row;
 }
 
-export type UpdateModeInput = Omit<CreateModeInput, 'ownerUserId' | 'slug'> & {
-	slug?: string;
-};
+export type UpdateModeInput = Omit<CreateModeInput, 'ownerUserId'>;
 
 /** Update an own mode. */
 export async function updateMode(
@@ -112,16 +104,8 @@ export class ModeInUseError extends Error {
 export async function duplicateMode(sourceId: string, userId: string): Promise<DbMode | null> {
 	const source = await findById(sourceId);
 	if (!source) return null;
-	const baseSlug = `${source.slug}-copy`;
-	let slug = baseSlug;
-	for (let i = 1; i < 50; i++) {
-		const exists = await findBySlug(slug);
-		if (!exists) break;
-		slug = `${baseSlug}-${i + 1}`;
-	}
 	return createMode({
 		ownerUserId: userId,
-		slug,
 		name: `${source.name} (Kopie)`,
 		description: source.description,
 		terminology: source.terminology,

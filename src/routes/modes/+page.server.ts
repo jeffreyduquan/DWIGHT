@@ -11,7 +11,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		modes: modes.map((m) => ({
 			id: m.id,
-			slug: m.slug,
 			name: m.name,
 			entityCount: m.defaultEntities.length
 		}))
