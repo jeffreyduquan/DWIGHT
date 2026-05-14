@@ -229,6 +229,9 @@
 | REQ-UI-039 | Phase 15 | `src/routes/s/[id]/round/+page.svelte` (slider `step=max(1,round(startingMoney/100))`) | manual | ☑ |
 | REQ-DRINKS-007 | Phase 15 | `src/lib/drinks/lock.ts` (oldestAge), `src/lib/drinks/lock.test.ts` (10 statt 30) | vitest | ☑ |
 | REQ-RT-005 | Phase 15 | `src/routes/s/[id]/+page.svelte` (zusätzliche SSE-Listener `round_live`/`round_settled`/`round_cancelled`) | manual | ☑ |
+| REQ-UI-040 | Phase 16 | `src/routes/s/[id]/round/+page.svelte` (Quick-Set-Buttons entfernt, `.stake-number text-center`) | manual | ☑ |
+| REQ-MODE-010 | Phase 16 | `drizzle/0008_bump_mode_defaults.sql`, `drizzle/meta/_journal.json`, `src/lib/server/modes/parseForm.ts` | manual | ☑ |
+| REQ-DRINKS-008 | Phase 16 | `src/routes/s/[id]/+page.svelte`, `src/routes/s/[id]/round/+page.svelte` (`drink_initiated` → `navigator.vibrate(2000)` wenn `targetUserId === me.userId`) | manual | ☑ |
 
 ## REQ-DATA — Data
 

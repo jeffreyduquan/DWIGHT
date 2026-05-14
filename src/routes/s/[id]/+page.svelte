@@ -67,7 +67,18 @@
 			playSound(s);
 			invalidateAll();
 		};
-		es.addEventListener('drink_initiated', h);
+		const onDrinkInitiated = (ev: MessageEvent) => {
+			try {
+				const msg = JSON.parse(ev.data) as { payload?: { targetUserId?: string } };
+				if (msg.payload?.targetUserId === data.me.userId && 'vibrate' in navigator) {
+					navigator.vibrate(2000);
+				}
+			} catch {
+				/* ignore */
+			}
+			invalidateAll();
+		};
+		es.addEventListener('drink_initiated', onDrinkInitiated);
 		es.addEventListener('drink_confirmed', sound('drink'));
 		es.addEventListener('drink_cancelled', h);
 		es.addEventListener('balance_updated', h);

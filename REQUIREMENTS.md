@@ -276,6 +276,9 @@
 - **REQ-DRINKS-007** **Phase 15 timer stays.** `timerSecondsRemaining` now uses the OLDEST pending drink's age. New drinks added later do NOT reset the running timer for that player. Test updated accordingly.
 - **REQ-UI-039** **Phase 15 stake-slider snap.** Range slider uses `step = max(1, round(startingMoney / 100))` (i.e. 1% of starting money) so values snap to clean amounts independent of `maxStakeAllowed`.
 - **REQ-RT-005** **Phase 15 lobby SSE.** Lobby (`/s/[id]`) invalidates on `round_opened`, `round_live`, `round_settled`, `round_cancelled` so the bet-state badge updates live.
+- **REQ-UI-040** **Phase 16 stake UI streamlined.** The 2%/5%/25% quick-set buttons in the round bet UI are removed. The number input is centre-aligned and remains paired with the range slider + Reset button.
+- **REQ-MODE-010** **Phase 16 mode-defaults migration.** Migration `0008_bump_mode_defaults.sql` updates existing modes whose `defaultConfig.startingMoney === 1000` to `2000`, and `defaultConfig.rebuy.amount === 1000` to `1500`. `parseForm.ts` defaults match (`startingMoney: 2000`, `rebuy.amount: 1500`).
+- **REQ-DRINKS-008** **Phase 16 receive vibration.** When the connected client receives a `drink_initiated` SSE whose `payload.targetUserId` equals the local user, the browser is requested to vibrate for 2000ms (`navigator.vibrate(2000)`, no-op on unsupported devices). Implemented on both lobby (`/s/[id]`) and round (`/s/[id]/round`).
 
 ---
 

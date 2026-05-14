@@ -122,7 +122,7 @@ export function parseModeForm(form: FormData): ParseResult {
 		: 'BIER_EXEN';
 
 	const defaultConfig: ModeDefaultConfig = {
-		startingMoney: toInt(form.get('startingMoney'), 1000),
+		startingMoney: toInt(form.get('startingMoney'), 2000),
 		minStake: toInt(form.get('minStake'), 10),
 		drinkPrices: {
 			SCHLUCK: toInt(form.get('priceSchluck'), 50),
@@ -135,7 +135,7 @@ export function parseModeForm(form: FormData): ParseResult {
 		rebuy: {
 			enabled: form.get('rebuyEnabled') === 'on',
 			drinkType: rebuyDrinkType,
-			amount: toInt(form.get('rebuyAmount'), 500)
+			amount: toInt(form.get('rebuyAmount'), 1500)
 		},
 		lockMode,
 		lockTimerSeconds,

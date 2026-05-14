@@ -450,6 +450,20 @@ Acceptance:
 
 ---
 
+## Phase 16 — Polish 4 (User-Feedback) ☑
+**Goal:** Defaults nachziehen, Stake-UI entrümpeln, haptisches Feedback.
+
+Tasks:
+- ☑ **#1 Defaults 2000/1500 (REQ-MODE-010):** Migration `0008_bump_mode_defaults.sql` updated bestehende Modes (`startingMoney 1000 → 2000`, `rebuy.amount 1000 → 1500`). `parseForm.ts` defaults bumped. Migration via `drizzle-kit migrate` applied.
+- ☑ **#2 Stake-UI entrümpelt (REQ-UI-040):** `[2%, 5%, 25%]` Quick-Set-Buttons + `stakes`/`stakeOptions()` entfernt. Number-Input zentriert (`.stake-number text-center` + spin-button hidden).
+- ☑ **#3 Vibration on receive (REQ-DRINKS-008):** Lobby + round listen für `drink_initiated`, parsen `payload.targetUserId`, `navigator.vibrate(2000)` wenn match.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 21 Warnings (+3 ungenutzte CSS-Selektoren `.stake-row`/`.stake-chip-active` — werden Phase 17 entfernt falls nicht reaktiviert).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

@@ -161,22 +161,12 @@
 		showSettleModal = false;
 	}
 
-	const startingMoney = $derived(data.session.config.startingMoney ?? 1000);
+	const startingMoney = $derived(data.session.config.startingMoney ?? 2000);
 	const minStake = $derived(data.session.config.minStake ?? 1);
 	const showOdds = $derived(data.session.config.showOdds !== false);
 	const maxStakePct = $derived(data.session.config.maxStakePctOfStart ?? 100);
 	const maxStakeAbs = $derived(Math.floor((startingMoney * maxStakePct) / 100));
 	const maxStakeAllowed = $derived(Math.min(maxStakeAbs, data.me.moneyBalance));
-
-	function stakeOptions(): number[] {
-		const raw = [
-			Math.max(minStake, Math.round(startingMoney * 0.02)),
-			Math.max(minStake, Math.round(startingMoney * 0.05)),
-			Math.max(minStake, Math.round(startingMoney * 0.25))
-		];
-		return [...new Set(raw)].sort((a, b) => a - b);
-	}
-	const stakes = $derived(stakeOptions());
 
 	function setStake(marketId: string, value: number) {
 		const v = Math.max(0, Math.min(maxStakeAllowed, Math.floor(value)));
@@ -198,6 +188,18 @@
 		es.addEventListener('bet_placed', sound('bet'));
 		es.addEventListener('drink_confirmed', sound('drink'));
 		es.addEventListener('round_settled', sound('win'));
+		const onDrinkInitiated = (ev: MessageEvent) => {
+			try {
+				const msg = JSON.parse(ev.data) as { payload?: { targetUserId?: string } };
+				if (msg.payload?.targetUserId === data.me.userId && 'vibrate' in navigator) {
+					navigator.vibrate(2000);
+				}
+			} catch {
+				/* ignore */
+			}
+			invalidateAll();
+		};
+		es.addEventListener('drink_initiated', onDrinkInitiated);
 		[
 			'round_opened',
 			'round_cancelled',
@@ -211,7 +213,6 @@
 			'market_settled',
 			'market_metrics_updated',
 			'balance_updated',
-			'drink_initiated',
 			'drink_cancelled'
 		].forEach((e) => es!.addEventListener(e, h));
 	});
@@ -324,33 +325,10 @@
 
 				{#if canBet}
 					<div class="space-y-2 px-3 pb-2">
-						<div class="stake-row">
-							{#each [2, 5, 25] as pct, i (pct)}
-								{@const v = stakes[i] ?? Math.max(minStake, Math.round((startingMoney * pct) / 100))}
-								<button
-									type="button"
-									class="stake-chip"
-									class:stake-chip-active={stakeTotal === v}
-									disabled={v > maxStakeAllowed}
-									onclick={() => setStake(m.id, v)}
-								>
-									{pct}%
-								</button>
-							{/each}
-							<button
-								type="button"
-								class="stake-chip stake-reset"
-								disabled={stakeTotal === 0}
-								onclick={() => resetStake(m.id)}
-								aria-label="Zurücksetzen"
-							>
-								<RotateCcw size={12} />
-							</button>
-						</div>
 						<div class="flex items-center gap-2">
 							<input
 								type="number"
-								class="input input-bordered input-sm tabular w-24 text-right"
+								class="input input-bordered input-sm tabular stake-number w-24 text-center"
 								min="0"
 								max={maxStakeAllowed}
 								value={stakeTotal}
@@ -365,6 +343,15 @@
 								value={stakeTotal}
 								oninput={(e) => setStake(m.id, Number((e.target as HTMLInputElement).value))}
 							/>
+							<button
+								type="button"
+								class="stake-chip stake-reset"
+								disabled={stakeTotal === 0}
+								onclick={() => resetStake(m.id)}
+								aria-label="Zurücksetzen"
+							>
+								<RotateCcw size={12} />
+							</button>
 						</div>
 						<p class="text-base-content/40 text-[0.6rem] tracking-wide">
 							Max {maxStakeAllowed} ({maxStakePct}% vom Startgeld, max. Guthaben)
@@ -768,6 +755,17 @@
 	}
 	.stake-reset {
 		color: oklch(48% 0.10 28);
+	}
+	.stake-number {
+		text-align: center;
+	}
+	.stake-number::-webkit-inner-spin-button,
+	.stake-number::-webkit-outer-spin-button {
+		appearance: none;
+		margin: 0;
+	}
+	.stake-number {
+		-moz-appearance: textfield;
 	}
 	.stake-running {
 		margin-left: auto;
