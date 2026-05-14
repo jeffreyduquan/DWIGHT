@@ -341,6 +341,19 @@ Tasks:
 
 ---
 
+## Phase 10 — Visual Editor v2 + Live-Session Re-Sync ☑
+**Goal:** GraphCanvas UX überarbeiten + Recovery-Pfad für Sessions, die vor Phase 9 erstellt wurden.
+
+Tasks:
+- ☑ `GraphCanvas.svelte` komplett neu: zentriertes Auto-Layout pro Tiefen-Reihe (`computeRows` via longest-incoming-path), schmale Cards (130–170px), Pin-getriebenes Hinzufügen (`suggestionsForInput` / `suggestionsForOutput` filtern `NODE_CATALOG`), Akzeptieren erstellt Node + Edge atomar.
+- ☑ Input-Pins (`◀` caret, top-edge, rounded-bottom) vs Output-Pins (`▶` caret, bottom-edge, rounded-top) visuell klar unterscheidbar; `pin.compat` Pulse-Animation hebt zulässige Drop-Targets hervor.
+- ☑ Allgemeiner `+ Node` FAB entfernt; nur Empty-State + Toolbar-`+ Quelle` Button bleiben für stand-alone Sources.
+- ☑ Live-Sessions: neue `?/syncBetGraphs` Action in `s/[id]/round/+page.server.ts` (HOST-only) ruft `snapshotForMode(session.modeId)`, schreibt `sessions.betGraphsSnapshot`, instantiiert sofort in die laufende SETUP/BETTING_OPEN Round wenn `listMarketsByRound(current.id).length === 0`, emittiert `market_created` SSE.
+- ☑ Empty-State auf der Round-Seite verlinkt jetzt zu `/modes/{modeId}/graphs` und bietet den Snapshot-Refresh-Knopf an.
+- ☑ Tests: 78/78 grün; `pnpm check` 0 Errors.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

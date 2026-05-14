@@ -182,9 +182,22 @@
 	<section class="space-y-3 {isBetLocked ? 'opacity-60' : ''}">
 		{#if data.markets.length === 0}
 			<div class="border-base-content/10 rounded-2xl border border-dashed p-5 text-center text-sm opacity-70">
-				{isHost
-					? 'Definiere Wetten-Templates im Mode, damit sie automatisch entstehen.'
-					: 'Der Host hat noch keine Wetten erstellt.'}
+				{#if isHost}
+					{#if data.session.hasBetGraphsSnapshot}
+						<p>Bet-Graphs sind eingefroren, aber für diese Runde wurde noch nichts gespawnt.</p>
+						<form method="POST" action="?/syncBetGraphs" use:enhance class="mt-3">
+							<button type="submit" class="btn btn-sm btn-primary rounded-full">Bet-Graphs neu laden + spawnen</button>
+						</form>
+					{:else}
+						<p>Diese Session hat noch keine Bet-Graphs.</p>
+						<a href="/modes/{data.session.modeId}/graphs" class="link link-primary mt-2 inline-block">→ Bet-Graphs anlegen</a>
+						<form method="POST" action="?/syncBetGraphs" use:enhance class="mt-3">
+							<button type="submit" class="btn btn-sm btn-ghost rounded-full">Danach hier: Snapshot aktualisieren</button>
+						</form>
+					{/if}
+				{:else}
+					Der Host hat noch keine Wetten erstellt.
+				{/if}
 			</div>
 		{/if}
 

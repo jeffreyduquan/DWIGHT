@@ -180,6 +180,8 @@
 | REQ-UI-019 | Phase 6 | `src/routes/modes/[id]/graphs/+page.{server.ts,svelte}`, `src/routes/modes/[id]/+page.svelte` (Discovery-Link) | manual | ◑ |
 | REQ-UI-020 | Phase 6 | `src/lib/graph/{validate,preview,compile}.ts`, `src/lib/server/repos/markets.ts` (`instantiateBetGraphs` log-and-skip) | `src/lib/graph/graph.test.ts` | ◑ |
 | REQ-UI-021 | Phase 7 | `src/lib/graph/GraphCanvas.svelte`, `src/routes/modes/[id]/graphs/+page.svelte` (integration) | manual visual | ◑ |
+| REQ-UI-022 | Phase 10 | `src/lib/graph/GraphCanvas.svelte` (zentriertes Reihen-Layout, schmale Cards, Pin-getriebenes Add via `suggestionsForInput`/`suggestionsForOutput`) | manual visual | ◑ |
+| REQ-UI-023 | Phase 10 | `src/routes/s/[id]/round/+page.server.ts` (`?/syncBetGraphs`), `src/routes/s/[id]/round/+page.svelte` (Recovery-Empty-State) | manual | ◑ |
 
 ## REQ-GM — Game Master Tools
 

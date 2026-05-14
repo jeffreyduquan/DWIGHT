@@ -1,27 +1,25 @@
 <!--
-  @file graph/GraphCanvas.svelte -- Visual bet-graph editor (Phase 7 MVP).
+  @file graph/GraphCanvas.svelte -- Visual bet-graph editor (Phase 7.2 redesign).
 
-  Tap-to-connect node canvas. Vertical auto-layout. Mobile-first.
-
-  Props:
-    - graph: BetGraph (in/out)
-    - mode: { trackables: {id,label}[], defaultEntities: {label}[] }
-  Bindings:
-    - bind:graph to receive edits
-
-  UX:
-    - Nodes render as cards stacked vertically (topological order).
-    - Header coloured by family; props editable inline.
-    - Pins are coloured buttons (left = inputs, right = outputs).
-    - Tap an output pin -> compatible input pins glow; tap one to connect.
-    - Tap an existing edge in the SVG overlay -> shows Delete pill.
-    - "+ Node" FAB opens a bottom sheet grouped by family.
-    - "JSON" toggle reveals raw JSON for power-users (read-only here; full edit
-      stays in the parent page's <details> fallback).
+  Design goals:
+    - Compact, narrow node cards arranged in CENTERED ROWS by depth.
+    - Inputs on TOP edge, Outputs on BOTTOM edge (vertical signal flow).
+    - Pin-driven node creation: tap any unconnected pin to open a sheet listing
+      only compatible nodes; selecting one auto-creates the node + the edge.
+    - A single "+ Quelle" action exists for the empty state / extra sources.
+    - Input pins (◀) and output pins (▶) are visually distinct.
+    - Edges drawn as cubic curves with type-coloured stroke.
 -->
 <script lang="ts">
 	import type { BetGraph, GraphNode, GraphEdge, GraphNodeKind } from '$lib/server/db/schema';
-	import { NODE_CATALOG, FAMILY_LABELS, PIN_COLORS, type NodeFamily, type PinType } from '$lib/graph/catalog';
+	import {
+		NODE_CATALOG,
+		FAMILY_LABELS,
+		PIN_COLORS,
+		type NodeFamily,
+		type PinType,
+		type NodeSpec
+	} from '$lib/graph/catalog';
 	import { validateGraph } from '$lib/graph/validate';
 	import { previewSentence } from '$lib/graph/preview';
 
@@ -38,73 +36,71 @@
 		mode: ModeContext;
 	} = $props();
 
-	// Pending output pin (waiting for input target tap).
-	let pendingFrom = $state<{ nodeId: string; pin: string; type: PinType } | null>(null);
-	let paletteOpen = $state(false);
-	let selectedEdgeIdx = $state<number | null>(null);
+	// ----- UI state -----
+	type PendingSlot =
+		| { side: 'input'; nodeId: string; pin: string; type: PinType; multi: boolean }
+		| { side: 'output'; nodeId: string; pin: string; type: PinType };
+	let pendingSlot = $state<PendingSlot | null>(null);
+	let sourcePickerOpen = $state(false);
 	let expandedNode = $state<string | null>(null);
-	// Drag-to-connect state: pointer position while dragging from an output pin.
-	let dragPointer = $state<{ x: number; y: number } | null>(null);
-	let didDrag = $state(false);
+	let selectedEdgeIdx = $state<number | null>(null);
 
-	// Pin DOM positions for SVG overlay.
 	let canvasEl: HTMLElement;
 	let pinPositions = $state<Record<string, { x: number; y: number }>>({});
 
 	const validation = $derived(validateGraph(graph));
 	const preview = $derived(previewSentence(graph));
 
-	const FAMILY_ORDER: NodeFamily[] = ['source', 'compute', 'logic', 'outcome'];
 	const FAMILY_BG: Record<NodeFamily, string> = {
-		source: 'oklch(92% 0.03 220)',
-		compute: 'oklch(92% 0.04 80)',
-		logic: 'oklch(92% 0.04 250)',
-		outcome: 'oklch(92% 0.05 148)'
+		source: 'oklch(94% 0.03 220)',
+		compute: 'oklch(94% 0.04 80)',
+		logic: 'oklch(94% 0.04 250)',
+		outcome: 'oklch(94% 0.05 148)'
 	};
 
-	/** Topological sort -- sources first, outcomes last. Cycles fall back to insertion order. */
-	function sortedNodes(g: BetGraph): GraphNode[] {
-		const byId = new Map(g.nodes.map((n) => [n.id, n]));
-		const inDeg = new Map<string, number>();
-		for (const n of g.nodes) inDeg.set(n.id, 0);
-		for (const e of g.edges) inDeg.set(e.to.nodeId, (inDeg.get(e.to.nodeId) ?? 0) + 1);
-		const out: GraphNode[] = [];
-		const queue: string[] = [];
-		for (const [id, d] of inDeg) if (d === 0) queue.push(id);
-		while (queue.length) {
-			const id = queue.shift()!;
-			const node = byId.get(id);
-			if (node) out.push(node);
-			for (const e of g.edges) {
-				if (e.from.nodeId === id) {
-					const cur = inDeg.get(e.to.nodeId)!;
-					inDeg.set(e.to.nodeId, cur - 1);
-					if (cur - 1 === 0) queue.push(e.to.nodeId);
-				}
+	// ----- Layout: rows by depth -----
+	type Row = { depth: number; nodes: GraphNode[] };
+
+	function computeRows(g: BetGraph): Row[] {
+		const depthOf = new Map<string, number>();
+		function depth(id: string, seen: Set<string>): number {
+			if (depthOf.has(id)) return depthOf.get(id)!;
+			if (seen.has(id)) return 0;
+			seen.add(id);
+			const incoming = g.edges.filter((e) => e.to.nodeId === id);
+			let d = 0;
+			if (incoming.length > 0) {
+				d = Math.max(...incoming.map((e) => depth(e.from.nodeId, seen))) + 1;
 			}
+			depthOf.set(id, d);
+			return d;
 		}
-		// Append any unsorted (cycle) at the end.
-		for (const n of g.nodes) if (!out.includes(n)) out.push(n);
-		return out;
+		for (const n of g.nodes) depth(n.id, new Set());
+		const rows = new Map<number, GraphNode[]>();
+		for (const n of g.nodes) {
+			const d = depthOf.get(n.id) ?? 0;
+			const arr = rows.get(d) ?? [];
+			arr.push(n);
+			rows.set(d, arr);
+		}
+		return Array.from(rows.entries())
+			.sort((a, b) => a[0] - b[0])
+			.map(([depth, nodes]) => ({ depth, nodes }));
 	}
 
-	const ordered = $derived(sortedNodes(graph));
+	const rows = $derived(computeRows(graph));
 
 	function newNodeId(kind: GraphNodeKind): string {
-		const base = kind;
 		let i = 1;
-		while (graph.nodes.some((n) => n.id === `${base}_${i}`)) i++;
-		return `${base}_${i}`;
+		while (graph.nodes.some((n) => n.id === `${kind}_${i}`)) i++;
+		return `${kind}_${i}`;
 	}
 
-	function addNode(kind: GraphNodeKind) {
+	function createNodeWithDefaults(kind: GraphNodeKind): GraphNode {
 		const spec = NODE_CATALOG[kind];
 		const props: Record<string, unknown> = {};
 		for (const p of spec.props) if (p.defaultValue !== undefined) props[p.name] = p.defaultValue;
-		const newNode: GraphNode = { id: newNodeId(kind), kind, props };
-		graph = { ...graph, nodes: [...graph.nodes, newNode] };
-		paletteOpen = false;
-		expandedNode = newNode.id;
+		return { id: newNodeId(kind), kind, props };
 	}
 
 	function deleteNode(id: string) {
@@ -124,121 +120,121 @@
 	function setProp(nodeId: string, key: string, value: unknown) {
 		graph = {
 			...graph,
-			nodes: graph.nodes.map((n) => (n.id === nodeId ? { ...n, props: { ...n.props, [key]: value } } : n))
+			nodes: graph.nodes.map((n) =>
+				n.id === nodeId ? { ...n, props: { ...n.props, [key]: value } } : n
+			)
 		};
 	}
 
-	function onOutputTap(nodeId: string, pin: string, type: PinType) {
-		// If user actually dragged, the pointerup handler already resolved this; skip tap-toggle.
-		if (didDrag) {
-			didDrag = false;
-			return;
-		}
-		if (pendingFrom && pendingFrom.nodeId === nodeId && pendingFrom.pin === pin) {
-			pendingFrom = null;
-			return;
-		}
-		pendingFrom = { nodeId, pin, type };
+	function pinIsConnected(nodeId: string, pin: string, side: 'in' | 'out'): boolean {
+		if (side === 'in') return graph.edges.some((e) => e.to.nodeId === nodeId && e.to.pin === pin);
+		return graph.edges.some((e) => e.from.nodeId === nodeId && e.from.pin === pin);
 	}
 
-	function onOutputPointerDown(ev: PointerEvent, nodeId: string, pin: string, type: PinType) {
-		// Begin a drag-to-connect gesture. Tap-to-connect remains via onclick.
-		pendingFrom = { nodeId, pin, type };
-		didDrag = false;
-		const cr = canvasEl?.getBoundingClientRect();
-		if (cr) dragPointer = { x: ev.clientX - cr.left, y: ev.clientY - cr.top };
-		(ev.target as Element).setPointerCapture?.(ev.pointerId);
-	}
+	// ----- Compatible-node lookup -----
+	type Suggestion = { spec: NodeSpec; pin: string };
 
-	function onWindowPointerMove(ev: PointerEvent) {
-		if (!pendingFrom || !canvasEl) return;
-		const cr = canvasEl.getBoundingClientRect();
-		dragPointer = { x: ev.clientX - cr.left, y: ev.clientY - cr.top };
-		didDrag = true;
-	}
-
-	function findInputPinAt(clientX: number, clientY: number): { nodeId: string; pin: string } | null {
-		const els = document.elementsFromPoint(clientX, clientY);
-		for (const el of els) {
-			const key = (el as HTMLElement).dataset?.pinKey;
-			if (key && key.startsWith('in:')) {
-				const [, nodeId, pinName] = key.split(':');
-				return { nodeId, pin: pinName };
+	function suggestionsForInput(type: PinType): Suggestion[] {
+		const out: Suggestion[] = [];
+		for (const spec of Object.values(NODE_CATALOG)) {
+			for (const p of spec.outputs) {
+				if (p.type === type) out.push({ spec, pin: p.name });
 			}
 		}
-		return null;
+		return out;
 	}
 
-	function onWindowPointerUp(ev: PointerEvent) {
-		if (!pendingFrom) {
-			dragPointer = null;
-			return;
-		}
-		if (!didDrag) {
-			// No drag happened -- let the onclick tap-toggle path handle it.
-			dragPointer = null;
-			return;
-		}
-		const hit = findInputPinAt(ev.clientX, ev.clientY);
-		if (hit) {
-			// Look up pin spec to know type + multi flag.
-			const targetNode = graph.nodes.find((n) => n.id === hit.nodeId);
-			if (targetNode) {
-				const spec = NODE_CATALOG[targetNode.kind];
-				const pinDef = spec.inputs.find((p) => p.name === hit.pin);
-				if (pinDef) {
-					onInputTap(hit.nodeId, hit.pin, pinDef.type, !!pinDef.multi);
-					dragPointer = null;
-					return;
-				}
+	function suggestionsForOutput(type: PinType): Suggestion[] {
+		const out: Suggestion[] = [];
+		for (const spec of Object.values(NODE_CATALOG)) {
+			for (const p of spec.inputs) {
+				if (p.type === type) out.push({ spec, pin: p.name });
 			}
 		}
-		// Drag released over nothing usable -> cancel pending.
-		pendingFrom = null;
-		dragPointer = null;
+		return out;
 	}
 
-	function onInputTap(nodeId: string, pin: string, type: PinType, multi: boolean) {
-		if (!pendingFrom) return;
-		if (pendingFrom.type !== type) {
-			pendingFrom = null;
-			return;
+	function suggestionsForPending(): Suggestion[] {
+		if (!pendingSlot) return [];
+		return pendingSlot.side === 'input'
+			? suggestionsForInput(pendingSlot.type)
+			: suggestionsForOutput(pendingSlot.type);
+	}
+
+	function groupedSuggestions(): Array<{ family: NodeFamily; items: Suggestion[] }> {
+		const all = suggestionsForPending();
+		const groups = new Map<NodeFamily, Suggestion[]>();
+		for (const s of all) {
+			const arr = groups.get(s.spec.family) ?? [];
+			arr.push(s);
+			groups.set(s.spec.family, arr);
 		}
-		// Reject self-loop.
-		if (pendingFrom.nodeId === nodeId) {
-			pendingFrom = null;
-			return;
-		}
-		// Reject duplicate.
-		const exists = graph.edges.some(
-			(e) =>
-				e.from.nodeId === pendingFrom!.nodeId &&
-				e.from.pin === pendingFrom!.pin &&
-				e.to.nodeId === nodeId &&
-				e.to.pin === pin
-		);
-		if (exists) {
-			pendingFrom = null;
-			return;
-		}
-		// Enforce single-edge on non-multi inputs by removing any prior.
+		const order: NodeFamily[] = ['source', 'compute', 'logic', 'outcome'];
+		return order
+			.filter((f) => groups.has(f))
+			.map((f) => ({ family: f, items: groups.get(f)! }));
+	}
+
+	function acceptSuggestion(sugg: Suggestion) {
+		if (!pendingSlot) return;
+		const newNode = createNodeWithDefaults(sugg.spec.kind);
+		const edge: GraphEdge =
+			pendingSlot.side === 'input'
+				? {
+						from: { nodeId: newNode.id, pin: sugg.pin },
+						to: { nodeId: pendingSlot.nodeId, pin: pendingSlot.pin }
+					}
+				: {
+						from: { nodeId: pendingSlot.nodeId, pin: pendingSlot.pin },
+						to: { nodeId: newNode.id, pin: sugg.pin }
+					};
 		let newEdges = graph.edges;
-		if (!multi) {
-			newEdges = newEdges.filter((e) => !(e.to.nodeId === nodeId && e.to.pin === pin));
+		if (pendingSlot.side === 'input' && !pendingSlot.multi) {
+			newEdges = newEdges.filter(
+				(e) => !(e.to.nodeId === pendingSlot!.nodeId && e.to.pin === pendingSlot!.pin)
+			);
 		}
-		const newEdge: GraphEdge = {
-			from: { nodeId: pendingFrom.nodeId, pin: pendingFrom.pin },
-			to: { nodeId, pin }
+		graph = {
+			...graph,
+			nodes: [...graph.nodes, newNode],
+			edges: [...newEdges, edge]
 		};
-		graph = { ...graph, edges: [...newEdges, newEdge] };
-		pendingFrom = null;
+		pendingSlot = null;
+		expandedNode = newNode.id;
+	}
+
+	function addSource(kind: GraphNodeKind) {
+		const newNode = createNodeWithDefaults(kind);
+		graph = { ...graph, nodes: [...graph.nodes, newNode] };
+		sourcePickerOpen = false;
+		expandedNode = newNode.id;
+	}
+
+	function onPinTap(
+		nodeId: string,
+		pin: string,
+		side: 'input' | 'output',
+		type: PinType,
+		multi = false
+	) {
+		if (pendingSlot && pendingSlot.nodeId === nodeId && pendingSlot.pin === pin) {
+			pendingSlot = null;
+			return;
+		}
+		if (side === 'input' && pinIsConnected(nodeId, pin, 'in') && !multi) {
+			pendingSlot = null;
+			return;
+		}
+		pendingSlot =
+			side === 'input'
+				? { side, nodeId, pin, type, multi }
+				: { side, nodeId, pin, type };
 	}
 
 	function pinKey(nodeId: string, pin: string, side: 'in' | 'out') {
 		return `${side}:${nodeId}:${pin}`;
 	}
 
-	/** Recompute all pin coords relative to canvas. */
 	function recomputePinPositions() {
 		if (!canvasEl) return;
 		const cr = canvasEl.getBoundingClientRect();
@@ -253,12 +249,10 @@
 	}
 
 	$effect(() => {
-		// Recompute when nodes/edges change.
-		// (Reading these triggers the effect.)
 		void graph.nodes.length;
 		void graph.edges.length;
 		void expandedNode;
-		void paletteOpen;
+		void rows;
 		requestAnimationFrame(recomputePinPositions);
 	});
 
@@ -266,15 +260,9 @@
 		const ro = new ResizeObserver(() => recomputePinPositions());
 		if (canvasEl) ro.observe(canvasEl);
 		window.addEventListener('resize', recomputePinPositions);
-		window.addEventListener('pointermove', onWindowPointerMove);
-		window.addEventListener('pointerup', onWindowPointerUp);
-		window.addEventListener('pointercancel', onWindowPointerUp);
 		return () => {
 			ro.disconnect();
 			window.removeEventListener('resize', recomputePinPositions);
-			window.removeEventListener('pointermove', onWindowPointerMove);
-			window.removeEventListener('pointerup', onWindowPointerUp);
-			window.removeEventListener('pointercancel', onWindowPointerUp);
 		};
 	});
 
@@ -282,9 +270,8 @@
 		const a = pinPositions[pinKey(e.from.nodeId, e.from.pin, 'out')];
 		const b = pinPositions[pinKey(e.to.nodeId, e.to.pin, 'in')];
 		if (!a || !b) return '';
-		const dx = Math.max(40, Math.abs(b.x - a.x) * 0.5);
-		const dy = (b.y - a.y) * 0.3;
-		return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y + dy}, ${b.x - dx} ${b.y - dy}, ${b.x} ${b.y}`;
+		const dy = Math.max(30, (b.y - a.y) * 0.5);
+		return `M ${a.x} ${a.y} C ${a.x} ${a.y + dy}, ${b.x} ${b.y - dy}, ${b.x} ${b.y}`;
 	}
 
 	function edgeMid(e: GraphEdge): { x: number; y: number } | null {
@@ -295,20 +282,24 @@
 	}
 
 	function edgeColor(e: GraphEdge): string {
-		const spec = NODE_CATALOG[graph.nodes.find((n) => n.id === e.from.nodeId)?.kind ?? ('entity' as GraphNodeKind)];
-		const pin = spec?.outputs.find((p) => p.name === e.from.pin);
+		const node = graph.nodes.find((n) => n.id === e.from.nodeId);
+		if (!node) return 'oklch(70% 0.04 220)';
+		const spec = NODE_CATALOG[node.kind];
+		const pin = spec.outputs.find((p) => p.name === e.from.pin);
 		return pin ? PIN_COLORS[pin.type] : 'oklch(70% 0.04 220)';
 	}
 
 	const ENTITY_OPTIONS = $derived(mode.defaultEntities.map((e) => e.name));
 	const TRACKABLE_OPTIONS = $derived(mode.trackables.map((t) => t.id));
+
+	const SOURCE_NODES = Object.values(NODE_CATALOG).filter((s) => s.family === 'source');
 </script>
 
 <div class="wrap">
 	<header class="banner">
 		<span class="preview">{preview}</span>
 		{#if validation.ok}
-			<span class="badge ok">✓ Valid</span>
+			<span class="badge ok">✓</span>
 		{:else}
 			<span class="badge warn">⚠ {validation.errors.length}</span>
 		{/if}
@@ -333,121 +324,138 @@
 						cy={m.y}
 						r="9"
 						class="edge-hit"
+						role="button"
+						tabindex="0"
+						aria-label="Edge {i + 1}"
 						onclick={() => (selectedEdgeIdx = selectedEdgeIdx === i ? null : i)}
+						onkeydown={(ev) => {
+							if (ev.key === 'Enter' || ev.key === ' ') {
+								ev.preventDefault();
+								selectedEdgeIdx = selectedEdgeIdx === i ? null : i;
+							}
+						}}
 					/>
 					{#if selectedEdgeIdx === i}
 						<foreignObject x={m.x - 30} y={m.y + 8} width="60" height="28">
-							<button type="button" class="del-edge" onclick={() => deleteEdge(i)}>Edge ×</button>
+							<button type="button" class="del-edge" onclick={() => deleteEdge(i)}>×</button>
 						</foreignObject>
 					{/if}
 				{/if}
 			{/each}
-
-			{#if pendingFrom && dragPointer}
-				{@const a = pinPositions[pinKey(pendingFrom.nodeId, pendingFrom.pin, 'out')]}
-				{#if a}
-					<path
-						d={`M ${a.x} ${a.y} L ${dragPointer.x} ${dragPointer.y}`}
-						stroke="oklch(60% 0.1 80)"
-						stroke-width="2.5"
-						stroke-dasharray="4 4"
-						fill="none"
-					/>
-				{/if}
-			{/if}
 		</svg>
 
-		{#each ordered as node (node.id)}
-			{@const spec = NODE_CATALOG[node.kind]}
-			<article class="node" style:--family-bg={FAMILY_BG[spec.family]}>
-				<header class="node-head">
-					<button type="button" class="node-title" onclick={() => (expandedNode = expandedNode === node.id ? null : node.id)}>
-						<span class="fam">{FAMILY_LABELS[spec.family]}</span>
-						<strong>{spec.label}</strong>
-						{#if spec.macro}<span class="macro">M</span>{/if}
-					</button>
-					<button type="button" class="del" aria-label="Node löschen" onclick={() => deleteNode(node.id)}>×</button>
-				</header>
+		{#each rows as row (row.depth)}
+			<div class="row">
+				{#each row.nodes as node (node.id)}
+					{@const spec = NODE_CATALOG[node.kind]}
+					{@const isExpanded = expandedNode === node.id}
+					<article class="node" style:--family-bg={FAMILY_BG[spec.family]}>
+						{#if spec.inputs.length > 0}
+							<div class="pins-top">
+								{#each spec.inputs as p (p.name)}
+									{@const k = pinKey(node.id, p.name, 'in')}
+									{@const connected = pinIsConnected(node.id, p.name, 'in')}
+									{@const compat =
+										pendingSlot?.side === 'output' &&
+										pendingSlot?.type === p.type &&
+										pendingSlot?.nodeId !== node.id}
+									<button
+										type="button"
+										class="pin pin-in"
+										class:compat
+										class:connected
+										class:required={p.required}
+										data-pin-key={k}
+										title={p.name + ' (' + p.type + (p.required ? ', required' : '') + ')'}
+										onclick={() => onPinTap(node.id, p.name, 'input', p.type, !!p.multi)}
+										style:--pin-color={PIN_COLORS[p.type]}
+										aria-label="Input {p.name}"
+									>
+										<span class="caret">◀</span>
+										<span class="dot"></span>
+										<span class="lbl">{p.name}</span>
+									</button>
+								{/each}
+							</div>
+						{/if}
 
-				<div class="pins-row">
-					<div class="pins inputs">
-						{#each spec.inputs as p (p.name)}
-							{@const k = pinKey(node.id, p.name, 'in')}
-							{@const compat = pendingFrom && pendingFrom.type === p.type && pendingFrom.nodeId !== node.id}
-							<button
-								type="button"
-								class="pin in"
-								class:compat
-								class:required={p.required}
-								data-pin-key={k}
-								title="{p.name} ({p.type}{p.required ? ', required' : ''}{p.multi ? ', multi' : ''})"
-								onclick={() => onInputTap(node.id, p.name, p.type, !!p.multi)}
-								style:--pin-color={PIN_COLORS[p.type]}
-							>
-								<span class="dot"></span>
-								<span class="lbl">{p.name}</span>
-							</button>
-						{/each}
-					</div>
+						<button
+							type="button"
+							class="body"
+							onclick={() => (expandedNode = isExpanded ? null : node.id)}
+						>
+							<span class="fam">{FAMILY_LABELS[spec.family]}</span>
+							<strong>{spec.label}</strong>
+							{#if spec.macro}<span class="macro">M</span>{/if}
+						</button>
 
-					<div class="props">
-						{#if expandedNode === node.id}
-							{#each spec.props as p (p.name)}
-								<label class="prop">
-									<span class="prop-lbl">{p.label}</span>
-									{#if p.kind === 'enum'}
-										<select
-											value={node.props?.[p.name] ?? p.defaultValue ?? ''}
-											onchange={(ev) => setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
-										>
-											{#each p.enumValues ?? [] as v (v)}
-												<option value={v}>{v}</option>
-											{/each}
-										</select>
-									{:else if p.kind === 'boolean'}
-										<input
-											type="checkbox"
-											checked={!!(node.props?.[p.name] ?? p.defaultValue)}
-											onchange={(ev) => setProp(node.id, p.name, (ev.target as HTMLInputElement).checked)}
-										/>
-									{:else if p.kind === 'number'}
-										<input
-											type="number"
-											value={(node.props?.[p.name] as number | undefined) ?? (p.defaultValue as number | undefined) ?? 0}
-											oninput={(ev) => setProp(node.id, p.name, Number((ev.target as HTMLInputElement).value))}
-										/>
-									{:else if p.kind === 'modeRef' && p.modeRefKind === 'trackable'}
-										<select
-											value={(node.props?.[p.name] as string | undefined) ?? ''}
-											onchange={(ev) => setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
-										>
-											<option value="">--</option>
-											{#each TRACKABLE_OPTIONS as t (t)}
-												<option value={t}>{t}</option>
-											{/each}
-										</select>
-									{:else if p.kind === 'modeRef' && p.modeRefKind === 'entity'}
-										<select
-											value={(node.props?.[p.name] as string | undefined) ?? ''}
-											onchange={(ev) => setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
-										>
-											<option value="">--</option>
-											{#each ENTITY_OPTIONS as e (e)}
-												<option value={e}>{e}</option>
-											{/each}
-										</select>
-									{:else}
-										<input
-											type="text"
-											value={(node.props?.[p.name] as string | undefined) ?? ''}
-											oninput={(ev) => setProp(node.id, p.name, (ev.target as HTMLInputElement).value)}
-										/>
-									{/if}
-								</label>
-							{/each}
-							{#if spec.props.length === 0}
-								<small class="muted">Keine Properties.</small>
-							{/if}
+						{#if isExpanded}
+							<div class="props">
+								{#each spec.props as p (p.name)}
+									<label class="prop">
+										<span class="prop-lbl">{p.label}</span>
+										{#if p.kind === 'enum'}
+											<select
+												value={(node.props?.[p.name] as string | undefined) ?? p.defaultValue ?? ''}
+												onchange={(ev) =>
+													setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
+											>
+												{#each p.enumValues ?? [] as v (v)}
+													<option value={v}>{v}</option>
+												{/each}
+											</select>
+										{:else if p.kind === 'boolean'}
+											<input
+												type="checkbox"
+												checked={!!(node.props?.[p.name] ?? p.defaultValue)}
+												onchange={(ev) =>
+													setProp(node.id, p.name, (ev.target as HTMLInputElement).checked)}
+											/>
+										{:else if p.kind === 'number'}
+											<input
+												type="number"
+												value={(node.props?.[p.name] as number | undefined) ??
+													(p.defaultValue as number | undefined) ??
+													0}
+												oninput={(ev) =>
+													setProp(node.id, p.name, Number((ev.target as HTMLInputElement).value))}
+											/>
+										{:else if p.kind === 'modeRef' && p.modeRefKind === 'trackable'}
+											<select
+												value={(node.props?.[p.name] as string | undefined) ?? ''}
+												onchange={(ev) =>
+													setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
+											>
+												<option value="">--</option>
+												{#each TRACKABLE_OPTIONS as t (t)}
+													<option value={t}>{t}</option>
+												{/each}
+											</select>
+										{:else if p.kind === 'modeRef' && p.modeRefKind === 'entity'}
+											<select
+												value={(node.props?.[p.name] as string | undefined) ?? ''}
+												onchange={(ev) =>
+													setProp(node.id, p.name, (ev.target as HTMLSelectElement).value)}
+											>
+												<option value="">--</option>
+												{#each ENTITY_OPTIONS as e (e)}
+													<option value={e}>{e}</option>
+												{/each}
+											</select>
+										{:else}
+											<input
+												type="text"
+												value={(node.props?.[p.name] as string | undefined) ?? ''}
+												oninput={(ev) =>
+													setProp(node.id, p.name, (ev.target as HTMLInputElement).value)}
+											/>
+										{/if}
+									</label>
+								{/each}
+								<button type="button" class="del-btn" onclick={() => deleteNode(node.id)}
+									>Node löschen</button
+								>
+							</div>
 						{:else if spec.props.length > 0}
 							<small class="prop-summary">
 								{#each spec.props as p (p.name)}
@@ -458,83 +466,155 @@
 								{/each}
 							</small>
 						{/if}
-					</div>
 
-					<div class="pins outputs">
-						{#each spec.outputs as p (p.name)}
-							{@const k = pinKey(node.id, p.name, 'out')}
-							{@const active = pendingFrom?.nodeId === node.id && pendingFrom?.pin === p.name}
-							<button
-								type="button"
-								class="pin out"
-								class:active
-								data-pin-key={k}
-								title="{p.name} ({p.type})"
-								onclick={() => onOutputTap(node.id, p.name, p.type)}
-								onpointerdown={(ev) => onOutputPointerDown(ev, node.id, p.name, p.type)}
-								style:--pin-color={PIN_COLORS[p.type]}
-							>
-								<span class="lbl">{p.name}</span>
-								<span class="dot"></span>
-							</button>
-						{/each}
-					</div>
-				</div>
-			</article>
+						{#if spec.outputs.length > 0}
+							<div class="pins-bottom">
+								{#each spec.outputs as p (p.name)}
+									{@const k = pinKey(node.id, p.name, 'out')}
+									{@const active = pendingSlot?.nodeId === node.id && pendingSlot?.pin === p.name}
+									{@const compat =
+										pendingSlot?.side === 'input' &&
+										pendingSlot?.type === p.type &&
+										pendingSlot?.nodeId !== node.id}
+									<button
+										type="button"
+										class="pin pin-out"
+										class:active
+										class:compat
+										data-pin-key={k}
+										title={p.name + ' (' + p.type + ')'}
+										onclick={() => onPinTap(node.id, p.name, 'output', p.type)}
+										style:--pin-color={PIN_COLORS[p.type]}
+										aria-label="Output {p.name}"
+									>
+										<span class="lbl">{p.name}</span>
+										<span class="dot"></span>
+										<span class="caret">▶</span>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</article>
+				{/each}
+			</div>
 		{/each}
 
 		{#if graph.nodes.length === 0}
-			<div class="empty-state">
-				<p class="empty">Leerer Graph. Wähle einen Start-Knoten.</p>
-				<button type="button" class="empty-add" onclick={() => (paletteOpen = true)}>+ Node hinzufügen</button>
+			<div class="empty">
+				<p>Leerer Graph.</p>
+				<button type="button" class="primary-action" onclick={() => (sourcePickerOpen = true)}>
+					+ Quell-Node hinzufügen
+				</button>
 			</div>
 		{/if}
 	</div>
 
-	<button type="button" class="fab" onclick={() => (paletteOpen = !paletteOpen)} aria-label="Node hinzufügen">
-		<span class="fab-icon">{paletteOpen ? '✕' : '+'}</span>
-		<span class="fab-label">{paletteOpen ? 'Schließen' : 'Node'}</span>
-	</button>
+	<div class="toolbar">
+		<button type="button" class="tool-btn" onclick={() => (sourcePickerOpen = true)}>+ Quelle</button>
+		{#if !validation.ok}
+			<details class="errs">
+				<summary>{validation.errors.length} Fehler</summary>
+				<ul>
+					{#each validation.errors as err, i (i)}
+						<li>{err.message}</li>
+					{/each}
+				</ul>
+			</details>
+		{/if}
+	</div>
 
-	{#if paletteOpen}
-		<div class="palette" role="dialog" aria-label="Node-Palette">
-			{#each FAMILY_ORDER as fam (fam)}
-				{@const items = Object.values(NODE_CATALOG).filter((s) => s.family === fam)}
-				{#if items.length > 0}
-					<section class="pal-section">
-						<h3>{FAMILY_LABELS[fam]}</h3>
-						<div class="pal-grid">
-							{#each items as spec (spec.kind)}
+	{#if pendingSlot}
+		<div
+			class="sheet"
+			role="dialog"
+			aria-label="Kompatible Nodes"
+			onclick={(ev) => {
+				if (ev.target === ev.currentTarget) pendingSlot = null;
+			}}
+			onkeydown={(ev) => {
+				if (ev.key === 'Escape') pendingSlot = null;
+			}}
+			tabindex="-1"
+		>
+			<div class="sheet-inner">
+				<header class="sheet-head">
+					<strong>
+						{pendingSlot.side === 'input' ? 'Liefert' : 'Verbraucht'}:
+						<span class="type-pill" style:--pin-color={PIN_COLORS[pendingSlot.type]}
+							>{pendingSlot.type}</span
+						>
+					</strong>
+					<button
+						type="button"
+						class="close"
+						onclick={() => (pendingSlot = null)}
+						aria-label="Schließen">×</button
+					>
+				</header>
+				{#each groupedSuggestions() as g (g.family)}
+					<section class="sg">
+						<h4>{FAMILY_LABELS[g.family]}</h4>
+						<div class="sg-grid">
+							{#each g.items as s (s.spec.kind + ':' + s.pin)}
 								<button
 									type="button"
-									class="pal-item"
-									style:--family-bg={FAMILY_BG[spec.family]}
-									onclick={() => addNode(spec.kind)}
+									class="sg-item"
+									style:--family-bg={FAMILY_BG[s.spec.family]}
+									onclick={() => acceptSuggestion(s)}
 								>
-									<strong>{spec.label}</strong>
-									<small>{spec.description}</small>
+									<strong>{s.spec.label}</strong>
+									<small>{s.spec.description}</small>
+									<em class="pin-hint">{s.pin}</em>
 								</button>
 							{/each}
 						</div>
 					</section>
+				{/each}
+				{#if groupedSuggestions().length === 0}
+					<p class="muted">Keine kompatiblen Nodes verfügbar.</p>
 				{/if}
-			{/each}
+			</div>
 		</div>
 	{/if}
 
-	{#if pendingFrom}
-		<p class="hint">Tippe einen passenden Input-Pin ({pendingFrom.type}) oder den Output erneut um abzubrechen.</p>
-	{/if}
-
-	{#if !validation.ok}
-		<details class="errs">
-			<summary>{validation.errors.length} Validierungsfehler</summary>
-			<ul>
-				{#each validation.errors as err (err.message)}
-					<li>{err.message}</li>
-				{/each}
-			</ul>
-		</details>
+	{#if sourcePickerOpen}
+		<div
+			class="sheet"
+			role="dialog"
+			aria-label="Quellen"
+			onclick={(ev) => {
+				if (ev.target === ev.currentTarget) sourcePickerOpen = false;
+			}}
+			onkeydown={(ev) => {
+				if (ev.key === 'Escape') sourcePickerOpen = false;
+			}}
+			tabindex="-1"
+		>
+			<div class="sheet-inner">
+				<header class="sheet-head">
+					<strong>Quell-Node wählen</strong>
+					<button
+						type="button"
+						class="close"
+						onclick={() => (sourcePickerOpen = false)}
+						aria-label="Schließen">×</button
+					>
+				</header>
+				<div class="sg-grid">
+					{#each SOURCE_NODES as s (s.kind)}
+						<button
+							type="button"
+							class="sg-item"
+							style:--family-bg={FAMILY_BG.source}
+							onclick={() => addSource(s.kind)}
+						>
+							<strong>{s.label}</strong>
+							<small>{s.description}</small>
+						</button>
+					{/each}
+				</div>
+			</div>
+		</div>
 	{/if}
 </div>
 
@@ -549,20 +629,21 @@
 		display: flex;
 		justify-content: space-between;
 		gap: 0.5rem;
-		padding: 0.5rem 0.7rem;
+		padding: 0.4rem 0.7rem;
 		background: white;
 		border-radius: 8px;
-		font-size: 0.85rem;
+		font-size: 0.8rem;
 	}
 	.banner .preview {
 		font-style: italic;
 		opacity: 0.85;
+		flex: 1;
 	}
 	.banner .badge {
-		font-size: 0.75rem;
 		font-weight: 600;
-		padding: 0.15rem 0.45rem;
+		padding: 0.05rem 0.4rem;
 		border-radius: 999px;
+		font-size: 0.75rem;
 	}
 	.banner .badge.ok {
 		color: oklch(40% 0.07 148);
@@ -576,8 +657,9 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		padding: 0.5rem 0 5rem;
+		gap: 2.5rem;
+		padding: 1rem 0;
+		min-height: 200px;
 	}
 	.edges {
 		position: absolute;
@@ -586,6 +668,7 @@
 		height: 100%;
 		pointer-events: none;
 		z-index: 0;
+		overflow: visible;
 	}
 	.edge-hit {
 		fill: rgba(0, 0, 0, 0);
@@ -596,225 +679,292 @@
 		background: oklch(60% 0.1 25);
 		color: white;
 		border: none;
-		font-size: 0.7rem;
-		padding: 0.2rem 0.4rem;
+		font-size: 0.9rem;
+		padding: 0.1rem 0.45rem;
 		border-radius: 6px;
 		cursor: pointer;
+		line-height: 1;
+	}
+	.row {
+		display: flex;
+		justify-content: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+		position: relative;
+		z-index: 1;
 	}
 	.node {
 		background: var(--family-bg, white);
-		border-radius: 12px;
-		padding: 0.55rem;
+		border-radius: 10px;
+		padding: 0.25rem 0.3rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
-		position: relative;
-		z-index: 1;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+		align-items: stretch;
+		gap: 0.25rem;
+		min-width: 130px;
+		max-width: 170px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
-	.node-head {
+	.pins-top,
+	.pins-bottom {
 		display: flex;
-		justify-content: space-between;
-		gap: 0.4rem;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 0.2rem;
 	}
-	.node-title {
+	.pins-top {
+		margin-top: -0.55rem;
+	}
+	.pins-bottom {
+		margin-bottom: -0.55rem;
+	}
+	.body {
 		background: transparent;
 		border: none;
 		text-align: left;
-		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 0.1rem;
+		gap: 0.05rem;
+		padding: 0.2rem 0.35rem;
 		cursor: pointer;
-		padding: 0;
 	}
 	.fam {
-		font-size: 0.7rem;
-		opacity: 0.6;
+		font-size: 0.6rem;
+		opacity: 0.55;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
+	.body strong {
+		font-size: 0.85rem;
+		line-height: 1.15;
+	}
 	.macro {
-		font-size: 0.65rem;
+		font-size: 0.6rem;
 		background: oklch(40% 0.07 148);
 		color: white;
-		padding: 0.05rem 0.3rem;
-		border-radius: 4px;
-		margin-left: 0.3rem;
-	}
-	.del {
-		background: transparent;
-		border: none;
-		font-size: 1.2rem;
-		opacity: 0.5;
-		cursor: pointer;
-		padding: 0 0.4rem;
-	}
-	.del:hover {
-		opacity: 1;
-	}
-	.pins-row {
-		display: grid;
-		grid-template-columns: minmax(0, auto) 1fr minmax(0, auto);
-		gap: 0.5rem;
-		align-items: stretch;
-	}
-	.pins {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
-		min-width: 60px;
-	}
-	.pins.inputs {
-		align-items: flex-start;
-	}
-	.pins.outputs {
-		align-items: flex-end;
+		padding: 0.05rem 0.25rem;
+		border-radius: 3px;
+		align-self: flex-start;
+		margin-top: 0.1rem;
 	}
 	.pin {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
-		background: white;
-		border: 1px solid rgba(0, 0, 0, 0.1);
-		padding: 0.25rem 0.5rem;
-		border-radius: 20px;
+		gap: 0.18rem;
+		padding: 0.15rem 0.4rem;
+		font-size: 0.65rem;
 		cursor: pointer;
-		font-size: 0.75rem;
-		min-height: 32px;
+		border: 1px solid rgba(0, 0, 0, 0.15);
+		min-height: 22px;
+		line-height: 1;
+	}
+	.pin-in {
+		background: white;
+		border-radius: 0 0 12px 12px;
+		border-top: none;
+	}
+	.pin-out {
+		background: white;
+		border-radius: 12px 12px 0 0;
+		border-bottom: none;
 	}
 	.pin .dot {
-		width: 10px;
-		height: 10px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
 		background: var(--pin-color, gray);
 		flex-shrink: 0;
 	}
+	.pin .caret {
+		font-size: 0.6rem;
+		color: var(--pin-color, gray);
+		font-weight: 700;
+	}
+	.pin .lbl {
+		opacity: 0.75;
+	}
 	.pin.required .dot {
-		box-shadow: 0 0 0 2px oklch(60% 0.15 25);
+		box-shadow: 0 0 0 1.5px oklch(60% 0.15 25);
+	}
+	.pin.connected {
+		background: var(--pin-color, white);
+	}
+	.pin.connected .lbl,
+	.pin.connected .caret {
+		color: oklch(20% 0.02 220);
 	}
 	.pin.compat {
-		outline: 2px solid oklch(60% 0.1 148);
-		animation: pulse 1.2s ease-in-out infinite;
+		outline: 2px solid oklch(60% 0.12 148);
+		animation: pulse 1.1s ease-in-out infinite;
+		z-index: 5;
 	}
 	.pin.active {
 		outline: 2px solid oklch(50% 0.15 80);
+		z-index: 5;
 	}
 	@keyframes pulse {
 		0%,
 		100% {
 			outline-offset: 0;
+			box-shadow: 0 0 0 0 oklch(60% 0.12 148 / 0.4);
 		}
 		50% {
 			outline-offset: 3px;
+			box-shadow: 0 0 0 4px oklch(60% 0.12 148 / 0.1);
 		}
 	}
 	.props {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
-		font-size: 0.8rem;
+		gap: 0.25rem;
+		padding: 0 0.35rem 0.3rem;
 	}
 	.prop {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.1rem;
+		font-size: 0.75rem;
 	}
 	.prop-lbl {
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		opacity: 0.65;
 	}
 	.prop input,
 	.prop select {
-		padding: 0.25rem 0.4rem;
-		border-radius: 6px;
+		padding: 0.2rem 0.3rem;
+		border-radius: 4px;
 		border: 1px solid rgba(0, 0, 0, 0.15);
 		background: white;
+		font-size: 0.75rem;
 	}
 	.prop-summary {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.3rem 0.7rem;
-		opacity: 0.75;
-	}
-	.muted {
-		opacity: 0.5;
+		gap: 0.15rem 0.4rem;
+		opacity: 0.7;
+		padding: 0 0.35rem 0.25rem;
 	}
 	.kv {
+		font-size: 0.65rem;
+	}
+	.del-btn {
+		margin-top: 0.2rem;
+		background: oklch(60% 0.1 25);
+		color: white;
+		border: none;
+		padding: 0.25rem;
+		border-radius: 5px;
+		cursor: pointer;
 		font-size: 0.7rem;
 	}
 	.empty {
 		text-align: center;
-		opacity: 0.6;
-		font-style: italic;
-		padding: 2rem;
-	}
-	.fab {
-		position: sticky;
-		bottom: 1rem;
-		align-self: center;
-		background: oklch(60% 0.055 148);
-		color: white;
-		border: none;
-		min-height: 56px;
-		padding: 0 1.25rem;
-		border-radius: 28px;
-		cursor: pointer;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-		z-index: 10;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: 600;
-	}
-	.fab-icon {
-		font-size: 1.4rem;
-		line-height: 1;
-	}
-	.fab-label {
-		font-size: 0.95rem;
-	}
-	.empty-state {
+		opacity: 0.85;
+		padding: 1.5rem 1rem;
 		display: flex;
 		flex-direction: column;
+		gap: 0.7rem;
 		align-items: center;
-		gap: 0.5rem;
-		padding: 1.5rem 1rem;
 	}
-	.empty-add {
+	.empty p {
+		opacity: 0.55;
+		margin: 0;
+		font-style: italic;
+	}
+	.primary-action,
+	.tool-btn {
 		background: oklch(60% 0.055 148);
 		color: white;
 		border: none;
-		padding: 0.6rem 1rem;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-	}
-	.palette {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		max-height: 70vh;
-		overflow-y: auto;
-		background: white;
-		padding: 0.75rem;
-		border-radius: 16px 16px 0 0;
-		box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
-		z-index: 20;
-	}
-	.pal-section h3 {
+		padding: 0.45rem 0.9rem;
+		border-radius: 999px;
 		font-size: 0.85rem;
-		margin: 0.5rem 0 0.3rem;
-		opacity: 0.7;
+		cursor: pointer;
+		font-weight: 500;
 	}
-	.pal-grid {
+	.toolbar {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		padding: 0.25rem 0;
+	}
+	.errs {
+		background: white;
+		padding: 0.3rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		flex: 1;
+		min-width: 12rem;
+	}
+	.errs ul {
+		margin: 0.25rem 0 0 1rem;
+		padding: 0;
+	}
+	.sheet {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.35);
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		z-index: 100;
+	}
+	.sheet-inner {
+		background: white;
+		width: 100%;
+		max-width: 540px;
+		max-height: 75vh;
+		overflow-y: auto;
+		padding: 0.85rem;
+		border-radius: 16px 16px 0 0;
+		box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+	}
+	.sheet-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+		margin-bottom: 0.5rem;
+	}
+	.type-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.05rem 0.45rem;
+		border-radius: 999px;
+		background: var(--pin-color, gray);
+		color: oklch(20% 0.02 220);
+		font-size: 0.7rem;
+		font-weight: 600;
+	}
+	.close {
+		background: transparent;
+		border: none;
+		font-size: 1.4rem;
+		cursor: pointer;
+		opacity: 0.6;
+		line-height: 1;
+		padding: 0 0.4rem;
+	}
+	.sg {
+		margin-bottom: 0.5rem;
+	}
+	.sg h4 {
+		font-size: 0.75rem;
+		margin: 0.4rem 0 0.3rem;
+		opacity: 0.6;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.sg-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 		gap: 0.4rem;
 	}
-	.pal-item {
+	.sg-item {
 		background: var(--family-bg, #eee);
 		border: none;
 		padding: 0.5rem;
@@ -822,31 +972,29 @@
 		text-align: left;
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.1rem;
 		cursor: pointer;
+		position: relative;
 	}
-	.pal-item small {
+	.sg-item strong {
+		font-size: 0.85rem;
+	}
+	.sg-item small {
 		font-size: 0.7rem;
 		opacity: 0.7;
 	}
-	.hint {
-		position: sticky;
-		bottom: 5rem;
-		background: oklch(50% 0.1 80);
-		color: white;
-		padding: 0.4rem 0.6rem;
-		border-radius: 8px;
-		font-size: 0.8rem;
+	.sg-item .pin-hint {
+		position: absolute;
+		top: 0.3rem;
+		right: 0.4rem;
+		font-size: 0.6rem;
+		opacity: 0.5;
+		font-style: italic;
+	}
+	.muted {
+		opacity: 0.6;
 		text-align: center;
-	}
-	.errs {
-		background: white;
-		padding: 0.5rem 0.7rem;
-		border-radius: 8px;
-		font-size: 0.8rem;
-	}
-	.errs ul {
-		margin: 0.3rem 0 0 1rem;
-		padding: 0;
+		font-style: italic;
+		padding: 1rem;
 	}
 </style>

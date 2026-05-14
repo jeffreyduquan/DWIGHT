@@ -46,7 +46,8 @@ import {
 	listOutcomesByMarket
 } from '$lib/server/repos/markets';
 import { placeBet } from '$lib/server/repos/bets';
-import { bets as betsTable, betOutcomes } from '$lib/server/db/schema';
+import { bets as betsTable, betOutcomes, sessions as sessionsTable } from '$lib/server/db/schema';
+import { snapshotForMode } from '$lib/server/repos/betGraphs';
 import { settleRound, cancelRoundWithRefund } from '$lib/server/round/lifecycle';
 import { evalPredicate } from '$lib/server/bets/predicate';
 import { emit } from '$lib/server/sse/broadcaster';
@@ -200,7 +201,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			id: session.id,
 			name: session.name,
 			config: session.config,
-			trackables: session.trackables
+			trackables: session.trackables,
+			modeId: session.modeId,
+			hasBetGraphsSnapshot: (session.betGraphsSnapshot ?? []).length > 0
 		},
 		me: {
 			userId: me.userId,
@@ -484,6 +487,37 @@ export const actions: Actions = {
 				proposerUserId,
 				count: targets.length
 			});
+		} catch (e) {
+			return fail(400, { error: friendlyError((e as Error).message) });
+		}
+		return { ok: true };
+	},
+
+	syncBetGraphs: async ({ locals, params }) => {
+		const user = requireUser(locals);
+		if ((await getRole(params.id, user.id)) !== 'HOST') return fail(403, { error: 'Nur Host' });
+		try {
+			const session = await findSession(params.id);
+			if (!session) return fail(404, { error: 'Session nicht gefunden' });
+			const snapshot = await snapshotForMode(session.modeId);
+			await db
+				.update(sessionsTable)
+				.set({ betGraphsSnapshot: snapshot })
+				.where(eq(sessionsTable.id, params.id));
+
+			// Auto-instantiate into the current round if one is open and has no markets yet.
+			const current = await getCurrentRound(params.id);
+			if (current && (current.status === 'SETUP' || current.status === 'BETTING_OPEN')) {
+				const existing = await listMarketsByRound(current.id);
+				if (existing.length === 0) {
+					const n = await instantiateBetGraphs({
+						roundId: current.id,
+						sessionId: params.id,
+						createdByUserId: user.id
+					});
+					if (n > 0) emit(params.id, 'market_created', { roundId: current.id, count: n });
+				}
+			}
 		} catch (e) {
 			return fail(400, { error: friendlyError((e as Error).message) });
 		}
