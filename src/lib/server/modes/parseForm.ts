@@ -139,7 +139,8 @@ export function parseModeForm(form: FormData): ParseResult {
 		},
 		lockMode,
 		lockTimerSeconds,
-		showOdds: form.get('showOdds') === 'on'
+		showOdds: form.get('showOdds') === 'on',
+		maxStakePctOfStart: Math.max(1, Math.min(100, toInt(form.get('maxStakePctOfStart'), 50)))
 	};
 
 	if (defaultConfig.startingMoney <= 0) {

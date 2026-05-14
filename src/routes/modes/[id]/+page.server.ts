@@ -3,7 +3,7 @@
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { deleteMode, findById, findBySlug, updateMode } from '$lib/server/repos/modes';
+import { deleteMode, findById, findBySlug, updateMode, ModeInUseError } from '$lib/server/repos/modes';
 import { parseModeForm } from '$lib/server/modes/parseForm';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -47,7 +47,16 @@ export const actions: Actions = {
 	},
 	delete: async ({ locals, params }) => {
 		if (!locals.user) throw redirect(303, '/login');
-		await deleteMode(params.id, locals.user.id);
+		try {
+			await deleteMode(params.id, locals.user.id);
+		} catch (err) {
+			if (err instanceof ModeInUseError) {
+				return fail(409, {
+					error: 'Mode wird von bestehenden Sessions verwendet. Lösche zuerst alle Sessions mit diesem Mode.'
+				});
+			}
+			throw err;
+		}
 		throw redirect(303, '/modes');
 	}
 };

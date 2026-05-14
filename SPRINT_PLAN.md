@@ -417,6 +417,24 @@ Acceptance:
 
 ---
 
+## Phase 14 — Polish 2 (User-Feedback) ☑
+**Goal:** 7 weitere Korrekturen aus User-Feedback.
+
+Tasks:
+- ☑ **#1 Mode-Delete Bug (REQ-MODE-008):** `deleteMode` fängt PG-FK-Error `23503` → `ModeInUseError`. Route-Action liefert 409 statt 500 mit deutscher Fehlermeldung.
+- ☑ **#2 Drinks-Liste merged (REQ-UI-034):** `DrinkPanel.svelte` `list`-Tab: alles in ein `<ul max-h-[28rem] overflow-y-auto>`. Pending bleibt expandable, History flach.
+- ☑ **#3 Lobby-Settings-Toggle (REQ-UI-035):** Settings-Panel hinter neuem `Settings`-Button neben QR + Sound, default zu.
+- ☑ **#4 Wett-Status-Badge (REQ-UI-036):** Lobby zeigt klickbaren Status-Banner (Wetten offen / geschlossen / Auflösung / Ergebnis / etc.) → linkt auf `/round`.
+- ☑ **#5 Bet-Stake-UI (REQ-UI-037):** 2/5/25% Quick-SET-Buttons, editable Number-Input + Range-Slider + Reset + Setzen.
+- ☑ **#6 maxStakePctOfStart (REQ-ECON-002):** Neues SessionConfig-Feld (default 50). `placeBet` wirft `STAKE_ABOVE_MAX`. UI in ModeForm/Settings/Create.
+- ☑ **#7 Startgeld-Default 2000 (REQ-MODE-009):** `freshModeDefaultConfig().startingMoney: 2000`.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 18 Warnings (3 neue benigne `state_referenced_locally` durch `confirmationMode`-`$state` Capture).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

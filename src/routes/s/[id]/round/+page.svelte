@@ -164,6 +164,9 @@
 	const startingMoney = $derived(data.session.config.startingMoney ?? 1000);
 	const minStake = $derived(data.session.config.minStake ?? 1);
 	const showOdds = $derived(data.session.config.showOdds !== false);
+	const maxStakePct = $derived(data.session.config.maxStakePctOfStart ?? 100);
+	const maxStakeAbs = $derived(Math.floor((startingMoney * maxStakePct) / 100));
+	const maxStakeAllowed = $derived(Math.min(maxStakeAbs, data.me.moneyBalance));
 
 	function stakeOptions(): number[] {
 		const raw = [
@@ -175,11 +178,9 @@
 	}
 	const stakes = $derived(stakeOptions());
 
-	function addStake(marketId: string, value: number) {
-		const current = stakeTotals[marketId] ?? 0;
-		const next = current + value;
-		if (next > data.me.moneyBalance) return;
-		stakeTotals[marketId] = next;
+	function setStake(marketId: string, value: number) {
+		const v = Math.max(0, Math.min(maxStakeAllowed, Math.floor(value)));
+		stakeTotals[marketId] = v;
 	}
 	function resetStake(marketId: string) {
 		stakeTotals[marketId] = 0;
@@ -322,17 +323,18 @@
 				</div>
 
 				{#if canBet}
-					<div class="px-3 pb-2">
+					<div class="space-y-2 px-3 pb-2">
 						<div class="stake-row">
-							<span class="stake-label">+</span>
-							{#each stakes as s (s)}
+							{#each [2, 5, 25] as pct, i (pct)}
+								{@const v = stakes[i] ?? Math.max(minStake, Math.round((startingMoney * pct) / 100))}
 								<button
 									type="button"
 									class="stake-chip"
-									disabled={stakeTotal + s > data.me.moneyBalance}
-									onclick={() => addStake(m.id, s)}
+									class:stake-chip-active={stakeTotal === v}
+									disabled={v > maxStakeAllowed}
+									onclick={() => setStake(m.id, v)}
 								>
-									+{s}
+									{pct}%
 								</button>
 							{/each}
 							<button
@@ -344,10 +346,29 @@
 							>
 								<RotateCcw size={12} />
 							</button>
-							{#if stakeTotal > 0}
-								<span class="stake-running tabular">= {stakeTotal}</span>
-							{/if}
 						</div>
+						<div class="flex items-center gap-2">
+							<input
+								type="number"
+								class="input input-bordered input-sm tabular w-24 text-right"
+								min="0"
+								max={maxStakeAllowed}
+								value={stakeTotal}
+								oninput={(e) => setStake(m.id, Number((e.target as HTMLInputElement).value))}
+							/>
+							<input
+								type="range"
+								class="range range-xs range-primary flex-1"
+								min="0"
+								max={maxStakeAllowed}
+								step={Math.max(1, Math.round(maxStakeAllowed / 100))}
+								value={stakeTotal}
+								oninput={(e) => setStake(m.id, Number((e.target as HTMLInputElement).value))}
+							/>
+						</div>
+						<p class="text-base-content/40 text-[0.6rem] tracking-wide">
+							Max {maxStakeAllowed} ({maxStakePct}% vom Startgeld, max. Guthaben)
+						</p>
 					</div>
 				{/if}
 
@@ -405,7 +426,7 @@
 									<button
 										type="submit"
 										class="btn btn-sm btn-primary flex-1 font-semibold"
-										disabled={stakeTotal === 0 || stakeTotal > data.me.moneyBalance}
+										disabled={stakeTotal < minStake || stakeTotal > maxStakeAllowed}
 									>
 										{stakeTotal > 0 ? `Setzen · ${stakeTotal}` : 'Einsatz wählen'}
 									</button>
@@ -735,6 +756,14 @@
 		color: oklch(38% 0.05 148);
 		box-shadow:
 			inset 1.5px 1.5px 3px oklch(40% 0.05 148 / 0.18),
+			inset -1.5px -1.5px 3px oklch(100% 0 0 / 0.78);
+	}
+	.stake-chip-active {
+		background-color: oklch(88% 0.06 148);
+		color: oklch(30% 0.06 148);
+		border-color: oklch(72% 0.06 148 / 0.7);
+		box-shadow:
+			inset 1.5px 1.5px 3px oklch(40% 0.06 148 / 0.18),
 			inset -1.5px -1.5px 3px oklch(100% 0 0 / 0.78);
 	}
 	.stake-reset {

@@ -82,6 +82,7 @@ function friendlyError(msg: string): string {
 	if (msg === 'INSUFFICIENT_FUNDS') return 'Nicht genug Guthaben.';
 	if (msg === 'INVALID_STAKE') return 'Ungültiger Einsatz.';
 	if (msg === 'STAKE_BELOW_MIN') return 'Einsatz liegt unter dem Minimum.';
+	if (msg === 'STAKE_ABOVE_MAX') return 'Einsatz übersteigt das Maximum pro Wette.';
 	if (msg.startsWith('MODE_INVALID:')) {
 		const parts = msg.split(':');
 		const detail = parts.slice(2).join(':');

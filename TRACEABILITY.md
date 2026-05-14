@@ -218,6 +218,13 @@
 | REQ-UI-032 | Phase 13 | `src/lib/components/ModeForm.svelte`, `src/routes/s/[id]/settings/+page.svelte`, `src/routes/s/create/+page.svelte` (`{#if confirmationMode==='PEERS'}`) | manual | ☑ |
 | REQ-UI-033 | Phase 13 | `src/routes/s/[id]/+page.svelte` (QR-Panel mt-3 unter Buttonreihe) | manual | ☑ |
 | REQ-MODE-007 | Phase 13 | `src/lib/server/modes/defaults.ts` (peerConfirmationsRequired:1, rebuy.amount:1500) | manual | ☑ |
+| REQ-MODE-008 | Phase 14 | `src/lib/server/repos/modes.ts` (ModeInUseError, 23503 catch), `src/routes/modes/[id]/+page.server.ts` (409 statt 500) | manual | ☑ |
+| REQ-MODE-009 | Phase 14 | `src/lib/server/modes/defaults.ts` (startingMoney:2000) | manual | ☑ |
+| REQ-ECON-002 | Phase 14 | `src/lib/server/db/schema.ts` (maxStakePctOfStart), `src/lib/server/repos/bets.ts` (STAKE_ABOVE_MAX), `src/lib/server/modes/{defaults,parseForm}.ts`, `src/lib/components/ModeForm.svelte`, `src/routes/s/create/+page.{svelte,server.ts}`, `src/routes/s/[id]/settings/+page.{svelte,server.ts}` | manual | ☑ |
+| REQ-UI-034 | Phase 14 | `src/lib/components/DrinkPanel.svelte` (unified list im `list`-Tab, max-h-[28rem] overflow-y-auto) | manual | ☑ |
+| REQ-UI-035 | Phase 14 | `src/routes/s/[id]/+page.svelte` (Settings-Toggle im Footer neben QR/Sound) | manual | ☑ |
+| REQ-UI-036 | Phase 14 | `src/routes/s/[id]/+page.svelte` (StateBadge), `src/routes/s/[id]/+page.server.ts` (`currentRound` im Load) | manual | ☑ |
+| REQ-UI-037 | Phase 14 | `src/routes/s/[id]/round/+page.svelte` (setStake, Number-Input, Slider, Reset, 2/5/25% Quick-Set-Buttons, maxStakeAllowed) | manual | ☑ |
 
 ## REQ-DATA — Data
 

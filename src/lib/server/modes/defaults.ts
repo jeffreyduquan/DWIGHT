@@ -5,7 +5,7 @@ import type { ModeDefaultConfig, Trackable } from '../db/schema';
 
 export function freshModeDefaultConfig(): ModeDefaultConfig {
 	return {
-		startingMoney: 1000,
+		startingMoney: 2000,
 		minStake: 10,
 		drinkPrices: { SCHLUCK: 50, KURZER: 150, BIER_EXEN: 500 },
 		confirmationMode: 'PEERS',
@@ -19,6 +19,7 @@ export function freshModeDefaultConfig(): ModeDefaultConfig {
 		lockMode: 'TIMER_LOCK',
 		lockTimerSeconds: 600,
 		showOdds: true,
+		maxStakePctOfStart: 50,
 		entityOverrides: {}
 	};
 }

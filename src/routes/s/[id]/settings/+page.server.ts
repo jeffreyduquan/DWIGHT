@@ -76,6 +76,10 @@ export const actions: Actions = {
 		const startingMoney = Math.max(100, toInt(form.get('startingMoney'), cfg.startingMoney));
 		const minStake = Math.max(1, toInt(form.get('minStake'), cfg.minStake));
 		const showOdds = form.get('showOdds') === 'on';
+		const maxStakePctOfStart = Math.max(
+			1,
+			Math.min(100, toInt(form.get('maxStakePctOfStart'), cfg.maxStakePctOfStart ?? 50))
+		);
 
 		const rebuyDrinkRaw = toStr(form.get('rebuyDrinkType'));
 		const rebuyDrinkType: DrinkType = (DRINK_TYPES as string[]).includes(rebuyDrinkRaw)
@@ -105,6 +109,7 @@ export const actions: Actions = {
 				startingMoney,
 				minStake,
 				showOdds,
+				maxStakePctOfStart,
 				rebuy,
 				entityOverrides,
 				autoLockOnDrink: undefined

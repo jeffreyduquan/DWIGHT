@@ -69,6 +69,11 @@ export async function placeBet(input: PlaceBetInput): Promise<DbBet> {
 			.where(eq(sessions.id, r.sessionId));
 		if (!s) throw new Error('SESSION_NOT_FOUND');
 		if (stake < s.config.minStake) throw new Error('STAKE_BELOW_MIN');
+		const maxPct = s.config.maxStakePctOfStart;
+		if (typeof maxPct === 'number' && maxPct > 0 && maxPct <= 100) {
+			const cap = Math.floor((s.config.startingMoney * maxPct) / 100);
+			if (cap > 0 && stake > cap) throw new Error('STAKE_ABOVE_MAX');
+		}
 
 		const [sp] = await tx
 			.select()

@@ -175,6 +175,21 @@
 				/>
 			</label>
 
+			<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
+				<span class="space-y-0.5">
+					<span class="block text-sm font-medium text-base-content">Max % vom Startgeld pro Wette</span>
+					<span class="text-base-content/40 block">Bremst Einzelwetten relativ zum Startguthaben.</span>
+				</span>
+				<input
+					type="number"
+					name="maxStakePctOfStart"
+					value={selectedMode.defaultConfig.maxStakePctOfStart ?? 50}
+					min="1"
+					max="100"
+					class="tabular w-16 bg-transparent text-right outline-none"
+				/>
+			</label>
+
 			<!-- Drink prices -->
 			<fieldset class="space-y-2">
 				<legend class="eyebrow inline-flex items-center gap-1.5">

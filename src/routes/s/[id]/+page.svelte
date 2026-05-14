@@ -28,6 +28,21 @@
 	const isHost = $derived(data.me.role === 'HOST');
 	const pendingDrinks = $derived(data.drinks.filter((d) => d.status === 'PENDING'));
 
+	type StateBadge = { label: string; tone: 'info' | 'warning' | 'success' | 'ghost'; emoji: string };
+	const betState = $derived<StateBadge>(
+		(() => {
+			const r = data.currentRound;
+			if (!r) return { label: 'Keine Runde', tone: 'ghost', emoji: '◌' };
+			if (r.status === 'SETUP') return { label: 'Setup', tone: 'ghost', emoji: '⚙️' };
+			if (r.status === 'BETTING_OPEN') return { label: 'Wetten offen', tone: 'success', emoji: '🟢' };
+			if (r.status === 'LIVE') return { label: 'Wetten geschlossen', tone: 'warning', emoji: '🔒' };
+			if (r.status === 'RESOLVING') return { label: 'Auflösung', tone: 'warning', emoji: '🧮' };
+			if (r.status === 'SETTLED') return { label: 'Ergebnis', tone: 'info', emoji: '🏁' };
+			if (r.status === 'CANCELLED') return { label: 'Abgebrochen', tone: 'ghost', emoji: '✕' };
+			return { label: r.status, tone: 'ghost', emoji: '?' };
+		})()
+	);
+
 	let soundOn = $state(isSoundEnabled());
 	function toggleSound() {
 		soundOn = !soundOn;
@@ -37,6 +52,11 @@
 	let showQr = $state(false);
 	function toggleQr() {
 		showQr = !showQr;
+	}
+
+	let showSettings = $state(false);
+	function toggleSettings() {
+		showSettings = !showSettings;
 	}
 
 	let es: EventSource | null = null;
@@ -59,6 +79,25 @@
 </script>
 
 <!-- Invite code + QR (collapsed by default; toggled from footer bar — panel opens below the toggle row) -->
+
+<!-- Bet-state badge -->
+<section class="mb-4">
+	<a
+		href={data.currentRound ? `/s/${data.session.id}/round` : `/s/${data.session.id}/round`}
+		class="glass glass-xl flex items-center justify-between gap-3 rounded-2xl p-3 text-sm hover:opacity-90"
+	>
+		<span class="inline-flex items-center gap-2">
+			<span class="text-lg">{betState.emoji}</span>
+			<span class="flex flex-col">
+				<span class="eyebrow">Wett-Status</span>
+				<span class="font-semibold {betState.tone === 'success' ? 'text-success' : betState.tone === 'warning' ? 'text-warning' : betState.tone === 'info' ? 'text-info' : 'text-base-content/70'}">
+					{betState.label}{#if data.currentRound} · Runde #{data.currentRound.roundNo}{/if}
+				</span>
+			</span>
+		</span>
+		<ArrowRight size={16} class="opacity-50" />
+	</a>
+</section>
 
 {#if data.me.betLocked}
 	<section
@@ -140,7 +179,7 @@
 </section>
 
 {#if isHost}
-	<section class="mb-4 space-y-2">
+	<section class="mb-4 space-y-2" class:hidden={!showSettings}>
 		<div class="flex items-center gap-3 px-1">
 			<IconBubble tone="warning" size="sm"><Settings size={16} /></IconBubble>
 			<p class="eyebrow">Session verwalten</p>
@@ -174,6 +213,16 @@
 {/if}
 
 <section class="flex justify-end gap-1">
+	{#if isHost}
+		<button
+			class="btn btn-xs btn-ghost gap-1"
+			class:btn-active={showSettings}
+			onclick={toggleSettings}
+			aria-label="Session-Einstellungen umschalten"
+		>
+			<Settings size={12} /> Settings
+		</button>
+	{/if}
 	<button
 		class="btn btn-xs btn-ghost gap-1"
 		class:btn-active={showQr}

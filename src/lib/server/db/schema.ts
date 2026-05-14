@@ -137,6 +137,11 @@ export type ModeDefaultConfig = {
 	/** Show parimutuel odds + percentage in market UI. Default true. */
 	showOdds?: boolean;
 	/**
+	 * Maximum stake per single bet as percentage of `startingMoney` (1–100).
+	 * Default 50 (= 50 %).
+	 */
+	maxStakePctOfStart?: number;
+	/**
 	 * Per-session entity name overrides. Keyed by the Mode's default entity `name`.
 	 *  Example: { "Blau": "Gelb", "Rot": "Grün" }
 	 *  Display layers should resolve overrides before rendering.

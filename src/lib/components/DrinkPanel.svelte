@@ -303,165 +303,149 @@
 		</form>
 	</section>
 {:else if tab === 'list'}
-	<section class="space-y-3">
-		{#if myPendingGroups.length}
-			<div class="drink-mine rounded-2xl p-3">
-				<header class="mb-2 flex items-center justify-between">
-					<h4 class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-warning">
-						<AlertCircle size={14} /> Du musst trinken ({myPending.length})
-					</h4>
-					{#if myTimerSeconds != null && myTimerSeconds > 0}
-						<span class="badge badge-warning gap-1 text-[10px] font-bold">
-							<Hourglass size={10} /> {fmtTimer(myTimerSeconds)}
-						</span>
-					{:else if myTimerSeconds === 0 && myLockMode === 'TIMER_LOCK'}
-						<span class="badge badge-error text-[10px] font-bold">Wett-Sperre aktiv</span>
-					{/if}
-				</header>
-				<ul class="max-h-80 space-y-2 overflow-y-auto pr-1">
-					{#each myPendingGroups as g (g.key)}
-						{@const open = expandedGroups[g.key] ?? false}
-						<li class="glass rounded-xl p-3">
-							<button
-								type="button"
-								class="flex w-full items-baseline justify-between gap-2 text-left"
-								onclick={() => toggleGroup(g.key)}
-								aria-expanded={open}
-							>
-								<span class="text-sm">
-									<strong>
-										{#if g.drinks.length > 1}{g.drinks.length}× {/if}{drinkLabel[g.drinkType]}
-									</strong>
-									{#if g.attackerNames.length > 0}
-										<span class="badge badge-warning badge-sm ml-1">
-											Erzwungen von {g.attackerNames.join(', ')}
-										</span>
-									{:else}
-										<span class="badge badge-info badge-sm ml-1">Eigen</span>
-									{/if}
-								</span>
-								<span class="tabular text-xs">
-									{g.drinks.reduce((s, d) => s + d.priceSnapshot, 0)}
-								</span>
-							</button>
-							{#if open || g.drinks.length === 1}
-								{#each g.drinks as d (d.id)}
-									{@const p = confirmProgress(d)}
-									<div class="border-base-content/10 mt-2 border-t pt-2">
-										<div class="flex items-center gap-1.5 text-xs">
-											<span class="confirm-chip {p.finished ? 'confirm-chip-done' : ''}">{p.primary}</span>
-										</div>
-										{#if canConfirmSelf}
-											<div class="mt-2 flex gap-2">
-												<form method="POST" action={aname('confirm')} use:enhance>
-													<input type="hidden" name="drinkId" value={d.id} />
-													<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen (GM)</button>
-												</form>
-												<form method="POST" action={aname('cancel')} use:enhance>
-													<input type="hidden" name="drinkId" value={d.id} />
-													<button class="btn btn-xs btn-error btn-outline">Abbrechen</button>
-												</form>
-											</div>
-										{/if}
-									</div>
-								{/each}
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		{#if otherPendingGroups.length}
-			<div>
-				<h4 class="text-base-content/70 mb-2 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider">
-					Andere → bestätigen ({peersPending.length})
+	<section class="space-y-2">
+		{#if myPending.length > 0}
+			<header class="flex items-center justify-between px-1">
+				<h4 class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-warning">
+					<AlertCircle size={14} /> Du musst trinken ({myPending.length})
 				</h4>
-				<ul class="max-h-80 space-y-2 overflow-y-auto pr-1">
-					{#each otherPendingGroups as g (g.key)}
-						{@const open = expandedGroups[g.key] ?? false}
-						<li class="glass rounded-xl p-3">
-							<button
-								type="button"
-								class="flex w-full items-baseline justify-between gap-2 text-left"
-								onclick={() => toggleGroup(g.key)}
-								aria-expanded={open}
-							>
-								<span class="text-sm">
-									<strong>{g.targetName}</strong> →
-									{#if g.drinks.length > 1}{g.drinks.length}× {/if}{drinkLabel[g.drinkType]}
-									{#if g.attackerNames.length > 0}
-										<span class="badge badge-warning badge-sm ml-1">
-											Erzwungen von {g.attackerNames.join(', ')}
-										</span>
-									{:else}
-										<span class="badge badge-info badge-sm ml-1">Eigen</span>
-									{/if}
-								</span>
-								<span class="tabular text-xs">
-									{g.drinks.reduce((s, d) => s + d.priceSnapshot, 0)}
-								</span>
-							</button>
-							{#if open || g.drinks.length === 1}
-								{#each g.drinks as d (d.id)}
-									{@const p = confirmProgress(d)}
-									<div class="border-base-content/10 mt-2 border-t pt-2">
-										<div class="flex items-center gap-1.5 text-xs">
-											<span class="confirm-chip {p.finished ? 'confirm-chip-done' : ''}">{p.primary}</span>
-										</div>
-										<div class="mt-2 flex gap-2">
-											{#if canConfirmOthers}
-												<form method="POST" action={aname('confirm')} use:enhance>
-													<input type="hidden" name="drinkId" value={d.id} />
-													<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen</button>
-												</form>
-											{/if}
-											{#if me.role === 'HOST'}
-												<form method="POST" action={aname('cancel')} use:enhance>
-													<input type="hidden" name="drinkId" value={d.id} />
-													<button class="btn btn-xs btn-error btn-outline">Abbrechen (GM)</button>
-												</form>
-											{/if}
-										</div>
-									</div>
-								{/each}
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		{#if historyGroups.length}
-			<div>
-				<h4 class="text-base-content/70 mb-2 text-xs font-medium uppercase tracking-wider">
-					Verlauf
-				</h4>
-				<ul class="max-h-96 space-y-1.5 overflow-y-auto pr-1">
-					{#each historyGroups as g (g.key)}
-						<li class="glass flex items-center justify-between rounded-lg p-2 text-sm">
-							<span class="min-w-0 truncate">
-								<strong>{g.targetName}</strong> ·
-								{#if g.count > 1}{g.count}× {/if}{drinkLabel[g.drinkType]}
-								{#if g.attackerNames.length > 0}
-									<span class="text-base-content/40 text-xs">· Erzwungen von {g.attackerNames.join(', ')}</span>
-								{/if}
-							</span>
-							<span
-								class="badge badge-sm shrink-0"
-								class:badge-success={g.status === 'CONFIRMED'}
-								class:badge-ghost={g.status === 'CANCELLED'}
-							>
-								{g.status === 'CONFIRMED' ? 'Getrunken' : 'Abgebrochen'}
-							</span>
-						</li>
-					{/each}
-				</ul>
-			</div>
+				{#if myTimerSeconds != null && myTimerSeconds > 0}
+					<span class="badge badge-warning gap-1 text-[10px] font-bold">
+						<Hourglass size={10} /> {fmtTimer(myTimerSeconds)}
+					</span>
+				{:else if myTimerSeconds === 0 && myLockMode === 'TIMER_LOCK'}
+					<span class="badge badge-error text-[10px] font-bold">Wett-Sperre aktiv</span>
+				{/if}
+			</header>
 		{/if}
 
 		{#if allPending.length === 0 && historyGroups.length === 0}
-			<p class="text-base-content/40 text-center text-xs">Noch keine Drinks.</p>
+			<p class="text-base-content/40 px-1 text-center text-xs">Noch keine Drinks.</p>
+		{:else}
+			<ul class="space-y-1.5 max-h-[28rem] overflow-y-auto pr-1">
+				<!-- 1) my pending (highlighted, expandable) -->
+				{#each myPendingGroups as g (g.key)}
+					{@const open = expandedGroups[g.key] ?? false}
+					<li class="drink-mine rounded-xl p-3">
+						<button
+							type="button"
+							class="flex w-full items-baseline justify-between gap-2 text-left"
+							onclick={() => toggleGroup(g.key)}
+							aria-expanded={open}
+						>
+							<span class="text-sm">
+								<strong>
+									{#if g.drinks.length > 1}{g.drinks.length}× {/if}{drinkLabel[g.drinkType]}
+								</strong>
+								{#if g.attackerNames.length > 0}
+									<span class="badge badge-warning badge-sm ml-1">
+										Erzwungen von {g.attackerNames.join(', ')}
+									</span>
+								{:else}
+									<span class="badge badge-info badge-sm ml-1">Eigen</span>
+								{/if}
+							</span>
+							<span class="tabular text-xs">
+								{g.drinks.reduce((s, d) => s + d.priceSnapshot, 0)}
+							</span>
+						</button>
+						{#if open || g.drinks.length === 1}
+							{#each g.drinks as d (d.id)}
+								{@const p = confirmProgress(d)}
+								<div class="border-base-content/10 mt-2 border-t pt-2">
+									<div class="flex items-center gap-1.5 text-xs">
+										<span class="confirm-chip {p.finished ? 'confirm-chip-done' : ''}">{p.primary}</span>
+									</div>
+									{#if canConfirmSelf}
+										<div class="mt-2 flex gap-2">
+											<form method="POST" action={aname('confirm')} use:enhance>
+												<input type="hidden" name="drinkId" value={d.id} />
+												<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen (GM)</button>
+											</form>
+											<form method="POST" action={aname('cancel')} use:enhance>
+												<input type="hidden" name="drinkId" value={d.id} />
+												<button class="btn btn-xs btn-error btn-outline">Abbrechen</button>
+											</form>
+										</div>
+									{/if}
+								</div>
+							{/each}
+						{/if}
+					</li>
+				{/each}
+
+				<!-- 2) other pending (expandable) -->
+				{#each otherPendingGroups as g (g.key)}
+					{@const open = expandedGroups[g.key] ?? false}
+					<li class="glass rounded-xl p-3">
+						<button
+							type="button"
+							class="flex w-full items-baseline justify-between gap-2 text-left"
+							onclick={() => toggleGroup(g.key)}
+							aria-expanded={open}
+						>
+							<span class="text-sm">
+								<strong>{g.targetName}</strong> →
+								{#if g.drinks.length > 1}{g.drinks.length}× {/if}{drinkLabel[g.drinkType]}
+								{#if g.attackerNames.length > 0}
+									<span class="badge badge-warning badge-sm ml-1">
+										Erzwungen von {g.attackerNames.join(', ')}
+									</span>
+								{:else}
+									<span class="badge badge-info badge-sm ml-1">Eigen</span>
+								{/if}
+							</span>
+							<span class="tabular text-xs">
+								{g.drinks.reduce((s, d) => s + d.priceSnapshot, 0)}
+							</span>
+						</button>
+						{#if open || g.drinks.length === 1}
+							{#each g.drinks as d (d.id)}
+								{@const p = confirmProgress(d)}
+								<div class="border-base-content/10 mt-2 border-t pt-2">
+									<div class="flex items-center gap-1.5 text-xs">
+										<span class="confirm-chip {p.finished ? 'confirm-chip-done' : ''}">{p.primary}</span>
+									</div>
+									<div class="mt-2 flex gap-2">
+										{#if canConfirmOthers}
+											<form method="POST" action={aname('confirm')} use:enhance>
+												<input type="hidden" name="drinkId" value={d.id} />
+												<button class="btn btn-xs btn-success gap-1"><CircleCheck size={12} /> Bestätigen</button>
+											</form>
+										{/if}
+										{#if me.role === 'HOST'}
+											<form method="POST" action={aname('cancel')} use:enhance>
+												<input type="hidden" name="drinkId" value={d.id} />
+												<button class="btn btn-xs btn-error btn-outline">Abbrechen (GM)</button>
+											</form>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						{/if}
+					</li>
+				{/each}
+
+				<!-- 3) history (flat rows) -->
+				{#each historyGroups as g (g.key)}
+					<li class="glass flex items-center justify-between rounded-lg p-2 text-sm opacity-80">
+						<span class="min-w-0 truncate">
+							<strong>{g.targetName}</strong> ·
+							{#if g.count > 1}{g.count}× {/if}{drinkLabel[g.drinkType]}
+							{#if g.attackerNames.length > 0}
+								<span class="text-base-content/40 text-xs">· Erzwungen von {g.attackerNames.join(', ')}</span>
+							{/if}
+						</span>
+						<span
+							class="badge badge-sm shrink-0"
+							class:badge-success={g.status === 'CONFIRMED'}
+							class:badge-ghost={g.status === 'CANCELLED'}
+						>
+							{g.status === 'CONFIRMED' ? 'Getrunken' : 'Abgebrochen'}
+						</span>
+					</li>
+				{/each}
+			</ul>
 		{/if}
 	</section>
 {/if}

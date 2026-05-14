@@ -72,11 +72,25 @@ export async function updateMode(
 }
 
 export async function deleteMode(id: string, userId: string): Promise<boolean> {
-	const rows = await db
-		.delete(modes)
-		.where(and(eq(modes.id, id), eq(modes.ownerUserId, userId)))
-		.returning({ id: modes.id });
-	return rows.length > 0;
+	try {
+		const rows = await db
+			.delete(modes)
+			.where(and(eq(modes.id, id), eq(modes.ownerUserId, userId)))
+			.returning({ id: modes.id });
+		return rows.length > 0;
+	} catch (err: unknown) {
+		// FK violation: sessions still reference this Mode → re-throw a typed error.
+		const code = (err as { code?: string })?.code;
+		if (code === '23503') throw new ModeInUseError();
+		throw err;
+	}
+}
+
+export class ModeInUseError extends Error {
+	constructor() {
+		super('Mode wird von bestehenden Sessions verwendet');
+		this.name = 'ModeInUseError';
+	}
 }
 
 export async function duplicateMode(sourceId: string, userId: string): Promise<DbMode | null> {

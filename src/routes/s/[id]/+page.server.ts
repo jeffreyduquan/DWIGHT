@@ -9,6 +9,7 @@ import { users, sessionPlayers, drinkConfirmations, type DrinkType } from '$lib/
 import { and, eq, inArray } from 'drizzle-orm';
 import { findById, listPlayers, getPlayer, endSession, deleteSession } from '$lib/server/repos/sessions';
 import { findById as findModeById } from '$lib/server/repos/modes';
+import { getCurrentRound } from '$lib/server/repos/rounds';
 import { listForSession as listEntities } from '$lib/server/repos/entities';
 import {
 	initiateSelfDrink,
@@ -34,6 +35,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		listEntities(session.id),
 		listDrinksForSession(session.id)
 	]);
+
+	const currentRound = await getCurrentRound(session.id);
 
 	const userIds = Array.from(
 		new Set([
@@ -93,6 +96,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			status: session.status,
 			config: session.config
 		},
+		currentRound: currentRound
+			? { id: currentRound.id, status: currentRound.status, roundNo: currentRound.roundNumber }
+			: null,
 		mode: mode
 			? {
 					name: mode.name,

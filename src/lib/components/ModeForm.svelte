@@ -405,6 +405,20 @@
 				checked={initial.defaultConfig.showOdds !== false}
 			/>
 		</label>
+		<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
+			<span class="space-y-0.5">
+				<span class="block text-sm font-medium text-base-content">Max % vom Startgeld pro Wette</span>
+				<span class="text-base-content/40 block">Bremst Einzelwetten relativ zum Startguthaben.</span>
+			</span>
+			<input
+				type="number"
+				name="maxStakePctOfStart"
+				value={initial.defaultConfig.maxStakePctOfStart ?? 50}
+				min="1"
+				max="100"
+				class="tabular w-16 bg-transparent text-right outline-none"
+			/>
+		</label>
 	</section>
 
 	<!-- Drinks -->

@@ -259,6 +259,19 @@
 - **REQ-UI-032** **Phase 13 conditional peer-count.** The `peerConfirmationsRequired` input is only rendered when `confirmationMode === 'PEERS'`. Applies in `ModeForm.svelte`, `/s/[id]/settings`, and `/s/create`.
 - **REQ-UI-033** **Phase 13 QR-Panel below.** On `/s/[id]` (lobby), the QR/Invite panel renders BELOW the footer button row (toggled via the QR button), not above the header.
 - **REQ-MODE-007** **Phase 13 mode defaults.** `freshModeDefaultConfig()` returns `peerConfirmationsRequired: 1` and `rebuy.amount: 1500` by default.
+- **REQ-MODE-008** **Phase 14 mode delete.** `deleteMode` translates Postgres FK errors (`23503`) into a typed `ModeInUseError` so the UI surfaces a friendly 409 instead of a 500. A Mode that is still referenced by any Session cannot be deleted.
+- **REQ-MODE-009** **Phase 14 startgeld default.** `freshModeDefaultConfig()` returns `startingMoney: 2000`.
+- **REQ-ECON-002** **Phase 14 max stake per bet.** `SessionConfig.maxStakePctOfStart` (1–100, default 50) caps the stake of any single bet to `floor(startingMoney * pct / 100)`. Enforced server-side in `placeBet` (error `STAKE_ABOVE_MAX`). Default Mode value 50. Configurable in Mode form, `/s/create` and `/s/[id]/settings`.
+- **REQ-UI-034** **Phase 14 unified drinks list.** `DrinkPanel.svelte` `list` tab merges my-pending + others-pending + history into one scrollable `<ul>` (`max-h-[28rem]`). Pending entries remain click-to-expand; history rows are flat, faded, with status badge.
+- **REQ-UI-035** **Phase 14 lobby settings toggle.** `/s/[id]` (lobby) hides the GM "Session verwalten" panel by default and exposes it via a `Settings` button next to QR + Sound in the footer.
+- **REQ-UI-036** **Phase 14 lobby bet-state badge.** `/s/[id]` shows the current round's bet phase as a coloured badge — *Wetten offen* (BETTING_OPEN), *Wetten geschlossen* (LIVE), *Auflösung* (RESOLVING), *Ergebnis* (SETTLED), *Abgebrochen* (CANCELLED), *Setup* (SETUP), *Keine Runde* (none).
+- **REQ-UI-037** **Phase 14 bet-stake UI.** Round page bet UI uses:
+  - 3 quick-set buttons `2%` / `5%` / `25%` (SET stake, not ADD; active chip highlighted),
+  - editable number input (number-input bound to stake),
+  - range slider (0 → `maxStakeAllowed`),
+  - Reset button (restored),
+  - "Setzen · {N}" submits the chosen stake.
+  `maxStakeAllowed = min(moneyBalance, floor(startingMoney * maxStakePctOfStart / 100))`.
 
 ---
 

@@ -41,6 +41,7 @@ export const actions: Actions = {
 		const startingMoney = Number(form.get('startingMoney') ?? 0);
 		const minStake = Number(form.get('minStake') ?? 1);
 		const showOdds = form.get('showOdds') === 'on';
+		const maxStakePctOfStart = Math.max(1, Math.min(100, Number(form.get('maxStakePctOfStart') ?? 50)));
 		const priceSchluck = Number(form.get('priceSchluck') ?? 0);
 		const priceKurzer = Number(form.get('priceKurzer') ?? 0);
 		const priceBier = Number(form.get('priceBier') ?? 0);
@@ -82,6 +83,7 @@ export const actions: Actions = {
 			startingMoney,
 			minStake: Math.max(1, minStake),
 			showOdds,
+			maxStakePctOfStart,
 			drinkPrices: {
 				SCHLUCK: priceSchluck > 0 ? priceSchluck : mode.defaultConfig.drinkPrices.SCHLUCK,
 				KURZER: priceKurzer > 0 ? priceKurzer : mode.defaultConfig.drinkPrices.KURZER,
