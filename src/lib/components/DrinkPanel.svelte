@@ -40,7 +40,7 @@
 		session: {
 			id: string;
 			config: {
-				confirmationMode: 'GM' | 'PEERS' | 'EITHER';
+				confirmationMode: 'GM' | 'PEERS';
 				peerConfirmationsRequired?: number;
 				drinkPrices: Record<DrinkType, number>;
 				rebuy: { enabled: boolean; drinkType: DrinkType; amount: number };
@@ -112,7 +112,7 @@
 			finished = gmCount >= 1;
 			primary = `GM ${Math.min(gmCount, 1)}/1`;
 		} else {
-			// PEERS (and legacy EITHER): GM confirmations count as peer.
+			// PEERS: GM confirmations count as peer.
 			finished = effective >= peerReq;
 			primary = `Bestätigt ${Math.min(effective, peerReq)}/${peerReq}`;
 		}

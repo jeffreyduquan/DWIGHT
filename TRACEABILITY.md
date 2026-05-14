@@ -129,7 +129,7 @@
 | REQ-DRINK-003 | D4 | `repos/drinks.ts:initiateSelfDrink`, finalize credits target | `drinks.confirmation.test.ts` | ☑ |
 | REQ-DRINK-004 | D4 | `initiateForceDrink` (debit attacker, no target credit) | manual | ☑ |
 | REQ-DRINK-005 | D4 | `drinks.priceSnapshot` captured at issue | manual | ☑ |
-| REQ-DRINK-006 | D4 | `confirmDrink` GM/PEERS/EITHER rule | `drinks.confirmation.test.ts` | ☑ |
+| REQ-DRINK-006 | D4 / Phase 11.2 | `confirmDrink` GM/PEERS rule, `drizzle/0007_confirmation_mode_2vals.sql`, `scripts/check-confirmation-mode.mjs` | `drinks.confirmation.test.ts` | ☑ |
 | REQ-DRINK-007 | D4 | `cancelDrink` (GM-only, FORCE refund) | manual | ☑ |
 | REQ-DRINK-008 | D4 | `forceDrinkTypesAllowed` validation in `initiateForceDrink` | manual | ☑ |
 | REQ-DRINK-009 | D2 | `drinks.session_id` | schema | ☑ |

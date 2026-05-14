@@ -174,8 +174,7 @@ export async function initiateForceDrink(input: ForceInput): Promise<DbDrink> {
 /**
  * Add a confirmation. Threshold check uses session.config.confirmationMode.
  *   GM: 1 confirmation with role=GM finalizes.
- *   PEERS: N distinct confirmations with role=PEER finalize.
- *   EITHER: whichever first (1 GM OR N PEERS).
+ *   PEERS: N distinct confirmations finalize; GM confirmations count as peer.
  * Confirmer cannot be the target (REQ-DRINK-010).
  */
 export type ConfirmDrinkInput = {
@@ -214,7 +213,6 @@ export async function confirmDrink(input: ConfirmDrinkInput): Promise<ConfirmDri
 
 		if (mode === 'GM' && input.role !== 'GM') throw new Error('GM_REQUIRED');
 		// In PEERS mode any confirmer counts (GM counts as a peer too).
-		// EITHER (legacy) is treated like PEERS.
 
 		// Insert confirmation (idempotent on (drinkId, confirmerUserId) via PK)
 		try {
@@ -235,7 +233,7 @@ export async function confirmDrink(input: ConfirmDrinkInput): Promise<ConfirmDri
 
 		const gmCount = all.filter((c) => c.role === 'GM').length;
 		const peerCount = all.filter((c) => c.role === 'PEER').length;
-		// In PEERS / EITHER mode GM confirmations count toward the peer threshold.
+		// In PEERS mode GM confirmations count toward the peer threshold.
 		const effectivePeerCount = peerCount + gmCount;
 
 		let finalize = false;

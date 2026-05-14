@@ -58,3 +58,17 @@ buffered.
 ## Backups
 
 `docker compose ... exec db pg_dump -U dwight dwight > backup.sql`
+
+## Migration 0007 (Phase 11.2): drop EITHER from confirmation_mode enum
+
+Vor dem `pnpm db:push` / `psql -f drizzle/0007_*.sql` zwingend Pre-flight ausführen:
+
+```sh
+DATABASE_URL=postgres://... node scripts/check-confirmation-mode.mjs
+```n
+Wenn das Skript mit Exit 1 abbricht, läuft noch eine aktive Session mit `confirmationMode = 'EITHER'`. Diese Session manuell auf `PEERS` migrieren oder beenden, bevor die SQL-Migration angewendet wird. Anschließend:
+
+```sh
+psql -f drizzle/0007_confirmation_mode_2vals.sql
+```
+

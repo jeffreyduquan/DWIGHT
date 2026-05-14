@@ -54,7 +54,7 @@ export const drinkTypeEnum = pgEnum('drink_type', ['SCHLUCK', 'KURZER', 'BIER_EX
 export const drinkOrigin = pgEnum('drink_origin', ['SELF', 'FORCE']);
 export const drinkStatusEnum = pgEnum('drink_status', ['PENDING', 'CONFIRMED', 'CANCELLED']);
 export const confirmerRole = pgEnum('confirmer_role', ['GM', 'PEER']);
-export const confirmationModeEnum = pgEnum('confirmation_mode', ['GM', 'PEERS', 'EITHER']);
+export const confirmationModeEnum = pgEnum('confirmation_mode', ['GM', 'PEERS']);
 
 // ---------- JSONB shape types ----------
 
@@ -78,7 +78,7 @@ const ZERO_USER_STATS: UserTotalStats = {
 
 export type DrinkPrices = { SCHLUCK: number; KURZER: number; BIER_EXEN: number };
 export type DrinkType = 'SCHLUCK' | 'KURZER' | 'BIER_EXEN';
-export type ConfirmationMode = 'GM' | 'PEERS' | 'EITHER';
+export type ConfirmationMode = 'GM' | 'PEERS';
 
 export type ModeTerminology = {
 	round: string;

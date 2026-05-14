@@ -371,6 +371,19 @@ Tasks:
 
 ---
 
+## Phase 11.2 — DB-Migration: ConfirmationMode auf 2 Werte ☑
+**Goal:** `EITHER` aus dem Postgres-Enum entfernen, jetzt da kein Code-Pfad ihn mehr benötigt.
+
+Tasks:
+- ☑ Pre-flight Skript `scripts/check-confirmation-mode.mjs` (failt deploy wenn aktive Session noch `EITHER` hat).
+- ☑ `drizzle/0007_confirmation_mode_2vals.sql`: Backfill `EITHER → PEERS` in `sessions.config` und `modes.default_config`, dann `RENAME TO ..._old` + `CREATE TYPE confirmation_mode AS ENUM ('GM','PEERS')` + `DROP TYPE ..._old`. Alles in einer Transaktion.
+- ☑ `_journal.json` Eintrag idx 7.
+- ☑ `schema.ts`: `pgEnum('confirmation_mode', ['GM','PEERS'])` und `type ConfirmationMode = 'GM' | 'PEERS'`.
+- ☑ `drinks.ts`, `DrinkPanel.svelte`: alle `EITHER`-Kommentare/Branches entfernt; Logik unverändert (PEERS = effektive Gesamtanzahl ≥ Schwelle).
+- ☑ `drinks.confirmation.test.ts`: EITHER-Test entfernt → 7 Tests. Gesamt 92/92.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
