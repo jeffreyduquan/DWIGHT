@@ -7,6 +7,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import GraphCanvas from '$lib/graph/GraphCanvas.svelte';
 	import type { BetGraph } from '$lib/server/db/schema';
 
@@ -25,6 +26,14 @@
 		draftGraph = structuredClone(g.graphJson);
 		showJson = false;
 	}
+
+	// Phase 19b: open the editor directly when ?edit=<id> is present.
+	$effect(() => {
+		const want = page.url.searchParams.get('edit');
+		if (!want || editingId === want) return;
+		const g = data.graphs.find((x) => x.id === want);
+		if (g) startEdit(g);
+	});
 
 	function cancelEdit() {
 		editingId = null;

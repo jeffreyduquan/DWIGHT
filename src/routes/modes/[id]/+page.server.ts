@@ -8,6 +8,9 @@ import { deleteMode, findById, updateMode, ModeInUseError } from '$lib/server/re
 import { parseModeForm } from '$lib/server/modes/parseForm';
 import { deleteBetGraph, findById as findGraphById, listByMode } from '$lib/server/repos/betGraphs';
 import { previewSentence } from '$lib/graph/preview';
+import { outcomeIconFor } from '$lib/graph/outcomeIcon';
+import { createBetGraph } from '$lib/server/repos/betGraphs';
+import { buildGraph, findTemplate, type TemplateId, type TemplateParams } from '$lib/graph/templates';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!locals.user) throw redirect(303, '/login');
@@ -25,7 +28,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		graphs: graphs.map((g) => ({
 			id: g.id,
 			name: g.name,
-			preview: previewSentence(g.graphJson)
+			preview: previewSentence(g.graphJson),
+			icon: outcomeIconFor(g.graphJson)
 		}))
 	};
 };
@@ -70,6 +74,45 @@ export const actions: Actions = {
 		const existing = await findGraphById(id);
 		if (!existing || existing.modeId !== mode.id) return fail(404, { error: 'Wette nicht gefunden' });
 		await deleteBetGraph(id);
+		return { ok: true };
+	},
+	createGraphFromTemplate: async ({ request, locals, params }) => {
+		if (!locals.user) throw redirect(303, '/login');
+		const mode = await findById(params.id);
+		if (!mode || mode.ownerUserId !== locals.user.id) return fail(403, { error: 'Kein Zugriff' });
+
+		const form = await request.formData();
+		const templateId = String(form.get('template') ?? '').trim() as TemplateId;
+		const spec = findTemplate(templateId);
+		if (!spec) return fail(400, { error: 'Unbekannte Vorlage' });
+
+		const params2: TemplateParams = {};
+		const trackableId = String(form.get('trackable') ?? '').trim();
+		const entityName = String(form.get('entity') ?? '').trim();
+		const threshold = Number(form.get('threshold') ?? NaN);
+		const topK = Number(form.get('topK') ?? NaN);
+		const seconds = Number(form.get('seconds') ?? NaN);
+		const direction = String(form.get('direction') ?? '').trim();
+		if (trackableId) params2.trackable = trackableId;
+		if (entityName) params2.entity = entityName;
+		if (Number.isFinite(threshold)) params2.threshold = threshold;
+		if (Number.isFinite(topK)) params2.topK = topK;
+		if (Number.isFinite(seconds)) params2.seconds = seconds;
+		if (direction === 'up' || direction === 'down') params2.direction = direction;
+
+		const trackableLabel = mode.trackables.find((t) => t.id === trackableId)?.label ?? trackableId;
+		const built = buildGraph(templateId, params2, {
+			trackable: trackableLabel,
+			entity: entityName || undefined
+		});
+		if (!built.ok) return fail(400, { error: built.error });
+
+		await createBetGraph({
+			modeId: mode.id,
+			name: built.name,
+			description: null,
+			graphJson: built.graph
+		});
 		return { ok: true };
 	}
 };

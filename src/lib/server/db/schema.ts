@@ -80,12 +80,6 @@ export type DrinkPrices = { SCHLUCK: number; KURZER: number; BIER_EXEN: number }
 export type DrinkType = 'SCHLUCK' | 'KURZER' | 'BIER_EXEN';
 export type ConfirmationMode = 'GM' | 'PEERS';
 
-export type ModeTerminology = {
-	round: string;
-	entity: string;
-	startedVerb: string;
-};
-
 export type ModeDefaultEntity = {
 	kind: string;
 	name: string;
@@ -383,12 +377,9 @@ export const modes = pgTable(
 	{
 		id: uuid('id').primaryKey().defaultRandom(),
 		name: text('name').notNull(),
-		description: text('description').notNull(),
 		ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'cascade' }),
-		terminology: jsonb('terminology').$type<ModeTerminology>().notNull(),
 		defaultEntities: jsonb('default_entities').$type<ModeDefaultEntity[]>().notNull(),
 		trackables: jsonb('trackables').$type<Trackable[]>().default([]).notNull(),
-		defaultConfig: jsonb('default_config').$type<ModeDefaultConfig>().notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 	}
 );

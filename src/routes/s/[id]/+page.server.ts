@@ -101,8 +101,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			: null,
 		mode: mode
 			? {
-					name: mode.name,
-					terminology: mode.terminology
+					name: mode.name
 				}
 			: null,
 		me: {

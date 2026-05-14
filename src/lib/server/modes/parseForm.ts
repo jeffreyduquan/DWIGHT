@@ -1,23 +1,14 @@
 /**
  * @file modes/parseForm.ts — parse FormData → Mode payload.
- * Phase 18a: slug column removed; description/terminology/defaultConfig kept
- * with hardcoded defaults so existing DB columns stay valid.
+ * Phase 19c: description/terminology/defaultConfig columns dropped from DB.
  */
-import type {
-	ModeDefaultConfig,
-	ModeDefaultEntity,
-	ModeTerminology,
-	Trackable
-} from '../db/schema';
-import { freshModeDefaultConfig, slugifyTrackableId } from './defaults';
+import type { ModeDefaultEntity, Trackable } from '../db/schema';
+import { slugifyTrackableId } from './defaults';
 
 export type ParsedModeForm = {
 	name: string;
-	description: string;
-	terminology: ModeTerminology;
 	defaultEntities: ModeDefaultEntity[];
 	trackables: Trackable[];
-	defaultConfig: ModeDefaultConfig;
 };
 
 export type ParseResult = { ok: true; data: ParsedModeForm } | { ok: false; error: string };
@@ -27,16 +18,6 @@ function toStr(v: FormDataEntryValue | null): string {
 }
 
 const TRACKABLE_SCOPES = ['global', 'entity'] as const;
-
-/**
- * Fixed terminology used as DB filler since Phase 17 (mode form no longer
- * exposes a terminology editor). UI now uses hardcoded German labels.
- */
-export const DEFAULT_TERMINOLOGY: ModeTerminology = {
-	round: 'Runde',
-	entity: 'Spieler',
-	startedVerb: 'läuft'
-};
 
 export function parseModeForm(form: FormData): ParseResult {
 	const name = toStr(form.get('name'));
@@ -92,13 +73,6 @@ export function parseModeForm(form: FormData): ParseResult {
 
 	return {
 		ok: true,
-		data: {
-			name,
-			description: '',
-			terminology: { ...DEFAULT_TERMINOLOGY },
-			defaultEntities,
-			trackables,
-			defaultConfig: freshModeDefaultConfig()
-		}
+		data: { name, defaultEntities, trackables }
 	};
 }

@@ -5,9 +5,46 @@
 	import { enhance } from '$app/forms';
 	import ModeForm from '$lib/components/ModeForm.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import { ArrowLeft, Trash2, CheckCircle2, Sparkles, Pencil, Plus, Wand2 } from '@lucide/svelte';
+	import IconBubble from '$lib/components/IconBubble.svelte';
+	import { TEMPLATES } from '$lib/graph/templates';
+	import {
+		ArrowLeft,
+		Trash2,
+		CheckCircle2,
+		Sparkles,
+		Pencil,
+		Plus,
+		Wand2,
+		Flag,
+		Trophy,
+		Skull,
+		Target,
+		Zap,
+		Medal,
+		Timer,
+		X,
+		AlertCircle
+	} from '@lucide/svelte';
 
 	let { data, form } = $props();
+
+	const TPL_ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer } as const;
+	const OUTCOME_ICONS = { Trophy, CheckCircle2, Medal, Sparkles } as const;
+
+	let pickerOpen = $state(false);
+	let selectedTplId = $state<string | null>(null);
+	const selectedTpl = $derived(TEMPLATES.find((t) => t.id === selectedTplId) ?? null);
+
+	function openPicker() {
+		selectedTplId = null;
+		pickerOpen = true;
+	}
+	function closePicker() {
+		pickerOpen = false;
+		selectedTplId = null;
+	}
+
+	const tplError = $derived(form && 'error' in form ? (form.error as string) : null);
 </script>
 
 <main class="relative min-h-svh overflow-hidden">
@@ -60,19 +97,25 @@
 			{:else}
 				<ul class="space-y-2">
 					{#each data.graphs as g (g.id)}
+						{@const Icon = OUTCOME_ICONS[g.icon]}
 						<li class="glass flex items-start gap-3 rounded-xl p-3">
-							<div class="flex-1 min-w-0">
+							<IconBubble tone="primary" size="sm"><Icon size={16} /></IconBubble>
+							<a
+								href="/modes/{data.mode.id}/graphs?edit={g.id}"
+								class="flex-1 min-w-0 hover:opacity-80 transition"
+								title="Wette bearbeiten"
+							>
 								<p class="font-medium text-sm truncate">{g.name}</p>
 								{#if g.preview}
 									<p class="text-base-content/50 mt-0.5 text-xs">{g.preview}</p>
 								{/if}
-							</div>
+							</a>
 							<a
-								href="/modes/{data.mode.id}/graphs"
+								href="/modes/{data.mode.id}/graphs?edit={g.id}"
 								class="text-primary inline-flex items-center gap-1 text-xs hover:underline"
 								title="Im Graph-Editor bearbeiten"
 							>
-								<Pencil size={12} /> bearbeiten
+								<Pencil size={12} />
 							</a>
 							<form
 								method="POST"
@@ -98,12 +141,13 @@
 			{/if}
 
 			<div class="flex flex-col gap-2 sm:flex-row">
-				<a
-					href="/modes/{data.mode.id}/graphs/new"
+				<button
+					type="button"
+					onclick={openPicker}
 					class="btn btn-primary flex-1 gap-2 rounded-xl"
 				>
 					<Wand2 size={14} /> Wette aus Vorlage
-				</a>
+				</button>
 				<a
 					href="/modes/{data.mode.id}/graphs"
 					class="btn btn-ghost flex-1 gap-2 rounded-xl text-sm"
@@ -141,4 +185,136 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if pickerOpen}
+		<!-- Template-Picker Modal (Phase 19a) -->
+		<div
+			class="bg-base-300/70 fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-sm sm:items-center"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Wett-Vorlage wählen"
+			onclick={(ev) => {
+				if (ev.target === ev.currentTarget) closePicker();
+			}}
+			onkeydown={(ev) => {
+				if (ev.key === 'Escape') closePicker();
+			}}
+			tabindex="-1"
+		>
+			<div
+				class="glass glass-xl w-full max-w-md rounded-2xl p-5 max-h-[90vh] overflow-y-auto"
+			>
+				<header class="mb-4 flex items-start justify-between">
+					<div>
+						<p class="eyebrow">Vorlage</p>
+						<h2 class="text-lg font-medium">Neue Wette</h2>
+					</div>
+					<button
+						type="button"
+						class="btn btn-ghost btn-sm btn-circle"
+						onclick={closePicker}
+						aria-label="Schließen"><X size={16} /></button
+					>
+				</header>
+
+				{#if tplError}
+					<div class="alert alert-error mb-3 text-xs"><AlertCircle size={14} /> {tplError}</div>
+				{/if}
+
+				{#if !selectedTplId}
+					<ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+						{#each TEMPLATES as t (t.id)}
+							{@const Icon = TPL_ICONS[t.icon]}
+							<li>
+								<button
+									type="button"
+									class="glass hover:ring-primary hover:ring-2 flex w-full items-start gap-2 rounded-xl p-3 text-left transition"
+									onclick={() => (selectedTplId = t.id)}
+								>
+									<IconBubble tone="primary" size="sm"><Icon size={16} /></IconBubble>
+									<div class="flex-1 min-w-0">
+										<div class="text-sm font-medium">{t.title}</div>
+										<p class="text-base-content/60 mt-0.5 text-[11px] leading-tight">
+											{t.tagline}
+										</p>
+									</div>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{:else if selectedTpl}
+					{@const Icon = TPL_ICONS[selectedTpl.icon]}
+					<form
+						method="POST"
+						action="?/createGraphFromTemplate"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								await update();
+								if (result.type === 'success') closePicker();
+							}}
+						class="space-y-3"
+					>
+						<input type="hidden" name="template" value={selectedTpl.id} />
+						<header class="flex items-center gap-2">
+							<IconBubble tone="primary" size="sm"><Icon size={16} /></IconBubble>
+							<div>
+								<div class="text-sm font-medium">{selectedTpl.title}</div>
+								<p class="text-base-content/60 text-[11px]">{selectedTpl.tagline}</p>
+							</div>
+						</header>
+
+						{#each selectedTpl.fields as f}
+							<label class="block space-y-1">
+								<span class="text-base-content/70 text-xs font-medium">{f.label}</span>
+								{#if f.kind === 'trackable'}
+									<select name="trackable" required class="select select-bordered select-sm w-full">
+										<option value="">— Event wählen —</option>
+										{#each data.mode.trackables as t (t.id)}
+											<option value={t.id}>{t.emoji ?? ''} {t.label}</option>
+										{/each}
+									</select>
+								{:else if f.kind === 'entity'}
+									<select name="entity" required class="select select-bordered select-sm w-full">
+										<option value="">— Spieler wählen —</option>
+										{#each data.mode.defaultEntities as e (e.name)}
+											<option value={e.name}>{e.name}</option>
+										{/each}
+									</select>
+								{:else if f.kind === 'number'}
+									<input
+										type="number"
+										name={f.name}
+										value={f.defaultValue}
+										min={f.min ?? 0}
+										max={f.max}
+										required
+										class="input input-bordered input-sm w-full"
+									/>
+								{:else if f.kind === 'enum'}
+									<select name={f.name} required class="select select-bordered select-sm w-full">
+										{#each f.options as o (o.value)}
+											<option value={o.value} selected={o.value === f.defaultValue}
+												>{o.label}</option
+											>
+										{/each}
+									</select>
+								{/if}
+							</label>
+						{/each}
+
+						<div class="flex items-center justify-between pt-2">
+							<button
+								type="button"
+								class="btn btn-ghost btn-sm"
+								onclick={() => (selectedTplId = null)}
+							>
+								← andere Vorlage
+							</button>
+							<button type="submit" class="btn btn-primary btn-sm">Erstellen</button>
+						</div>
+					</form>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </main>

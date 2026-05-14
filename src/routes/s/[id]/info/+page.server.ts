@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	]);
 
 	return {
-		mode: mode ? { name: mode.name, terminology: mode.terminology } : null,
+		mode: mode ? { name: mode.name } : null,
 		trackables: session.trackables,
 		entities: entities.map((e) => ({
 			...e,

@@ -7,9 +7,7 @@ import { db } from '../db';
 import {
 	modes,
 	sessions,
-	type ModeDefaultConfig,
 	type ModeDefaultEntity,
-	type ModeTerminology,
 	type Trackable
 } from '../db/schema';
 
@@ -36,11 +34,8 @@ export async function findById(id: string): Promise<DbMode | null> {
 export type CreateModeInput = {
 	ownerUserId: string;
 	name: string;
-	description: string;
-	terminology: ModeTerminology;
 	defaultEntities: ModeDefaultEntity[];
 	trackables: Trackable[];
-	defaultConfig: ModeDefaultConfig;
 };
 
 export async function createMode(input: CreateModeInput): Promise<DbMode> {
@@ -107,10 +102,7 @@ export async function duplicateMode(sourceId: string, userId: string): Promise<D
 	return createMode({
 		ownerUserId: userId,
 		name: `${source.name} (Kopie)`,
-		description: source.description,
-		terminology: source.terminology,
 		defaultEntities: source.defaultEntities,
-		trackables: source.trackables,
-		defaultConfig: source.defaultConfig
+		trackables: source.trackables
 	});
 }

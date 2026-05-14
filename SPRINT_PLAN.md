@@ -498,6 +498,22 @@ Acceptance:
 
 ---
 
+## Phase 19 — Mode-Editor UX Cleanup ☑
+**Goal:** Letzte Reste aus dem Mode-Editor wegputzen: ungenutzte DB-Spalten droppen, Template-Picker als Modal inline statt eigene Route, Bet-Graph-Karten mit aussagekräftigem Outcome-Icon und Direkt-Edit per URL-Param.
+
+Tasks:
+- ☑ **19c DB-Cleanup (REQ-MODE-014):** Migration `0010_drop_mode_unused_cols.sql` droppt `modes.description`, `modes.terminology`, `modes.default_config`. `schema.ts` entfernt die Spalten + `ModeTerminology`-Type. `repos/modes.ts` `CreateModeInput` schrumpft auf `{ownerUserId, name, defaultEntities, trackables}`. `parseForm.ts` rauchfrei umgeschrieben (kein DEFAULT_TERMINOLOGY, kein freshModeDefaultConfig). `s/[id]/+page.server.ts` und `s/[id]/info/+page.server.ts` lesen kein `mode.terminology` mehr.
+- ☑ **19a Inline Template-Modal (REQ-UI-046):** `/modes/[id]/+page.svelte` öffnet einen DaisyUI-Glass-Dialog beim Klick auf "+ Wette aus Vorlage". 7 Karten + dynamisches Form inline. Neue Action `?/createGraphFromTemplate` baut + persistiert. Route `/modes/[id]/graphs/new` bleibt als no-JS-Fallback.
+- ☑ **19b Outcome-Icons + Direkt-Edit (REQ-UI-047):** Neuer Helper `src/lib/graph/outcomeIcon.ts` mappt Bet-Graph → Lucide-Icon (`Trophy`/`CheckCircle2`/`Medal`/`Sparkles`). Karten im Mode-Editor zeigen Icon-Bubble und verlinken auf `/modes/[id]/graphs?edit=<graphId>`. Graphs-Page liest `?edit=` per `$effect` aus `page.url.searchParams` und ruft `startEdit` auf dem passenden Graph.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 102/102.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ Mode-Editor öffnet Template-Picker inline ohne Routenwechsel.
+- ☑ Klick auf Bet-Graph-Karte landet direkt in `startEdit` für diesen Graph.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
