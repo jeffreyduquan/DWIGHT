@@ -182,6 +182,15 @@
 | REQ-UI-021 | Phase 7 | `src/lib/graph/GraphCanvas.svelte`, `src/routes/modes/[id]/graphs/+page.svelte` (integration) | manual visual | ◑ |
 | REQ-UI-022 | Phase 10 | `src/lib/graph/GraphCanvas.svelte` (zentriertes Reihen-Layout, schmale Cards, Pin-getriebenes Add via `suggestionsForInput`/`suggestionsForOutput`) | manual visual | ◑ |
 | REQ-UI-023 | Phase 10 | `src/routes/s/[id]/round/+page.server.ts` (`?/syncBetGraphs`), `src/routes/s/[id]/round/+page.svelte` (Recovery-Empty-State) | manual | ◑ |
+| REQ-DRINK-011 | Phase 11 | `src/lib/drinks/lock.ts` (`effectiveLockMode`, `isLockedByDrinks`, `timerSecondsRemaining`), `src/lib/server/repos/bets.ts` (lazy timer check), `src/lib/server/repos/drinks.ts` (`betLocked` nur bei `lockMode === 'LOCK'`) | `src/lib/drinks/lock.test.ts` | ☑ |
+| REQ-DRINK-012 | Phase 11 | `src/routes/s/create/+page.server.ts` (kein `isAdmin`-Gate mehr) | manual | ☑ |
+| REQ-UI-022 (Phase 11) | Phase 11 | `src/routes/+page.svelte` (Empty-State + große `.create-bubble`) | manual visual | ☑ |
+| REQ-UI-023 (Phase 11) | Phase 11 | `src/lib/components/QrCode.svelte`, `src/routes/s/[id]/+page.svelte` (QR-Sektion), `src/routes/s/join/+page.server.ts` (`?code=` prefill) | manual visual | ☑ |
+| REQ-UI-024 | Phase 11 | `src/lib/components/DrinkPanel.svelte` (scrollable Listen, `.drink-mine` Gradient, `Hourglass`-Timer-Pill) | `src/lib/drinks/lock.test.ts` (Timer-Logik) | ☑ |
+| REQ-UI-025 | Phase 11 | `src/routes/s/[id]/settings/+page.{server.ts,svelte}`, `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
+| REQ-SESS-CONFIG-001 | Phase 11 | `src/lib/server/db/schema.ts` (`LockMode`, `ModeDefaultConfig` extensions), `src/lib/server/modes/defaults.ts`, `src/lib/drinks/lock.ts` (`effectiveLockMode` legacy fallback) | `src/lib/drinks/lock.test.ts` | ☑ |
+| REQ-SESS-CONFIG-002 | Phase 11 | `src/routes/s/[id]/{+page,round/+page,info/+page}.server.ts` (entity-name override mapping) | manual | ☑ |
+| REQ-SESS-CONFIG-003 | Phase 11 | `src/lib/server/repos/sessions.ts` (`updateSessionConfig`) | manual | ☑ |
 
 ## REQ-GM — Game Master Tools
 

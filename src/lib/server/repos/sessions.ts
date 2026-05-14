@@ -174,3 +174,25 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
 	const res = await db.delete(sessions).where(eq(sessions.id, sessionId)).returning({ id: sessions.id });
 	return res.length > 0;
 }
+
+/**
+ * Patch a session's config jsonb. Host-only at route level. Returns the new
+ * row or null if not found.
+ */
+export async function updateSessionConfig(
+	sessionId: string,
+	patch: Partial<import('../db/schema').SessionConfig>
+): Promise<DbSession | null> {
+	const [current] = await db
+		.select({ config: sessions.config })
+		.from(sessions)
+		.where(eq(sessions.id, sessionId));
+	if (!current) return null;
+	const nextConfig = { ...current.config, ...patch };
+	const [updated] = await db
+		.update(sessions)
+		.set({ config: nextConfig })
+		.where(eq(sessions.id, sessionId))
+		.returning();
+	return updated ?? null;
+}

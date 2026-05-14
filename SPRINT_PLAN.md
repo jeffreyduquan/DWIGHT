@@ -354,6 +354,23 @@ Tasks:
 
 ---
 
+## Phase 11 — Player Comfort & Session Settings ☑
+**Goal:** Drink-Timer, simplere Bestätigung, GM-Settings, QR-Beitritt, Entity-Umbenennung, Landing-Polish.
+
+Tasks:
+- ☑ `ConfirmationMode` auf `GM | PEERS` reduziert; in PEERS-Modus zählt eine GM-Bestätigung als Peer. Legacy-Wert `EITHER` bleibt im DB-Enum, wird logisch als PEERS behandelt.
+- ☑ Neue `lockMode: 'TIMER_LOCK' | 'LOCK' | 'NONE'` + `lockTimerSeconds` (Default 600) in `SessionConfig`. `freshModeDefaultConfig` setzt Default `TIMER_LOCK / 600`. `bets.placeBet` ruft `isLockedByDrinks()` (in `src/lib/drinks/lock.ts`) für lazy Timer-Check; `drinks.initiateSelfDrink/initiateForceDrink` setzen `betLocked=true` nur noch bei `lockMode === 'LOCK'`. Legacy `autoLockOnDrink` wird via `effectiveLockMode()` ausgewertet.
+- ☑ `DrinkPanel.svelte`: Pending-Tab mit scrollbarer "Du musst trinken"-Liste auf sage→amber-Gradient + `Hourglass`-Timer-Pill, scrollbare "Andere → bestätigen"-Liste, scrollbare History-Liste; einzelne `Bestätigt n/N` Chip-Anzeige (GM zählt mit).
+- ☑ Neues GM-only Route `s/[id]/settings/+page.{server.ts,svelte}` für Drink-Preise, Bestätigung, Lock-Modus + Timer, Rebuy und `entityOverrides[entityName]`. `updateSessionConfig()` Repo shallow-merged das Patch in `sessions.config`.
+- ☑ Entity-Overrides werden in `s/[id]/+page.server.ts`, `s/[id]/round/+page.server.ts`, `s/[id]/info/+page.server.ts` an der `load()`-Grenze über `cfg.entityOverrides?.[e.name] || e.name` aufgelöst.
+- ☑ Landing `+page.svelte`: bei `sessions.length === 0` rendert großer, zentrierter „Erste Session erstellen"-Tile mit Sage-Gradient-Kreis (`+` Icon, 6rem). „+ Session erstellen"-Pill-Button erscheint nur wenn ≥1 Session existiert. Admin-Gate auf Session-Erstellung entfernt (jeder eingeloggte User wird GM).
+- ☑ Neuer `QrCode.svelte` (qrcode npm) rendert SVG-QR-Code für `${origin}/s/join?code=${inviteCode}`. Lobby zeigt QR + Code prominent oben. `/s/join` liest `?code=` URL-Param und befüllt das Input vor.
+- ☑ Lobby „Session verwalten" hat jetzt zuerst einen primären „Einstellungen öffnen"-Button (`/s/[id]/settings`) vor dem Hard-Delete.
+- ☑ Tests: 88/88 grün (neu: `src/lib/drinks/lock.test.ts` mit 10 Tests, `drinks.confirmation.test.ts` aktualisiert auf 3 Tests).
+- ☑ `pnpm check`: 0 Errors, 15 Warnings (alle pre-existing / unkritische `$state` initial-capture Hinweise).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

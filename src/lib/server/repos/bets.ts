@@ -8,10 +8,12 @@ import {
 	bets,
 	betMarkets,
 	betOutcomes,
+	drinks,
 	rounds,
 	sessionPlayers,
 	sessions
 } from '../db/schema';
+import { isLockedByDrinks } from '../../drinks/lock';
 
 export type DbBet = typeof bets.$inferSelect;
 
@@ -80,6 +82,21 @@ export async function placeBet(input: PlaceBetInput): Promise<DbBet> {
 			.for('update');
 		if (!sp) throw new Error('NOT_IN_SESSION');
 		if (sp.betLocked) throw new Error('BET_LOCKED');
+		// TIMER_LOCK: lazy check against pending drinks. If oldest pending drink
+		// has exceeded `lockTimerSeconds`, treat as locked.
+		const pending = await tx
+			.select({ createdAt: drinks.createdAt })
+			.from(drinks)
+			.where(
+				and(
+					eq(drinks.sessionId, r.sessionId),
+					eq(drinks.targetUserId, input.userId),
+					eq(drinks.status, 'PENDING')
+				)
+			);
+		if (isLockedByDrinks(s.config, pending.map((p) => p.createdAt))) {
+			throw new Error('BET_LOCKED');
+		}
 		if (sp.moneyBalance < stake) throw new Error('INSUFFICIENT_FUNDS');
 
 		await tx

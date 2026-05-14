@@ -6,9 +6,13 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { findByInviteCode, joinSession } from '$lib/server/repos/sessions';
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = ({ locals, url }) => {
 	if (!locals.user) throw redirect(303, '/login');
-	return {};
+	const prefill = String(url.searchParams.get('code') ?? '')
+		.trim()
+		.toUpperCase()
+		.slice(0, 6);
+	return { prefill };
 };
 
 export const actions: Actions = {

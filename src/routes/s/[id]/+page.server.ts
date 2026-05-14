@@ -114,7 +114,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		})),
 		entities: entities.map((e) => ({
 			id: e.id,
-			name: e.name,
+			name: session.config.entityOverrides?.[e.name] || e.name,
 			kind: e.kind,
 			attributes: e.attributes
 		})),

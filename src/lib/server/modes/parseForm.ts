@@ -34,7 +34,8 @@ function toStr(v: FormDataEntryValue | null): string {
 }
 
 const DRINK_TYPES: DrinkType[] = ['SCHLUCK', 'KURZER', 'BIER_EXEN'];
-const CONFIRMATION_MODES: ConfirmationMode[] = ['GM', 'PEERS', 'EITHER'];
+const CONFIRMATION_MODES: ConfirmationMode[] = ['GM', 'PEERS'];
+const LOCK_MODES = ['TIMER_LOCK', 'LOCK', 'NONE'] as const;
 const TRACKABLE_SCOPES = ['global', 'entity'] as const;
 
 export function parseModeForm(form: FormData): ParseResult {
@@ -107,7 +108,13 @@ export function parseModeForm(form: FormData): ParseResult {
 		confirmationModeRaw
 	)
 		? (confirmationModeRaw as ConfirmationMode)
-		: 'EITHER';
+		: 'PEERS';
+
+	const lockModeRaw = toStr(form.get('lockMode'));
+	const lockMode = (LOCK_MODES as readonly string[]).includes(lockModeRaw)
+		? (lockModeRaw as (typeof LOCK_MODES)[number])
+		: 'TIMER_LOCK';
+	const lockTimerSeconds = Math.max(30, toInt(form.get('lockTimerSeconds'), 600));
 
 	const rebuyDrinkRaw = toStr(form.get('rebuyDrinkType'));
 	const rebuyDrinkType: DrinkType = (DRINK_TYPES as string[]).includes(rebuyDrinkRaw)
@@ -130,7 +137,8 @@ export function parseModeForm(form: FormData): ParseResult {
 			drinkType: rebuyDrinkType,
 			amount: toInt(form.get('rebuyAmount'), 500)
 		},
-		autoLockOnDrink: form.get('autoLockOnDrink') === 'on',
+		lockMode,
+		lockTimerSeconds,
 		showOdds: form.get('showOdds') === 'on'
 	};
 

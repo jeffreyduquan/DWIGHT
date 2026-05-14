@@ -450,12 +450,11 @@
 				<span class="text-base-content/50 text-xs">Modus</span>
 				<select
 					name="confirmationMode"
-					value={initial.defaultConfig.confirmationMode}
+					value={initial.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'}
 					class="select select-bordered select-sm w-full"
 				>
 					<option value="GM">Nur GM</option>
-					<option value="PEERS">Nur Peers</option>
-					<option value="EITHER">GM oder Peers</option>
+					<option value="PEERS">Peers (GM zählt mit)</option>
 				</select>
 			</label>
 			<label class="glass space-y-1 rounded-lg p-2">
@@ -471,7 +470,59 @@
 			</label>
 		</div>
 		<p class="text-base-content/40 text-xs">
-			GM bestätigt allein, oder N Peers bestätigen. „GM oder Peers" akzeptiert beides.
+			GM bestätigt allein, oder N Peers bestätigen. GM-Bestätigungen zählen immer als Peer.
+		</p>
+	</section>
+
+	<!-- Lock policy -->
+	<section class="glass glass-xl space-y-3 p-5">
+		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
+			Sperre bei offenem Drink
+		</h2>
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+				<input
+					type="radio"
+					name="lockMode"
+					value="TIMER_LOCK"
+					checked={(initial.defaultConfig.lockMode ?? 'TIMER_LOCK') === 'TIMER_LOCK'}
+					class="radio radio-xs radio-primary"
+				/>
+				<span>Timer + Sperre</span>
+			</label>
+			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+				<input
+					type="radio"
+					name="lockMode"
+					value="LOCK"
+					checked={initial.defaultConfig.lockMode === 'LOCK'}
+					class="radio radio-xs radio-primary"
+				/>
+				<span>Nur Sperre</span>
+			</label>
+			<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+				<input
+					type="radio"
+					name="lockMode"
+					value="NONE"
+					checked={initial.defaultConfig.lockMode === 'NONE'}
+					class="radio radio-xs radio-primary"
+				/>
+				<span>Keine Sperre</span>
+			</label>
+		</div>
+		<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
+			<span class="text-base-content/50">Timer-Dauer (Sekunden)</span>
+			<input
+				type="number"
+				name="lockTimerSeconds"
+				value={initial.defaultConfig.lockTimerSeconds ?? 600}
+				min="30"
+				class="tabular w-24 bg-transparent text-right outline-none"
+			/>
+		</label>
+		<p class="text-base-content/40 text-xs">
+			Standard: Timer + Sperre, 10 Minuten. Spieler können während des Timers weiter wetten und den Drink bestätigen lassen.
 		</p>
 	</section>
 
@@ -480,21 +531,6 @@
 		<h2 class="text-base-content/60 text-xs font-medium uppercase tracking-widest">
 			Rebuy (Pleite → Trinken → Geld)
 		</h2>
-		<label class="glass flex items-center justify-between rounded-xl p-3">
-			<span class="space-y-1">
-				<span class="block text-sm font-medium">Auto-Sperre bei Drink</span>
-				<span class="text-base-content/40 block text-xs">
-					Sperrt einen Spieler automatisch vom Wetten, solange er einen offenen Drink hat.
-					Host kann jederzeit manuell sperren / entsperren.
-				</span>
-			</span>
-			<input
-				type="checkbox"
-				name="autoLockOnDrink"
-				class="toggle toggle-primary"
-				checked={initial.defaultConfig.autoLockOnDrink !== false}
-			/>
-		</label>
 		<label class="glass flex items-center justify-between rounded-xl p-3">
 			<span class="space-y-1">
 				<span class="block text-sm font-medium">Rebuy erlauben</span>

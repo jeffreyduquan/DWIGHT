@@ -8,7 +8,7 @@ export function freshModeDefaultConfig(): ModeDefaultConfig {
 		startingMoney: 1000,
 		minStake: 10,
 		drinkPrices: { SCHLUCK: 50, KURZER: 150, BIER_EXEN: 500 },
-		confirmationMode: 'EITHER',
+		confirmationMode: 'PEERS',
 		peerConfirmationsRequired: 2,
 		forceDrinkTypesAllowed: ['SCHLUCK', 'KURZER', 'BIER_EXEN'],
 		rebuy: {
@@ -16,8 +16,10 @@ export function freshModeDefaultConfig(): ModeDefaultConfig {
 			drinkType: 'BIER_EXEN',
 			amount: 500
 		},
-		autoLockOnDrink: true,
-		showOdds: true
+		lockMode: 'TIMER_LOCK',
+		lockTimerSeconds: 600,
+		showOdds: true,
+		entityOverrides: {}
 	};
 }
 

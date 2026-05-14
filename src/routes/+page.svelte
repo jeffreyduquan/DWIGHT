@@ -72,12 +72,19 @@
 				</div>
 
 				{#if data.sessions.length === 0}
-					<div class="glass-xl px-6 py-12 text-center">
-						<div class="mx-auto mb-4 flex justify-center">
-							<IconBubble tone="neutral" size="lg"><Sparkles size={22} /></IconBubble>
+					<a
+						href="/s/create"
+						class="glass-interactive group flex flex-col items-center justify-center gap-4 rounded-3xl px-6 py-14 text-center"
+						aria-label="Erste Session erstellen"
+					>
+						<div class="create-bubble">
+							<Plus size={40} strokeWidth={2.5} />
 						</div>
-						<p class="text-base-content/60 text-sm">Noch keine Sessions.</p>
-					</div>
+						<div class="space-y-1">
+							<p class="text-base-content/85 font-semibold">Erste Session erstellen</p>
+							<p class="text-base-content/45 text-xs">Du wirst automatisch GM.</p>
+						</div>
+					</a>
 				{:else}
 					{@const activeSessions = data.sessions.filter((x) => x.status !== 'ENDED')}
 					{@const endedSessions = data.sessions.filter((x) => x.status === 'ENDED')}
@@ -122,7 +129,7 @@
 			</section>
 
 			<section class="fade-up mt-8 flex flex-col gap-3" style="animation-delay: 160ms">
-				{#if data.isAdmin}
+				{#if data.sessions.length > 0}
 					<a href="/s/create" class="btn btn-primary glow-primary h-14 gap-2 rounded-xl text-base">
 						<Plus size={18} /> Session erstellen
 					</a>
@@ -150,3 +157,23 @@
 		{/if}
 	</div>
 </main>
+
+<style>
+	.create-bubble {
+		width: 6rem;
+		height: 6rem;
+		border-radius: 9999px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: oklch(98% 0.02 148);
+		background: linear-gradient(135deg, oklch(60% 0.055 148), oklch(50% 0.075 148));
+		box-shadow:
+			0 12px 28px -10px oklch(60% 0.055 148 / 0.55),
+			inset 0 1px 0 oklch(100% 0 0 / 0.3);
+		transition: transform 180ms ease;
+	}
+	.create-bubble:hover {
+		transform: scale(1.04);
+	}
+</style>

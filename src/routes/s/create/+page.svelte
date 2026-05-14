@@ -185,17 +185,16 @@
 				</span>
 				<select
 					name="confirmationMode"
-					value={selectedMode.defaultConfig.confirmationMode}
+					value={selectedMode.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'}
 					class="select select-bordered glass h-12 w-full rounded-xl"
 				>
 					<option value="GM">Nur GM bestätigt</option>
 					<option value="PEERS"
-						>Nur Peers ({selectedMode.defaultConfig.peerConfirmationsRequired})</option
+						>Peers ({selectedMode.defaultConfig.peerConfirmationsRequired}) — GM zählt mit</option
 					>
-					<option value="EITHER">GM oder Peers</option>
 				</select>
 				<p class="text-base-content/40 mt-1 text-xs">
-					Wer bestätigt, dass ein Drink wirklich gekippt wurde.
+					Wer bestätigt, dass ein Drink wirklich gekippt wurde. GM-Bestätigungen zählen immer als Peer.
 				</p>
 			</label>
 
@@ -244,19 +243,55 @@
 						/>
 					</label>
 				</div>
-				<label class="glass flex items-center justify-between rounded-xl p-3">
-					<span class="space-y-1">
-						<span class="block text-sm font-medium">Auto-Sperre bei Drink</span>
-						<span class="text-base-content/40 block text-xs">
-							Spieler werden automatisch vom Wetten gesperrt, solange ein Drink offen ist.
-						</span>
+				<label class="glass block space-y-2 rounded-xl p-3">
+					<span class="eyebrow inline-flex items-center gap-1.5">
+						<Lock size={12} /> Sperre bei offenem Drink
 					</span>
-					<input
-						type="checkbox"
-						name="autoLockOnDrink"
-						checked={selectedMode.defaultConfig.autoLockOnDrink !== false}
-						class="toggle toggle-primary"
-					/>
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+						<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+							<input
+								type="radio"
+								name="lockMode"
+								value="TIMER_LOCK"
+								checked={(selectedMode.defaultConfig.lockMode ?? 'TIMER_LOCK') === 'TIMER_LOCK'}
+								class="radio radio-xs radio-primary"
+							/>
+							<span>Timer + Sperre</span>
+						</label>
+						<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+							<input
+								type="radio"
+								name="lockMode"
+								value="LOCK"
+								checked={selectedMode.defaultConfig.lockMode === 'LOCK'}
+								class="radio radio-xs radio-primary"
+							/>
+							<span>Nur Sperre</span>
+						</label>
+						<label class="glass flex cursor-pointer items-center gap-2 rounded-lg p-2 text-xs">
+							<input
+								type="radio"
+								name="lockMode"
+								value="NONE"
+								checked={selectedMode.defaultConfig.lockMode === 'NONE'}
+								class="radio radio-xs radio-primary"
+							/>
+							<span>Keine Sperre</span>
+						</label>
+					</div>
+					<label class="mt-1 flex items-center justify-between text-xs">
+						<span class="text-base-content/50">Timer-Dauer (Sekunden)</span>
+						<input
+							type="number"
+							name="lockTimerSeconds"
+							value={selectedMode.defaultConfig.lockTimerSeconds ?? 600}
+							min="30"
+							class="tabular w-20 bg-transparent text-right outline-none"
+						/>
+					</label>
+					<p class="text-base-content/40 mt-1 text-xs">
+						Beim Timer können Spieler bis zum Ablauf weiter wetten. Danach werden sie gesperrt.
+					</p>
 				</label>
 			</fieldset>
 

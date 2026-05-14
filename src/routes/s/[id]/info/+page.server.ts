@@ -25,6 +25,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	return {
 		mode: mode ? { name: mode.name, terminology: mode.terminology } : null,
 		trackables: session.trackables,
-		entities
+		entities: entities.map((e) => ({
+			...e,
+			name: session.config.entityOverrides?.[e.name] || e.name
+		}))
 	};
 };

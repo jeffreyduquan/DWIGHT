@@ -15,6 +15,7 @@ import {
 	type ConfirmationMode,
 	type DrinkType
 } from '../db/schema';
+import { effectiveLockMode } from '../../drinks/lock';
 
 export type DbDrink = typeof drinks.$inferSelect;
 export type DbDrinkConfirmation = typeof drinkConfirmations.$inferSelect;
@@ -72,8 +73,9 @@ export async function initiateSelfDrink(input: SelfInput): Promise<DbDrink> {
 				status: 'PENDING'
 			})
 			.returning();
-		// Auto-lock betting while drink is pending.
-		if (s.config.autoLockOnDrink !== false) {
+		// Auto-lock betting only in LOCK mode. TIMER_LOCK is evaluated lazily at
+		// bet-placement time via isLockedByDrinks(); NONE never locks.
+		if (effectiveLockMode(s.config) === 'LOCK') {
 			await tx
 				.update(sessionPlayers)
 				.set({ betLocked: true })
@@ -153,8 +155,8 @@ export async function initiateForceDrink(input: ForceInput): Promise<DbDrink> {
 				status: 'PENDING'
 			})
 			.returning();
-		// Auto-lock betting on target while drink is pending.
-		if (s.config.autoLockOnDrink !== false) {
+		// Auto-lock betting only in LOCK mode.
+		if (effectiveLockMode(s.config) === 'LOCK') {
 			await tx
 				.update(sessionPlayers)
 				.set({ betLocked: true })
@@ -211,7 +213,8 @@ export async function confirmDrink(input: ConfirmDrinkInput): Promise<ConfirmDri
 		}
 
 		if (mode === 'GM' && input.role !== 'GM') throw new Error('GM_REQUIRED');
-		if (mode === 'PEERS' && input.role !== 'PEER') throw new Error('PEER_REQUIRED');
+		// In PEERS mode any confirmer counts (GM counts as a peer too).
+		// EITHER (legacy) is treated like PEERS.
 
 		// Insert confirmation (idempotent on (drinkId, confirmerUserId) via PK)
 		try {
@@ -232,11 +235,12 @@ export async function confirmDrink(input: ConfirmDrinkInput): Promise<ConfirmDri
 
 		const gmCount = all.filter((c) => c.role === 'GM').length;
 		const peerCount = all.filter((c) => c.role === 'PEER').length;
+		// In PEERS / EITHER mode GM confirmations count toward the peer threshold.
+		const effectivePeerCount = peerCount + gmCount;
 
 		let finalize = false;
 		if (mode === 'GM') finalize = gmCount >= 1;
-		else if (mode === 'PEERS') finalize = peerCount >= cfg.peerConfirmationsRequired;
-		else if (mode === 'EITHER') finalize = gmCount >= 1 || peerCount >= cfg.peerConfirmationsRequired;
+		else finalize = effectivePeerCount >= cfg.peerConfirmationsRequired;
 
 		if (!finalize) {
 			return { drink: d, finalized: false };

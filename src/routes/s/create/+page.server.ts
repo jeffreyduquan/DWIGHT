@@ -26,13 +26,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
-const CONFIRMATION_MODES: ConfirmationMode[] = ['GM', 'PEERS', 'EITHER'];
+const CONFIRMATION_MODES: ConfirmationMode[] = ['GM', 'PEERS'];
+const LOCK_MODES = ['TIMER_LOCK', 'LOCK', 'NONE'] as const;
 const DRINK_TYPES: DrinkType[] = ['SCHLUCK', 'KURZER', 'BIER_EXEN'];
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		if (!locals.user) throw redirect(303, '/login');
-		if (!locals.isAdmin) throw error(403, 'Nur Admins dürfen Sessions erstellen');
+		// Any logged-in user may create a session and becomes its GM (host).
 
 		const form = await request.formData();
 		const modeId = String(form.get('modeId') ?? '').trim();
@@ -41,7 +42,9 @@ export const actions: Actions = {
 		const priceSchluck = Number(form.get('priceSchluck') ?? 0);
 		const priceKurzer = Number(form.get('priceKurzer') ?? 0);
 		const priceBier = Number(form.get('priceBier') ?? 0);
-		const confirmationModeRaw = String(form.get('confirmationMode') ?? 'EITHER');
+		const confirmationModeRaw = String(form.get('confirmationMode') ?? 'PEERS');
+		const lockModeRaw = String(form.get('lockMode') ?? 'TIMER_LOCK');
+		const lockTimerSeconds = Math.max(30, Number(form.get('lockTimerSeconds') ?? 600));
 		const rebuyEnabled = form.get('rebuyEnabled') === 'on';
 		const rebuyDrinkRaw = String(form.get('rebuyDrinkType') ?? 'BIER_EXEN');
 		const rebuyAmount = Number(form.get('rebuyAmount') ?? 0);
@@ -52,6 +55,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Startgeld ungültig' });
 		if (!(CONFIRMATION_MODES as string[]).includes(confirmationModeRaw))
 			return fail(400, { error: 'Bestätigungs-Modus ungültig' });
+		if (!(LOCK_MODES as readonly string[]).includes(lockModeRaw))
+			return fail(400, { error: 'Sperr-Modus ungültig' });
 		if (!(DRINK_TYPES as string[]).includes(rebuyDrinkRaw))
 			return fail(400, { error: 'Rebuy-Drink ungültig' });
 		if (rebuyEnabled && (!Number.isFinite(rebuyAmount) || rebuyAmount <= 0))
@@ -74,9 +79,10 @@ export const actions: Actions = {
 				drinkType: rebuyDrinkRaw as DrinkType,
 				amount: rebuyEnabled ? rebuyAmount : mode.defaultConfig.rebuy.amount
 			},
-			autoLockOnDrink:
-				form.get('autoLockOnDrink') === 'on' ||
-				(form.get('autoLockOnDrink') == null && mode.defaultConfig.autoLockOnDrink !== false)
+			lockMode: lockModeRaw as (typeof LOCK_MODES)[number],
+			lockTimerSeconds,
+			autoLockOnDrink: undefined,
+			entityOverrides: mode.defaultConfig.entityOverrides ?? {}
 		};
 
 		const session = await createSession({

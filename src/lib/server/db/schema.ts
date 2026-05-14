@@ -108,6 +108,14 @@ export type Trackable = {
 	description?: string;
 };
 
+/**
+ * Bet-lock behaviour when a player has a PENDING drink.
+ *  - `TIMER_LOCK` (default): grace timer of `lockTimerSeconds`; after expiry the player is locked.
+ *  - `LOCK`: lock immediately on PENDING drink, unlock on CONFIRMED/CANCELLED.
+ *  - `NONE`: never lock.
+ */
+export type LockMode = 'TIMER_LOCK' | 'LOCK' | 'NONE';
+
 export type ModeDefaultConfig = {
 	startingMoney: number;
 	minStake: number;
@@ -116,10 +124,24 @@ export type ModeDefaultConfig = {
 	peerConfirmationsRequired: number;
 	forceDrinkTypesAllowed: DrinkType[];
 	rebuy: RebuyConfig;
-	/** Auto-lock a player from betting while they have a PENDING drink. Default true. */
+	/**
+	 * @deprecated Replaced by `lockMode`. Kept for backward read of old configs.
+	 *   `autoLockOnDrink: false` → `lockMode: 'NONE'`.
+	 *   `autoLockOnDrink: true` (or unset) → `lockMode: 'TIMER_LOCK'`.
+	 */
 	autoLockOnDrink?: boolean;
+	/** Lock behaviour while a drink is pending. Default `TIMER_LOCK`. */
+	lockMode?: LockMode;
+	/** Grace seconds before `TIMER_LOCK` kicks in. Default 600 (10 min). */
+	lockTimerSeconds?: number;
 	/** Show parimutuel odds + percentage in market UI. Default true. */
 	showOdds?: boolean;
+	/**
+	 * Per-session entity name overrides. Keyed by the Mode's default entity `name`.
+	 *  Example: { "Blau": "Gelb", "Rot": "Grün" }
+	 *  Display layers should resolve overrides before rendering.
+	 */
+	entityOverrides?: Record<string, string>;
 };
 
 export type SessionConfig = ModeDefaultConfig;

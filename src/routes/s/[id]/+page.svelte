@@ -9,6 +9,7 @@
 	import { playSound, isSoundEnabled, setSoundEnabled } from '$lib/client/sounds.svelte';
 	import DrinkPanel from '$lib/components/DrinkPanel.svelte';
 	import IconBubble from '$lib/components/IconBubble.svelte';
+	import QrCode from '$lib/components/QrCode.svelte';
 	import {
 		ArrowRight,
 		Beer,
@@ -18,7 +19,8 @@
 		Settings,
 		Trash2,
 		Lock,
-		Unlock
+		Unlock,
+		QrCode as QrCodeIcon
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -51,9 +53,16 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- Invite code chip -->
-<section class="mb-4 flex items-center justify-end">
-	<span class="badge badge-ghost tabular badge-sm">Code: {data.session.inviteCode}</span>
+<!-- Invite code + QR -->
+<section class="mb-4">
+	<div class="glass glass-xl flex flex-col items-center gap-3 p-4">
+		<div class="flex items-center gap-2">
+			<QrCodeIcon size={14} class="text-base-content/50" />
+			<span class="eyebrow">Mit Code beitreten</span>
+		</div>
+		<QrCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/join?code=${data.session.inviteCode}`} size={180} />
+		<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
+	</div>
 </section>
 
 {#if data.me.betLocked}
@@ -142,6 +151,9 @@
 			<p class="eyebrow">Session verwalten</p>
 		</div>
 		<div class="glass glass-xl space-y-2 p-4">
+			<a href="/s/{data.session.id}/settings" class="btn btn-sm btn-primary glow-primary w-full gap-2">
+				<Settings size={14} /> Einstellungen öffnen
+			</a>
 			<form
 				method="POST"
 				action="?/deleteSession"

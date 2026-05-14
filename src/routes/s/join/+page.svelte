@@ -7,8 +7,8 @@
 	import IconBubble from '$lib/components/IconBubble.svelte';
 	import { ArrowLeft, ArrowRight, AlertCircle, KeyRound } from '@lucide/svelte';
 
-	let { form } = $props();
-	let code = $state(form?.code ?? '');
+	let { data, form } = $props();
+	let code = $state(form?.code ?? data?.prefill ?? '');
 </script>
 
 <header class="mb-8 flex items-center justify-between">
