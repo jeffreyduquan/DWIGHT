@@ -39,10 +39,13 @@ export const actions: Actions = {
 		const modeId = String(form.get('modeId') ?? '').trim();
 		const name = String(form.get('name') ?? '').trim();
 		const startingMoney = Number(form.get('startingMoney') ?? 0);
+		const minStake = Number(form.get('minStake') ?? 1);
+		const showOdds = form.get('showOdds') === 'on';
 		const priceSchluck = Number(form.get('priceSchluck') ?? 0);
 		const priceKurzer = Number(form.get('priceKurzer') ?? 0);
 		const priceBier = Number(form.get('priceBier') ?? 0);
 		const confirmationModeRaw = String(form.get('confirmationMode') ?? 'PEERS');
+		const peerConfirmationsRequired = Math.max(1, Number(form.get('peerConfirmationsRequired') ?? 1));
 		const lockModeRaw = String(form.get('lockMode') ?? 'TIMER_LOCK');
 		const lockTimerSeconds = Math.max(30, Number(form.get('lockTimerSeconds') ?? 600));
 		const rebuyEnabled = form.get('rebuyEnabled') === 'on';
@@ -77,12 +80,15 @@ export const actions: Actions = {
 		const config: SessionConfig = {
 			...mode.defaultConfig,
 			startingMoney,
+			minStake: Math.max(1, minStake),
+			showOdds,
 			drinkPrices: {
 				SCHLUCK: priceSchluck > 0 ? priceSchluck : mode.defaultConfig.drinkPrices.SCHLUCK,
 				KURZER: priceKurzer > 0 ? priceKurzer : mode.defaultConfig.drinkPrices.KURZER,
 				BIER_EXEN: priceBier > 0 ? priceBier : mode.defaultConfig.drinkPrices.BIER_EXEN
 			},
 			confirmationMode: confirmationModeRaw as ConfirmationMode,
+			peerConfirmationsRequired,
 			rebuy: {
 				enabled: rebuyEnabled,
 				drinkType: rebuyDrinkRaw as DrinkType,

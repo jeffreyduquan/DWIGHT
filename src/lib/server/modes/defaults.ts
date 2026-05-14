@@ -9,12 +9,12 @@ export function freshModeDefaultConfig(): ModeDefaultConfig {
 		minStake: 10,
 		drinkPrices: { SCHLUCK: 50, KURZER: 150, BIER_EXEN: 500 },
 		confirmationMode: 'PEERS',
-		peerConfirmationsRequired: 2,
+		peerConfirmationsRequired: 1,
 		forceDrinkTypesAllowed: ['SCHLUCK', 'KURZER', 'BIER_EXEN'],
 		rebuy: {
 			enabled: true,
 			drinkType: 'BIER_EXEN',
-			amount: 500
+			amount: 1500
 		},
 		lockMode: 'TIMER_LOCK',
 		lockTimerSeconds: 600,

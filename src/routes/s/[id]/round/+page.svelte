@@ -20,7 +20,6 @@
 		CircleCheck,
 		X,
 		Undo2,
-		Crown,
 		ChevronDown,
 		Sparkles,
 		Play,
@@ -558,19 +557,12 @@
 				</button>
 			{/if}
 
-			<details class="glass overflow-hidden rounded-2xl group">
-				<summary class="flex cursor-pointer items-center gap-2 p-3 text-sm">
-					<Crown size={14} class="text-primary" />
-					<span class="font-medium">GM</span>
-					<ChevronDown size={14} class="text-base-content/40 ml-auto transition-transform group-open:rotate-180" />
-				</summary>
-				<div class="border-base-content/10 space-y-3 border-t p-3">
-					<form method="POST" action="?/cancel" use:enhance>
-						<input type="hidden" name="roundId" value={round.id} />
-						<button class="btn btn-xs btn-error btn-outline w-full">Runde abbrechen</button>
-					</form>
-				</div>
-			</details>
+			<form method="POST" action="?/cancel" use:enhance>
+				<input type="hidden" name="roundId" value={round.id} />
+				<button class="btn btn-sm btn-error btn-outline w-full gap-1">
+					<X size={12} /> Runde abbrechen
+				</button>
+			</form>
 		</section>
 	{/if}
 {/if}

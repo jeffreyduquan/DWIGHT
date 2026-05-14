@@ -49,6 +49,10 @@
 		modeId?: string;
 	} = $props();
 
+	let confirmationMode = $state<'GM' | 'PEERS'>(
+		initial.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'
+	);
+
 	let entities = $state<EntityRow[]>(
 		(initial.defaultEntities.length > 0
 			? initial.defaultEntities
@@ -450,24 +454,26 @@
 				<span class="text-base-content/50 text-xs">Modus</span>
 				<select
 					name="confirmationMode"
-					value={initial.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'}
+					bind:value={confirmationMode}
 					class="select select-bordered select-sm w-full"
 				>
 					<option value="GM">Nur GM</option>
 					<option value="PEERS">Peers (GM zählt mit)</option>
 				</select>
 			</label>
-			<label class="glass space-y-1 rounded-lg p-2">
-				<span class="text-base-content/50 text-xs">Peer-Anzahl</span>
-				<input
-					type="number"
-					name="peerConfirmationsRequired"
-					value={initial.defaultConfig.peerConfirmationsRequired}
-					min="1"
-					max="10"
-					class="tabular w-full bg-transparent text-sm outline-none"
-				/>
-			</label>
+			{#if confirmationMode === 'PEERS'}
+				<label class="glass space-y-1 rounded-lg p-2">
+					<span class="text-base-content/50 text-xs">Peer-Anzahl</span>
+					<input
+						type="number"
+						name="peerConfirmationsRequired"
+						value={initial.defaultConfig.peerConfirmationsRequired}
+						min="1"
+						max="10"
+						class="tabular w-full bg-transparent text-sm outline-none"
+					/>
+				</label>
+			{/if}
 		</div>
 		<p class="text-base-content/40 text-xs">
 			GM bestätigt allein, oder N Peers bestätigen. GM-Bestätigungen zählen immer als Peer.

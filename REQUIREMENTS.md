@@ -254,6 +254,11 @@
 - **REQ-STAT-002** Per-player round history with stake / payout / drink list per round.
 - **REQ-STAT-003** All-time per-user stats live in `users.total_stats` JSONB. Updated transactionally with each bet resolve / drink confirm.
 - **REQ-STAT-004** **Phase 12 per-drink-type breakdown.** `getSessionLeaderboard` and `getMySessionStats` additionally return `drinksByType: { SCHLUCK, KURZER, BIER_EXEN }` (CONFIRMED only, target = user). The "Eigene Drinks" stat tile on `/s/[id]/stats` shows the three counts in a 3-column grid labelled "Schlücke / Shots / Exen".
+- **REQ-UI-030** **Phase 13 GM controls inline.** The round page no longer wraps GM-only controls in an expandable `<details>` block. The "Runde abbrechen" button sits directly below the "Ergebnisse anzeigen" CTA as a full-width `btn-sm btn-error btn-outline`.
+- **REQ-UI-031** **Phase 13 create/settings parity.** `/s/create` exposes the same config sections as `/s/[id]/settings`: `startingMoney`, `minStake`, `showOdds`, `drinkPrices`, `confirmationMode` (+ conditional `peerConfirmationsRequired`), `lockMode`, `lockTimerSeconds`, `rebuy.{enabled,drinkType,amount}`, and `entityOverrides`. The server action parses all fields into `SessionConfig`.
+- **REQ-UI-032** **Phase 13 conditional peer-count.** The `peerConfirmationsRequired` input is only rendered when `confirmationMode === 'PEERS'`. Applies in `ModeForm.svelte`, `/s/[id]/settings`, and `/s/create`.
+- **REQ-UI-033** **Phase 13 QR-Panel below.** On `/s/[id]` (lobby), the QR/Invite panel renders BELOW the footer button row (toggled via the QR button), not above the header.
+- **REQ-MODE-007** **Phase 13 mode defaults.** `freshModeDefaultConfig()` returns `peerConfirmationsRequired: 1` and `rebuy.amount: 1500` by default.
 
 ---
 

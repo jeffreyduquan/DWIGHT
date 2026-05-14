@@ -401,6 +401,22 @@ Acceptance:
 
 ---
 
+## Phase 13 — Polish (User-Feedback) ☑
+**Goal:** 5 mechanische Korrekturen aus User-Feedback.
+
+Tasks:
+- ☑ **#1 GM-Inline (REQ-UI-030):** Round-Page: `<details>`-GM-Panel entfernt. "Runde abbrechen" full-width `btn-sm btn-error btn-outline` direkt unter "Ergebnisse anzeigen".
+- ☑ **#2 Create=Settings (REQ-UI-031):** `/s/create` exposed vollständige Config (startingMoney, minStake, showOdds, drinkPrices, confirmationMode + peerCount, lockMode/Timer, rebuy, entityOverrides). Server parsed alle Felder.
+- ☑ **#3 Conditional Peer-Count (REQ-UI-032):** `peerConfirmationsRequired`-Input nur sichtbar wenn `confirmationMode === 'PEERS'`. Greift in ModeForm, Settings und Create.
+- ☑ **#4 QR-unten (REQ-UI-033):** Lobby-QR-Panel rendert jetzt UNTER der Footer-Buttonreihe (mt-3) statt darüber.
+- ☑ **#5 Defaults (REQ-MODE-007):** `freshModeDefaultConfig`: `peerConfirmationsRequired: 1`, `rebuy.amount: 1500`.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 93/93.
+- ☑ `pnpm check`: 0 Errors, 15 Warnings (2 neue benigne `state_referenced_locally`).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

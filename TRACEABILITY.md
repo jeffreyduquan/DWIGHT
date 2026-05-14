@@ -213,6 +213,11 @@
 | REQ-STAT-002 | D5 | `getMySessionStats` (ROI, hit-rate, drinks) | manual | ☑ |
 | REQ-STAT-003 | D5 | `getRoundHistory` + history list in UI | manual | ☑ |
 | REQ-STAT-004 | Phase 12 | `src/lib/server/repos/stats.ts` (`drinksByType` SQL aggregate), `src/routes/s/[id]/stats/+page.svelte` (3-col Tile Schlücke/Shots/Exen) | manual | ☑ |
+| REQ-UI-030 | Phase 13 | `src/routes/s/[id]/round/+page.svelte` (inline cancel button, kein `<details>`) | manual | ☑ |
+| REQ-UI-031 | Phase 13 | `src/routes/s/create/+page.svelte` + `+page.server.ts` (minStake, showOdds, peerConfirmations, lock, rebuy, entityOverrides) | manual | ☑ |
+| REQ-UI-032 | Phase 13 | `src/lib/components/ModeForm.svelte`, `src/routes/s/[id]/settings/+page.svelte`, `src/routes/s/create/+page.svelte` (`{#if confirmationMode==='PEERS'}`) | manual | ☑ |
+| REQ-UI-033 | Phase 13 | `src/routes/s/[id]/+page.svelte` (QR-Panel mt-3 unter Buttonreihe) | manual | ☑ |
+| REQ-MODE-007 | Phase 13 | `src/lib/server/modes/defaults.ts` (peerConfirmationsRequired:1, rebuy.amount:1500) | manual | ☑ |
 
 ## REQ-DATA — Data
 

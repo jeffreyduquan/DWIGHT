@@ -26,8 +26,14 @@
 	const selectedMode = $derived(data.modes.find((m) => m.id === selectedModeId) ?? null);
 
 	let rebuyEnabled = $state(selectedMode?.defaultConfig.rebuy.enabled ?? true);
+	let confirmationMode = $state<'GM' | 'PEERS'>(
+		selectedMode?.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'
+	);
 	$effect(() => {
-		if (selectedMode) rebuyEnabled = selectedMode.defaultConfig.rebuy.enabled;
+		if (selectedMode) {
+			rebuyEnabled = selectedMode.defaultConfig.rebuy.enabled;
+			confirmationMode = selectedMode.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS';
+		}
 	});
 
 	const formError = $derived(form && 'error' in form ? (form.error as string) : null);
@@ -124,18 +130,48 @@
 
 		{#if selectedMode}
 			<!-- Money -->
-			<label class="block space-y-1">
-				<span class="eyebrow inline-flex items-center gap-1.5">
-					<Coins size={12} /> Startgeld
+			<div class="grid grid-cols-2 gap-2">
+				<label class="block space-y-1">
+					<span class="eyebrow inline-flex items-center gap-1.5">
+						<Coins size={12} /> Startgeld
+					</span>
+					<input
+						type="number"
+						name="startingMoney"
+						value={selectedMode.defaultConfig.startingMoney}
+						min="100"
+						step="50"
+						class="input input-bordered glass tabular h-12 w-full rounded-xl"
+						required
+					/>
+				</label>
+				<label class="block space-y-1">
+					<span class="eyebrow inline-flex items-center gap-1.5">
+						<Coins size={12} /> Mindesteinsatz
+					</span>
+					<input
+						type="number"
+						name="minStake"
+						value={selectedMode.defaultConfig.minStake}
+						min="1"
+						class="input input-bordered glass tabular h-12 w-full rounded-xl"
+						required
+					/>
+				</label>
+			</div>
+
+			<label class="glass flex items-center justify-between rounded-xl p-3">
+				<span class="space-y-1">
+					<span class="block text-sm font-medium">Quoten anzeigen</span>
+					<span class="text-base-content/40 block text-xs">
+						Multiplikator + Prozent neben jedem Outcome.
+					</span>
 				</span>
 				<input
-					type="number"
-					name="startingMoney"
-					value={selectedMode.defaultConfig.startingMoney}
-					min="100"
-					step="50"
-					class="input input-bordered glass tabular h-12 w-full rounded-xl"
-					required
+					type="checkbox"
+					name="showOdds"
+					class="toggle toggle-primary"
+					checked={selectedMode.defaultConfig.showOdds !== false}
 				/>
 			</label>
 
@@ -185,18 +221,29 @@
 				</span>
 				<select
 					name="confirmationMode"
-					value={selectedMode.defaultConfig.confirmationMode === 'GM' ? 'GM' : 'PEERS'}
+					bind:value={confirmationMode}
 					class="select select-bordered glass h-12 w-full rounded-xl"
 				>
 					<option value="GM">Nur GM bestätigt</option>
-					<option value="PEERS"
-						>Peers ({selectedMode.defaultConfig.peerConfirmationsRequired}) — GM zählt mit</option
-					>
+					<option value="PEERS">Peers — GM zählt mit</option>
 				</select>
 				<p class="text-base-content/40 mt-1 text-xs">
 					Wer bestätigt, dass ein Drink wirklich gekippt wurde. GM-Bestätigungen zählen immer als Peer.
 				</p>
 			</label>
+			{#if confirmationMode === 'PEERS'}
+				<label class="glass block space-y-1 rounded-xl p-3">
+					<span class="text-base-content/50 text-xs">Peer-Anzahl</span>
+					<input
+						type="number"
+						name="peerConfirmationsRequired"
+						value={selectedMode.defaultConfig.peerConfirmationsRequired}
+						min="1"
+						max="10"
+						class="tabular w-full bg-transparent text-base outline-none"
+					/>
+				</label>
+			{/if}
 
 			<!-- Rebuy -->
 			<fieldset class="space-y-3">

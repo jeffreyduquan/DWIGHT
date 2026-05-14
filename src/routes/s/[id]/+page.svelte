@@ -58,21 +58,7 @@
 	onDestroy(() => es?.close());
 </script>
 
-<!-- Invite code + QR (collapsed by default; toggled from footer bar) -->
-{#if showQr}
-	<section class="mb-4">
-		<div class="glass glass-xl flex flex-col items-center gap-3 p-4">
-			<div class="flex w-full items-center justify-between">
-				<span class="eyebrow inline-flex items-center gap-1.5">
-					<QrCodeIcon size={14} /> Mit Code beitreten
-				</span>
-				<button class="btn btn-xs btn-ghost" onclick={toggleQr} aria-label="QR schließen">Schließen</button>
-			</div>
-			<QrCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/join?code=${data.session.inviteCode}`} size={180} />
-			<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
-		</div>
-	</section>
-{/if}
+<!-- Invite code + QR (collapsed by default; toggled from footer bar — panel opens below the toggle row) -->
 
 {#if data.me.betLocked}
 	<section
@@ -204,6 +190,21 @@
 		{#if soundOn}<Volume2 size={12} /> Sound an{:else}<VolumeX size={12} /> Sound aus{/if}
 	</button>
 </section>
+
+{#if showQr}
+	<section class="mt-3">
+		<div class="glass glass-xl flex flex-col items-center gap-3 p-4">
+			<div class="flex w-full items-center justify-between">
+				<span class="eyebrow inline-flex items-center gap-1.5">
+					<QrCodeIcon size={14} /> Mit Code beitreten
+				</span>
+				<button class="btn btn-xs btn-ghost" onclick={toggleQr} aria-label="QR schließen">Schließen</button>
+			</div>
+			<QrCode value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/join?code=${data.session.inviteCode}`} size={180} />
+			<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
+		</div>
+	</section>
+{/if}
 
 <style>
 	.player-row {

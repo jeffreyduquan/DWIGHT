@@ -98,10 +98,12 @@
 				<span>Peers (GM zählt mit)</span>
 			</label>
 		</div>
-		<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
-			<span class="text-base-content/50">Peer-Anzahl</span>
-			<input type="number" name="peerConfirmationsRequired" value={cfg.peerConfirmationsRequired} min="1" max="10" class="tabular w-16 bg-transparent text-right outline-none" />
-		</label>
+		{#if confirmationMode === 'PEERS'}
+			<label class="glass flex items-center justify-between rounded-xl p-3 text-xs">
+				<span class="text-base-content/50">Peer-Anzahl</span>
+				<input type="number" name="peerConfirmationsRequired" value={cfg.peerConfirmationsRequired} min="1" max="10" class="tabular w-16 bg-transparent text-right outline-none" />
+			</label>
+		{/if}
 	</section>
 
 	<!-- Lock mode -->
