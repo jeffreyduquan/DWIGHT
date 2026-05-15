@@ -269,6 +269,7 @@
 | REQ-UI-062 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`SLOT_W/H`=140/80, `TILE_W/H`=120/60) | manual | ☑ |
 | REQ-UI-063 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`spawnFromCatalog` column-major scan) | manual | ☑ |
 | REQ-UI-064 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`.editor-grid grid-template-columns: 200px 1fr 240px`, `.catalog-item` padding/font) | manual | ☑ |
+| REQ-UI-065 | Phase 25 | `src/lib/graph/SlotGraphEditor.svelte` (`pendingOutPin` $state, `onOutputPinClick`/`onInputPinClick`, `.pin.tap-active` + `.pin.tap-target` styles, Escape/canvas-click resets) | manual | ☑ |
 
 ## REQ-DATA — Data
 

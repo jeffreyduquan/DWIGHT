@@ -77,6 +77,15 @@
 	};
 	let wireDrag = $state<WireDrag | null>(null);
 
+	/** Tap-to-wire selection: when user clicks an output pin without drag,
+	 * remember it; next click on a compatible input pin creates the edge. */
+	type PendingPin = {
+		nodeId: string;
+		pin: string;
+		type: PinType;
+	};
+	let pendingOutPin = $state<PendingPin | null>(null);
+
 	/** Sidebar drag (kind being placed). */
 	let sidebarDragKind = $state<GraphNodeKind | null>(null);
 	/** Existing-node drag (re-snap to new slot). */
@@ -377,6 +386,30 @@
 		window.removeEventListener('pointerup', onWindowPointerUp);
 	}
 
+	/** Tap on an output pin: toggle/select it as the wire source. */
+	function onOutputPinClick(ev: MouseEvent, n: GraphNode, pin: PinDef) {
+		ev.stopPropagation();
+		ev.preventDefault();
+		// Only respond if drag wasn't actually started.
+		if (wireDrag) return;
+		if (pendingOutPin && pendingOutPin.nodeId === n.id && pendingOutPin.pin === pin.name) {
+			pendingOutPin = null;
+		} else {
+			pendingOutPin = { nodeId: n.id, pin: pin.name, type: pin.type };
+		}
+	}
+
+	/** Tap on an input pin: if a source pin is pending, create the wire. */
+	function onInputPinClick(ev: MouseEvent, n: GraphNode, pin: PinDef) {
+		if (!pendingOutPin) return;
+		ev.stopPropagation();
+		ev.preventDefault();
+		if (canConnect(pendingOutPin.type, pin.type)) {
+			addEdge(pendingOutPin.nodeId, pendingOutPin.pin, n.id, pin.name, pin.multi === true);
+		}
+		pendingOutPin = null;
+	}
+
 	// ---------- bezier path ----------
 	function bezierPath(
 		x1: number,
@@ -392,6 +425,9 @@
 	function onKeyDown(ev: KeyboardEvent) {
 		if (ev.target instanceof HTMLInputElement || ev.target instanceof HTMLTextAreaElement) {
 			return;
+		}
+		if (ev.key === 'Escape') {
+			pendingOutPin = null;
 		}
 		if (ev.key === 'Delete' || ev.key === 'Backspace') {
 			if (selectedNodeId) {
@@ -506,11 +542,15 @@
 		bind:this={canvasEl}
 		role="region"
 		aria-label="Bet-Graph Canvas"
-		ondragover={onCanvasDragOver}
-		ondrop={onCanvasDrop}
-		onclick={(e) => {
-			if (e.target === e.currentTarget) selectedNodeId = null;
+		ondragover={onCanvasDragOver}{
+				selectedNodeId = null;
+				pendingOutPin = null;
+			}
 		}}
+	>
+		<div
+			class="canvas-grid"
+			style:width="{
 	>
 		<div
 			class="canvas-visibleCols * SLOT_W}px"
@@ -639,10 +679,12 @@
 						<button
 							type="button"
 							class="pin pin-in"
+							class:tap-target={pendingOutPin && canConnect(pendingOutPin.type, p.type) && pendingOutPin.nodeId !== n.id}
 							style:top="{pinY(idx, spec.inputs.length) - 6}px"
 							style:background={pinColor(p.type)}
 							title="{p.name} ({p.type}){p.required ? ' *' : ''}"
 							onpointerup={(ev) => onInputPinPointerUp(ev, n, p)}
+							onclick={(ev) => onInputPinClick(ev, n, p)}
 						></button>
 					{/each}
 					<!-- output pins (right edge) -->
@@ -650,10 +692,12 @@
 						<button
 							type="button"
 							class="pin pin-out"
+							class:tap-active={pendingOutPin?.nodeId === n.id && pendingOutPin?.pin === p.name}
 							style:top="{pinY(idx, spec.outputs.length) - 6}px"
 							style:background={pinColor(p.type)}
-							title="{p.name} ({p.type})"
+							title="{p.name} ({p.type}) — Tap zum Verbinden, oder Ziehen"
 							onpointerdown={(ev) => onOutputPinPointerDown(ev, n, p)}
+							onclick={(ev) => onOutputPinClick(ev, n, p)}
 						></button>
 					{/each}
 				</div>
@@ -1008,6 +1052,19 @@
 	}
 	.pin:hover {
 		transform: scale(1.4);
+	}
+	.pin.tap-active {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+		transform: scale(1.3);
+		box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 30%, transparent);
+	}
+	.pin.tap-target {
+		animation: pin-pulse 1.2s ease-in-out infinite;
+	}
+	@keyframes pin-pulse {
+		0%, 100% { transform: scale(1); box-shadow: 0 1px 3px color-mix(in oklab, black 40%, transparent); }
+		50% { transform: scale(1.25); box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-success) 35%, transparent); }
 	}
 
 	/* ---------- Inspector ---------- */

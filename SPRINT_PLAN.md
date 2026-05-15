@@ -601,6 +601,24 @@ Acceptance:
 
 ---
 
+## Phase 25 — Tap-to-Wire ☑
+**Goal:** Pin-Verbindungen per Drag waren auf Touch nicht zuverlässig. Diese Phase ergänzt einen Tap1→Tap2 Pfad parallel zum existierenden Drag.
+
+Tasks:
+- ☑ **25a Tap-to-Wire (REQ-UI-065):** `pendingOutPin` $state, `onOutputPinClick`/`onInputPinClick` Handler. Click auf Output-Pin selektiert (oder de-selektiert) ihn; Click auf kompatiblen Input erstellt Edge. Visual: `.tap-active` Primary-Ring + `.tap-target` `pin-pulse` Animation auf kompatiblen Inputs. `Escape` und Canvas-leer-Click brechen ab.
+
+Offen (Phase 26, größerer Refactor):
+- **26a** Inline-Properties auf der Node (Inspector entfällt für Standard-Felder).
+- **26b** Click auf leeren Pin → Popover "neuen passenden Node spawnen ODER mit existierendem verbinden".
+- **26c** Template-Wizard mit Setup-Fragen zur Trackable-Scope-Klärung (single vs. global).
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

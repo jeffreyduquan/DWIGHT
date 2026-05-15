@@ -316,6 +316,7 @@
 - **REQ-UI-062** **Phase 24 Compact Tile-Geometrie.** SlotGraphEditor verwendet `SLOT_W=140 / SLOT_H=80 / TILE_W=120 / TILE_H=60` (vorher 180/110/160/90). Tiles wirken kompakt, mehr Nodes pro Viewport sichtbar.
 - **REQ-UI-063** **Phase 24 Vertical-Default Spawn.** `spawnFromCatalog` füllt **spaltenweise** (column-major) — Default-Layouts wachsen vertikal nach unten; horizontale Verzweigungen sind opt-in (Drag/Drop in spätere Spalte).
 - **REQ-UI-064** **Phase 24 Schlanke Sidebars.** `grid-template-columns: 200px 1fr 240px` (vorher 260/300). Catalog-Items kleiner padding (`0.25rem 0.4rem`) und font (`0.7rem`). Inspector und Catalog blocken weniger Canvas-Fläche; Pins bleiben besser sichtbar.
+- **REQ-UI-065** **Phase 25 Tap-to-Wire.** Pins lassen sich per Tap1 (Output) → Tap2 (Input) verbinden, zusätzlich zum Drag. Aktiver Source-Pin zeigt einen Primary-Ring (`.tap-active`); kompatible Ziel-Inputs pulsieren (`.tap-target` Animation). `Escape` oder Klick auf leeren Canvas bricht ab. Touch-first nutzbar.
 
 ---
 
