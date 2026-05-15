@@ -273,6 +273,10 @@
 | REQ-UI-066 | Phase 26 | `src/lib/graph/SlotGraphEditor.svelte` (`.editor-root grid-template-columns: 200px 1fr`, `.inspector` als `position: absolute` overlay, `.inspector.visible { transform: translateX(0) }`, `.inspector .mobile-drawer-head { display: flex }` für Desktop-Close, X-Click cleart selectedNodeId) | manual | ☑ |
 | REQ-UI-067 | Phase 26 | `src/lib/graph/SlotGraphEditor.svelte` (`pinPopover` $state, `compatibleKinds`/`compatibleExistingPins`/`spawnAndWireFromPopover`/`connectFromPopover` Helper, `.pin-popover` Markup im canvas-grid, `.pin-popover*` CSS) | manual | ☑ |
 | REQ-UI-068 | Phase 26 | `src/routes/modes/[id]/+page.svelte` (`templateAvailable()` Helper, `disabled` + Tooltip auf inkompatiblen Template-Buttons, `badge-ghost badge-xs` "einzel" auf Templates mit `templateRequiresEntityScope`) | manual | ☑ |
+| REQ-UI-069 | Phase 27 | `src/lib/components/ModeForm.svelte` (`pb-24` aus `<form>` entfernt), `src/routes/modes/[id]/+page.svelte` + `src/routes/modes/new/+page.svelte` (`pt-8 pb-24` am Page-Wrapper) | manual | ☑ |
+| REQ-UI-070 | Phase 27 | `src/lib/graph/SlotGraphEditor.svelte` (`class:empty={graph.nodes.length === 0}` an `.canvas-scroll`, `.canvas-scroll.empty { overflow-x: hidden }` + `.canvas-scroll.empty .canvas-grid { width: 100% !important; min-width: 100% }`) | manual | ☑ |
+| REQ-UI-071 | Phase 27 | `src/lib/graph/SlotGraphEditor.svelte` (`.editor-root grid-template-columns: 1fr`, `.catalog` als `position: absolute; transform: translateX(-100%); transition`, `.catalog.mobile-open { transform: translateX(0) }`, `.mobile-only` und `.mobile-drawer-head` immer sichtbar; alte `@media (max-width: 767px)` Drawer-Logik entfernt) | manual | ☑ |
+| REQ-UI-072 | Phase 27 | `src/routes/modes/[id]/+page.svelte` (`selectedTrackableId` $state, `selectedTrackable` $derived, `trackableCompatibleTemplates` $derived, `personalizedTitle(tplId, label)` Helper; Picker-UI als 2-Step Wizard mit Trackable→Template→Form; hidden input für Trackable in Form) | manual | ☑ |
 
 ## REQ-DATA — Data
 

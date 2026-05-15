@@ -102,7 +102,7 @@
 	<div class="alert alert-error mb-4 text-sm">{error}</div>
 {/if}
 
-<form method="POST" {action} use:enhance class="space-y-5 pb-24">
+<form method="POST" {action} use:enhance class="space-y-5">
 	<!-- 1 — Name -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">

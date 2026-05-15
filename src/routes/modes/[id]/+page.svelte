@@ -31,8 +31,12 @@
 	const OUTCOME_ICONS = { Trophy, CheckCircle2, Medal, Sparkles } as const;
 
 	let pickerOpen = $state(false);
+	let selectedTrackableId = $state<string | null>(null);
 	let selectedTplId = $state<string | null>(null);
 	const selectedTpl = $derived(TEMPLATES.find((t) => t.id === selectedTplId) ?? null);
+	const selectedTrackable = $derived(
+		data.mode.trackables.find((t) => t.id === selectedTrackableId) ?? null
+	);
 
 	/** Trackables compatible with the selected template (filter by scope). */
 	const compatibleTrackables = $derived.by(() => {
@@ -51,13 +55,46 @@
 		return data.mode.trackables.length > 0;
 	}
 
+	/** Templates compatible with the currently selected trackable's scope. */
+	const trackableCompatibleTemplates = $derived.by(() => {
+		if (!selectedTrackable) return [];
+		return TEMPLATES.filter((t) => {
+			if (templateRequiresEntityScope(t.id)) return selectedTrackable.scope === 'entity';
+			return true;
+		});
+	});
+
+	/** Personalized question phrasing using the chosen trackable's label. */
+	function personalizedTitle(tplId: TemplateId, label: string): string {
+		switch (tplId) {
+			case 'race':
+				return `Wer macht zuerst „${label}"?`;
+			case 'champion':
+				return `Wer macht die meisten „${label}"?`;
+			case 'loser':
+				return `Wer macht die wenigsten „${label}"?`;
+			case 'will_player':
+				return `Wer schafft zuerst N × „${label}"?`;
+			case 'podium':
+				return `Top-N nach „${label}"`;
+			case 'race_vs_time':
+				return `Wie viele „${label}" in N Sekunden?`;
+			case 'will_happen':
+				return `Passiert „${label}" mindestens N-mal?`;
+			default:
+				return label;
+		}
+	}
+
 	function openPicker() {
 		selectedTplId = null;
+		selectedTrackableId = null;
 		pickerOpen = true;
 	}
 	function closePicker() {
 		pickerOpen = false;
 		selectedTplId = null;
+		selectedTrackableId = null;
 	}
 
 	const tplError = $derived(form && 'error' in form ? (form.error as string) : null);
@@ -67,7 +104,7 @@
 	<div class="aurora" aria-hidden="true"></div>
 	<div class="noise" aria-hidden="true"></div>
 
-	<div class="relative mx-auto max-w-md px-6 py-8">
+	<div class="relative mx-auto max-w-md px-6 pt-8 pb-24">
 		<header class="mb-6 flex items-center justify-between">
 			<a
 				href="/modes"

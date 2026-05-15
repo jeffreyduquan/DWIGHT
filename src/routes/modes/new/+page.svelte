@@ -13,7 +13,7 @@
 	<div class="aurora" aria-hidden="true"></div>
 	<div class="noise" aria-hidden="true"></div>
 
-	<div class="relative mx-auto max-w-md px-6 py-8">
+	<div class="relative mx-auto max-w-md px-6 pt-8 pb-24">
 		<header class="mb-6 flex items-center justify-between">
 			<a
 				href="/modes"

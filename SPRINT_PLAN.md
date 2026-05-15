@@ -619,7 +619,8 @@ Acceptance:
 
 ---
 
-## Phase 26 — Editor Pass-2 ⏳ (in-progress)
+## Phase 26 — Editor Pass-2 ☑
+
 **Goal:** Inspector + Catalog dominierten das Interface. Diese Phase macht den Inspector zu einem on-demand Overlay, lässt den Canvas voll atmen, und legt 26b/26c als Folge-Sub-Phasen an.
 
 Tasks:
@@ -628,6 +629,23 @@ Tasks:
 - ☑ **26c Template-Verfügbarkeit (REQ-UI-068):** `templateAvailable(tplId)` Helper in `/modes/[id]/+page.svelte`. Inkompatible Templates sind `disabled` mit Tooltip; einzel-Templates bekommen Badge "einzel" neben Titel. Damit sieht der User sofort welche Vorlagen mit dem aktuellen Trackable-Setup funktionieren.
 
 Acceptance (26a):
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
+## Phase 27 — UX-Refinement Pass-3 ☑
+
+**Goal:** Senior-UX-Pass auf das gesamte Editor- und Mode-Interface — Lücken schließen, Canvas befreien, Template-Flow personalisieren.
+
+Tasks:
+- ☑ **27a Mode-Page Spacing (REQ-UI-069):** `pb-24` (Buffer für fixe Save-Bar) von `<form>` in `ModeForm` ans äußere Page-Container (`/modes/[id]/+page.svelte`, `/modes/new/+page.svelte`) verschoben. Schließt die Lücke zwischen Mode-Form (Trackables) und Folgesektionen (Wetten, Delete).
+- ☑ **27b Graph-Canvas leer kein X-Scroll (REQ-UI-070):** `.canvas-scroll.empty { overflow-x: hidden }` + `.canvas-scroll.empty .canvas-grid { width: 100% !important }`. Bei leerem Graph erscheint keine horizontale Scrollbar.
+- ☑ **27c Catalog/Inspector als Drawer auf allen Breakpoints (REQ-UI-071):** `.editor-root` ist jetzt einspaltig (`grid-template-columns: 1fr`). Catalog ist absolute-positioniertes Drawer das per `.mobile-open` reinslidet (analog Inspector aus 26a). `.mobile-only` Buttons in der Statusbar immer sichtbar zum Öffnen. Canvas hat damit immer volle Breite.
+- ☑ **27d Template-Wizard trackable-first (REQ-UI-072):** Picker ist 2-Step-Wizard: Step 1 wählt Trackable (mit Scope-Badge), Step 2 zeigt nur kompatible Templates mit personalisierten Titeln (`personalizedTitle(tplId, label)`), Step 3 (Form) bekommt Trackable als hidden input und fragt nur Restparameter ab. Bei leerer Trackable-Liste Hinweis statt leerer Auswahl.
+
+Acceptance:
 - ☑ `pnpm vitest run`: 105/105.
 - ☑ `pnpm check`: 0 Errors.
 - ☑ `pnpm exec vite build`: erfolgreich.

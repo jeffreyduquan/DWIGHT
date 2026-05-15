@@ -665,6 +665,7 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 	<div
 		class="canvas-scroll"
+		class:empty={graph.nodes.length === 0}
 		bind:this={canvasEl}
 		role="region"
 		aria-label="Bet-Graph Canvas"
@@ -1045,11 +1046,11 @@
 <style>
 	.editor-root {
 		display: grid;
-		grid-template-columns: 200px 1fr;
+		grid-template-columns: 1fr;
 		grid-template-rows: 1fr auto;
 		grid-template-areas:
-			'catalog canvas'
-			'status status';
+			'canvas'
+			'status';
 		gap: 0;
 		height: 100%;
 		min-height: 540px;
@@ -1062,7 +1063,7 @@
 	}
 
 	.mobile-drawer-head {
-		display: none;
+		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		padding-bottom: 0.4rem;
@@ -1070,17 +1071,28 @@
 		border-bottom: 1px solid var(--color-base-300);
 	}
 	.mobile-only {
-		display: none;
+		display: inline-flex;
 	}
 
-	/* ---------- Catalog sidebar ---------- */
+	/* ---------- Catalog drawer (off-canvas, all breakpoints) ---------- */
 	.catalog {
-		grid-area: catalog;
+		position: absolute;
+		top: 0;
+		bottom: 2.25rem;
+		left: 0;
+		width: min(85vw, 280px);
+		z-index: 30;
+		transform: translateX(-100%);
+		transition: transform 0.18s ease;
 		border-right: 1px solid var(--color-base-300);
 		background: var(--color-base-200);
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
+		box-shadow: 0 4px 24px color-mix(in oklab, black 35%, transparent);
+	}
+	.catalog.mobile-open {
+		transform: translateX(0);
 	}
 	.catalog-header {
 		padding: 0.625rem;
@@ -1145,6 +1157,13 @@
 		overflow: auto;
 		background: var(--color-base-100);
 		position: relative;
+	}
+	.canvas-scroll.empty {
+		overflow-x: hidden;
+	}
+	.canvas-scroll.empty .canvas-grid {
+		width: 100% !important;
+		min-width: 100%;
 	}
 	.canvas-grid {
 		position: relative;
@@ -1412,47 +1431,10 @@
 		gap: 0.3rem;
 	}
 
-	/* ---------- Mobile (< 768px): drawers instead of fixed sidebars ---------- */
+	/* ---------- Compact mobile tweaks ---------- */
 	@media (max-width: 767px) {
 		.editor-root {
-			grid-template-columns: 1fr;
-			grid-template-rows: 1fr auto;
-			grid-template-areas:
-				'canvas'
-				'status';
 			min-height: 70vh;
-		}
-		.mobile-only {
-			display: inline-flex;
-		}
-		.mobile-drawer-head {
-			display: flex;
-		}
-		.catalog,
-		.inspector {
-			position: absolute;
-			top: 0;
-			bottom: 40px;
-			width: min(85vw, 320px);
-			z-index: 30;
-			transition: transform 0.18s ease;
-			box-shadow: 0 4px 24px color-mix(in oklab, black 35%, transparent);
-		}
-		.catalog {
-			left: 0;
-			transform: translateX(-100%);
-			border-right: 1px solid var(--color-base-300);
-		}
-		.catalog.mobile-open {
-			transform: translateX(0);
-		}
-		.inspector {
-			right: 0;
-			transform: translateX(100%);
-			border-left: 1px solid var(--color-base-300);
-		}
-		.inspector.mobile-open {
-			transform: translateX(0);
 		}
 		.status-stats {
 			display: none;
