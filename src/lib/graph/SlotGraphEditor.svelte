@@ -517,7 +517,8 @@
 			<!-- background grid dots -->
 			<svg class="grid-dots" width={visibleCols * SLOT_W} height={visibleRows * SLOT_H}>
 				{#each Array(visibleCols) as _, c}
-					{#each Array(visibleRowsSLOT_W + SLOT_W / 2} cy={r * SLOT_H + SLOT_H / 2} r="1.5" />
+					{#each Array(visibleRows) as _, r}
+						<circle cx={c * SLOT_W + SLOT_W / 2} cy={r * SLOT_H + SLOT_H / 2} r="1.5" />
 					{/each}
 				{/each}
 			</svg>
