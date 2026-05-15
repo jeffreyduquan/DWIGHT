@@ -1,5 +1,5 @@
 /**
- * @file graph/templates.test.ts -- Smoke tests for all bet-graph templates.
+ * @file graph/templates.test.ts -- Smoke tests for all Graph 2.0 templates.
  * Each template must:
  *  - produce a structurally valid graph (validator)
  *  - compile to a runtime market (compiler)
@@ -23,8 +23,7 @@ const BASE = {
 	entity: 'Mario',
 	threshold: 3,
 	topK: 2,
-	seconds: 60,
-	direction: 'up' as const
+	seconds: 60
 };
 
 const LABELS = { trackable: 'Tor', entity: 'Mario' };
@@ -43,6 +42,11 @@ describe('bet-graph templates', () => {
 			const res = buildGraph(id, BASE, LABELS);
 			expect(res.ok, JSON.stringify(res)).toBe(true);
 			if (!res.ok) return;
+			expect(res.graph.version).toBe(2);
+			expect(res.graph.grid).toBeDefined();
+			for (const n of res.graph.nodes) {
+				expect(n.pos).toBeDefined();
+			}
 			const v = validateGraph(res.graph);
 			expect(v.ok, JSON.stringify(v.errors)).toBe(true);
 			const c = compileGraph(res.graph, CTX);

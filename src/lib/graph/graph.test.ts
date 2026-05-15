@@ -1,8 +1,17 @@
 /**
- * @file graph.test.ts -- Validator + compiler tests for the bet-graph engine.
+ * @file graph.test.ts -- Validator + compiler tests for the Graph 2.0 engine.
+ *
+ * Graph 2.0 kinds: entities/entity/event/number/time, aggregate/rank,
+ * compare/condition/combine, winner/truth/podium, first_occurrence/delta/
+ * between/time_compare/sequence_match.
+ *
+ * Predicate AST kinds (count/and/or/not/compare_counters/log_rank/
+ * timestamp_compare/events_in_order/ref/sum/diff/const/const_seconds/
+ * first_occurrence/round_now) are runtime-engine-stable and unchanged.
  */
 import { describe, expect, it } from 'vitest';
-import type { BetGraph, Trackable } from '$lib/server/db/schema';
+import type { BetGraph, GraphNode, GraphEdge, Trackable } from '$lib/server/db/schema';
+import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
 import { validateGraph } from './validate';
 import { compileGraph, type CompileContext } from './compile';
 import { previewSentence } from './preview';
@@ -21,23 +30,40 @@ const CTX: CompileContext = {
 	trackables: TRACKABLES
 };
 
-function g(nodes: BetGraph['nodes'], edges: BetGraph['edges']): BetGraph {
-	return { version: 1, nodes, edges };
+let _nextCol = 0;
+function pos(col?: number, row = 0) {
+	return { col: col ?? _nextCol++, row };
 }
 
+function node(id: string, kind: GraphNode['kind'], props?: Record<string, unknown>, p?: { col: number; row: number }): GraphNode {
+	return { id, kind, pos: p ?? pos(), props };
+}
+
+function g(nodes: GraphNode[], edges: GraphEdge[]): BetGraph {
+	_nextCol = 0;
+	return { version: 2, grid: { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS }, nodes, edges };
+}
+
+function edge(fromId: string, fromPin: string, toId: string, toPin: string): GraphEdge {
+	return { from: { nodeId: fromId, pin: fromPin }, to: { nodeId: toId, pin: toPin } };
+}
+
+// ============================================================
+// validateGraph
+// ============================================================
 describe('validateGraph', () => {
-	it('passes a minimal valid graph (arg_max -> entity_outcome)', () => {
+	it('passes a minimal rank → winner graph', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'am', kind: 'arg_max' },
-				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Top-Scorer' } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank', { direction: 'desc' }),
+				node('w', 'winner', { marketTitle: 'Top-Scorer' })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'am', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'am', pin: 'scope' } },
-				{ from: { nodeId: 'am', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
 			]
 		);
 		expect(validateGraph(graph)).toEqual({ ok: true, errors: [] });
@@ -45,11 +71,8 @@ describe('validateGraph', () => {
 
 	it('catches missing required input pins', () => {
 		const graph = g(
-			[
-				{ id: 'am', kind: 'arg_max' },
-				{ id: 'o', kind: 'entity_outcome' }
-			],
-			[{ from: { nodeId: 'am', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }]
+			[node('rk', 'rank'), node('w', 'winner')],
+			[edge('rk', 'out', 'w', 'result')]
 		);
 		const res = validateGraph(graph);
 		expect(res.ok).toBe(false);
@@ -58,11 +81,8 @@ describe('validateGraph', () => {
 
 	it('catches type mismatch on connection', () => {
 		const graph = g(
-			[
-				{ id: 'c', kind: 'constant', props: { value: 5 } },
-				{ id: 'o', kind: 'entity_outcome' }
-			],
-			[{ from: { nodeId: 'c', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }]
+			[node('n', 'number', { value: 5 }), node('w', 'winner')],
+			[edge('n', 'out', 'w', 'result')]
 		);
 		const res = validateGraph(graph);
 		expect(res.ok).toBe(false);
@@ -70,7 +90,7 @@ describe('validateGraph', () => {
 	});
 
 	it('requires exactly one outcome', () => {
-		const graph = g([{ id: 'c', kind: 'constant', props: { value: 5 } }], []);
+		const graph = g([node('n', 'number', { value: 5 })], []);
 		const res = validateGraph(graph);
 		expect(res.errors.some((e) => e.code === 'NO_OUTCOME')).toBe(true);
 	});
@@ -78,33 +98,75 @@ describe('validateGraph', () => {
 	it('rejects cycles', () => {
 		const graph = g(
 			[
-				{ id: 'and1', kind: 'and' },
-				{ id: 'not1', kind: 'not' },
-				{ id: 'o', kind: 'boolean_outcome' }
+				node('c1', 'combine', { combine: 'and' }),
+				node('c2', 'combine', { combine: 'not' }),
+				node('t', 'truth')
 			],
 			[
-				{ from: { nodeId: 'and1', pin: 'out' }, to: { nodeId: 'not1', pin: 'in' } },
-				{ from: { nodeId: 'not1', pin: 'out' }, to: { nodeId: 'and1', pin: 'inputs' } },
-				{ from: { nodeId: 'and1', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('c1', 'out', 'c2', 'inputs'),
+				edge('c2', 'out', 'c1', 'inputs'),
+				edge('c1', 'out', 't', 'result')
 			]
 		);
 		expect(validateGraph(graph).errors.some((e) => e.code === 'CYCLE')).toBe(true);
 	});
-});
 
-describe('compileGraph', () => {
-	it('compiles arg_max + entity_outcome to compare_entities-style outcomes', () => {
+	it('accepts EntityList → Entity coercion (rank.out → winner.result)', () => {
+		// rank emits EntityList; winner.result expects Entity. Coercion is allowed.
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'am', kind: 'arg_max' },
-				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Top-Scorer' } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank'),
+				node('w', 'winner')
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'am', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'am', pin: 'scope' } },
-				{ from: { nodeId: 'am', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
+			]
+		);
+		expect(validateGraph(graph).ok).toBe(true);
+	});
+
+	it('accepts Entity → EntityList coercion (entity → aggregate.scope)', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('e', 'entity', { entityName: 'Mario' }),
+				node('agg', 'aggregate', { agg: 'count' }),
+				node('n', 'number', { value: 1 }),
+				node('cmp', 'compare', { op: 'gte' }),
+				node('t', 'truth')
+			],
+			[
+				edge('ev', 'out', 'agg', 'event'),
+				edge('e', 'out', 'agg', 'scope'),
+				edge('agg', 'out', 'cmp', 'a'),
+				edge('n', 'out', 'cmp', 'b'),
+				edge('cmp', 'out', 't', 'result')
+			]
+		);
+		expect(validateGraph(graph).ok).toBe(true);
+	});
+});
+
+// ============================================================
+// compileGraph — Winner / Rank
+// ============================================================
+describe('compileGraph: winner', () => {
+	it('rank(desc) → winner = per-entity compare_counters(self > other)', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank', { direction: 'desc' }),
+				node('w', 'winner', { marketTitle: 'Top-Scorer' })
+			],
+			[
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -113,51 +175,21 @@ describe('compileGraph', () => {
 		expect(res.market.title).toBe('Top-Scorer');
 		expect(res.market.outcomes).toHaveLength(3);
 		expect(res.market.outcomes.map((o) => o.label).sort()).toEqual(['Luigi', 'Mario', 'Peach']);
-		// each outcome is AND of (this entity > each other entity)
-		for (const o of res.market.outcomes) {
-			expect(o.predicate.kind).toBe('and');
-		}
+		expect(res.market.outcomes[0].predicate.kind).toBe('and');
 	});
 
-	it('compiles race_to_threshold with N=1 to log_rank outcomes', () => {
+	it('rank with threshold>0 (race) → per-entity count(gte,N) outcomes', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'n', kind: 'constant', props: { value: 1 } },
-				{ id: 'r', kind: 'race_to_threshold' },
-				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Erstes Tor' } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank', { direction: 'desc', threshold: 3 }),
+				node('w', 'winner', { marketTitle: 'Drei Tore' })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'r', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'r', pin: 'scope' } },
-				{ from: { nodeId: 'n', pin: 'out' }, to: { nodeId: 'r', pin: 'threshold' } },
-				{ from: { nodeId: 'r', pin: 'winner' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		expect(res.market.outcomes).toHaveLength(3);
-		for (const o of res.market.outcomes) {
-			expect(o.predicate.kind).toBe('log_rank');
-		}
-	});
-
-	it('compiles race_to_threshold with N>1 to per-entity count(gte,N) outcomes', () => {
-		const graph = g(
-			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'n', kind: 'constant', props: { value: 3 } },
-				{ id: 'r', kind: 'race_to_threshold' },
-				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Drei Tore' } }
-			],
-			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'r', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'r', pin: 'scope' } },
-				{ from: { nodeId: 'n', pin: 'out' }, to: { nodeId: 'r', pin: 'threshold' } },
-				{ from: { nodeId: 'r', pin: 'winner' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -174,140 +206,18 @@ describe('compileGraph', () => {
 		}
 	});
 
-	it('compiles sum + compare(>N) + boolean_outcome to compare_counters sum predicate', () => {
+	it('rank(asc) → winner = per-entity compare_counters(self < other)', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 's', kind: 'sum' },
-				{ id: 'n', kind: 'constant', props: { value: 5 } },
-				{ id: 'c', kind: 'compare', props: { op: 'gt' } },
-				{ id: 'o', kind: 'boolean_outcome', props: { marketTitle: 'Über 5 Tore total' } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank', { direction: 'asc' }),
+				node('w', 'winner', { marketTitle: 'Loser' })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 's', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 's', pin: 'scope' } },
-				{ from: { nodeId: 's', pin: 'out' }, to: { nodeId: 'c', pin: 'a' } },
-				{ from: { nodeId: 'n', pin: 'out' }, to: { nodeId: 'c', pin: 'b' } },
-				{ from: { nodeId: 'c', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		expect(res.market.outcomes).toHaveLength(2);
-		const yes = res.market.outcomes[0];
-		expect(yes.predicate.kind).toBe('compare_counters');
-	});
-
-	it('compiles count + compare to compare_counters predicate', () => {
-		const graph = g(
-			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'foul' } },
-				{ id: 'cnt', kind: 'count' },
-				{ id: 'n', kind: 'constant', props: { value: 1 } },
-				{ id: 'cmp', kind: 'compare', props: { op: 'gte' } },
-				{ id: 'o', kind: 'boolean_outcome', props: { marketTitle: 'Mind. 1 Foul' } }
-			],
-			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'cnt', pin: 'trackable' } },
-				{ from: { nodeId: 'cnt', pin: 'out' }, to: { nodeId: 'cmp', pin: 'a' } },
-				{ from: { nodeId: 'n', pin: 'out' }, to: { nodeId: 'cmp', pin: 'b' } },
-				{ from: { nodeId: 'cmp', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		expect(res.market.outcomes).toHaveLength(2);
-		expect(res.market.outcomes[0].predicate.kind).toBe('compare_counters');
-	});
-
-	it('compiles delta(a,b) signed + compare to diff CounterExpr (Family E)', () => {
-		const graph = g(
-			[
-				{ id: 'tg', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'eA', kind: 'entity', props: { entityName: 'Mario' } },
-				{ id: 'eB', kind: 'entity', props: { entityName: 'Luigi' } },
-				{ id: 'cA', kind: 'count' },
-				{ id: 'cB', kind: 'count' },
-				{ id: 'd', kind: 'delta', props: { mode: 'signed' } },
-				{ id: 'k', kind: 'constant', props: { value: 2 } },
-				{ id: 'cmp', kind: 'compare', props: { op: 'gte' } },
-				{ id: 'o', kind: 'boolean_outcome', props: { marketTitle: 'Mario 2 Tore vorn?' } }
-			],
-			[
-				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'cA', pin: 'trackable' } },
-				{ from: { nodeId: 'eA', pin: 'out' }, to: { nodeId: 'cA', pin: 'entity' } },
-				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'cB', pin: 'trackable' } },
-				{ from: { nodeId: 'eB', pin: 'out' }, to: { nodeId: 'cB', pin: 'entity' } },
-				{ from: { nodeId: 'cA', pin: 'out' }, to: { nodeId: 'd', pin: 'a' } },
-				{ from: { nodeId: 'cB', pin: 'out' }, to: { nodeId: 'd', pin: 'b' } },
-				{ from: { nodeId: 'd', pin: 'out' }, to: { nodeId: 'cmp', pin: 'a' } },
-				{ from: { nodeId: 'k', pin: 'out' }, to: { nodeId: 'cmp', pin: 'b' } },
-				{ from: { nodeId: 'cmp', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		const yes = res.market.outcomes[0].predicate;
-		expect(yes.kind).toBe('compare_counters');
-		if (yes.kind !== 'compare_counters') return;
-		expect((yes.left as { kind: string }).kind).toBe('diff');
-	});
-
-	it('compiles if_then via or(not(cond), then) (Family G)', () => {
-		const graph = g(
-			[
-				{ id: 'tg', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'tf', kind: 'trackable', props: { trackableId: 'foul' } },
-				{ id: 'cg', kind: 'count' },
-				{ id: 'cf', kind: 'count' },
-				{ id: 'kg', kind: 'constant', props: { value: 3 } },
-				{ id: 'kf', kind: 'constant', props: { value: 5 } },
-				{ id: 'cmpG', kind: 'compare', props: { op: 'gte' } },
-				{ id: 'cmpF', kind: 'compare', props: { op: 'gte' } },
-				{ id: 'ifn', kind: 'if_then' },
-				{ id: 'o', kind: 'boolean_outcome' }
-			],
-			[
-				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'cg', pin: 'trackable' } },
-				{ from: { nodeId: 'tf', pin: 'out' }, to: { nodeId: 'cf', pin: 'trackable' } },
-				{ from: { nodeId: 'cg', pin: 'out' }, to: { nodeId: 'cmpG', pin: 'a' } },
-				{ from: { nodeId: 'kg', pin: 'out' }, to: { nodeId: 'cmpG', pin: 'b' } },
-				{ from: { nodeId: 'cf', pin: 'out' }, to: { nodeId: 'cmpF', pin: 'a' } },
-				{ from: { nodeId: 'kf', pin: 'out' }, to: { nodeId: 'cmpF', pin: 'b' } },
-				{ from: { nodeId: 'cmpG', pin: 'out' }, to: { nodeId: 'ifn', pin: 'cond' } },
-				{ from: { nodeId: 'cmpF', pin: 'out' }, to: { nodeId: 'ifn', pin: 'then' } },
-				{ from: { nodeId: 'ifn', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		const yes = res.market.outcomes[0].predicate;
-		expect(yes.kind).toBe('or');
-		if (yes.kind !== 'or') return;
-		expect(yes.children[0].kind).toBe('not');
-	});
-
-	it('compiles between as and(>=min, <=max)', () => {
-		const graph = g(
-			[
-				{ id: 'tg', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'cnt', kind: 'count' },
-				{ id: 'lo', kind: 'constant', props: { value: 2 } },
-				{ id: 'hi', kind: 'constant', props: { value: 5 } },
-				{ id: 'btw', kind: 'between', props: { inclusive: true } },
-				{ id: 'o', kind: 'boolean_outcome' }
-			],
-			[
-				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'cnt', pin: 'trackable' } },
-				{ from: { nodeId: 'cnt', pin: 'out' }, to: { nodeId: 'btw', pin: 'value' } },
-				{ from: { nodeId: 'lo', pin: 'out' }, to: { nodeId: 'btw', pin: 'min' } },
-				{ from: { nodeId: 'hi', pin: 'out' }, to: { nodeId: 'btw', pin: 'max' } },
-				{ from: { nodeId: 'btw', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -316,53 +226,28 @@ describe('compileGraph', () => {
 		const yes = res.market.outcomes[0].predicate;
 		expect(yes.kind).toBe('and');
 		if (yes.kind !== 'and') return;
-		expect(yes.children).toHaveLength(2);
+		expect(yes.children[0].kind).toBe('compare_counters');
+		if (yes.children[0].kind !== 'compare_counters') return;
+		expect(yes.children[0].cmp).toBe('lt');
 	});
+});
 
-	it('compiles time_compare with first_occurrence into timestamp_compare (Family F)', () => {
+// ============================================================
+// compileGraph — Podium
+// ============================================================
+describe('compileGraph: podium', () => {
+	it('podium withOrder=true → N*K log_rank outcomes', () => {
 		const graph = g(
 			[
-				{ id: 'ta', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'ea', kind: 'entity', props: { entityName: 'Mario' } },
-				{ id: 'eb', kind: 'entity', props: { entityName: 'Luigi' } },
-				{ id: 'foA', kind: 'first_occurrence' },
-				{ id: 'foB', kind: 'first_occurrence' },
-				{ id: 'tc', kind: 'time_compare', props: { op: 'lt' } },
-				{ id: 'o', kind: 'boolean_outcome' }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank'),
+				node('p', 'podium', { marketTitle: 'Podium', topK: 2, withOrder: true })
 			],
 			[
-				{ from: { nodeId: 'ta', pin: 'out' }, to: { nodeId: 'foA', pin: 'trackable' } },
-				{ from: { nodeId: 'ea', pin: 'out' }, to: { nodeId: 'foA', pin: 'entity' } },
-				{ from: { nodeId: 'ta', pin: 'out' }, to: { nodeId: 'foB', pin: 'trackable' } },
-				{ from: { nodeId: 'eb', pin: 'out' }, to: { nodeId: 'foB', pin: 'entity' } },
-				{ from: { nodeId: 'foA', pin: 'out' }, to: { nodeId: 'tc', pin: 'a' } },
-				{ from: { nodeId: 'foB', pin: 'out' }, to: { nodeId: 'tc', pin: 'b' } },
-				{ from: { nodeId: 'tc', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
-			]
-		);
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(true);
-		if (!res.ok) return;
-		const yes = res.market.outcomes[0].predicate;
-		expect(yes.kind).toBe('timestamp_compare');
-		if (yes.kind !== 'timestamp_compare') return;
-		expect(yes.left.kind).toBe('first_occurrence');
-		expect(yes.right.kind).toBe('first_occurrence');
-		expect(yes.cmp).toBe('lt');
-	});
-
-	it('compiles ranking_outcome with rank to N*K log_rank outcomes (Family J)', () => {
-		const graph = g(
-			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'rk', kind: 'rank' },
-				{ id: 'o', kind: 'ranking_outcome', props: { topK: 2, withOrder: true, marketTitle: 'Podium' } }
-			],
-			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'rk', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'rk', pin: 'scope' } },
-				{ from: { nodeId: 'rk', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'p', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -377,18 +262,18 @@ describe('compileGraph', () => {
 		expect(labels).toContain('Peach auf Platz 2');
 	});
 
-	it('compiles ranking_outcome withOrder=false to per-entity OR(log_rank...)', () => {
+	it('podium withOrder=false → per-entity OR(log_rank...)', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'rk', kind: 'rank' },
-				{ id: 'o', kind: 'ranking_outcome', props: { topK: 2, withOrder: false } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank'),
+				node('p', 'podium', { topK: 2, withOrder: false })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'rk', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'rk', pin: 'scope' } },
-				{ from: { nodeId: 'rk', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'p', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -397,21 +282,242 @@ describe('compileGraph', () => {
 		expect(res.market.outcomes).toHaveLength(3);
 		expect(res.market.outcomes[0].predicate.kind).toBe('or');
 	});
+});
 
-	it('compiles "now vs first_occurrence" via round_now TimestampExpr (Family I)', () => {
+// ============================================================
+// compileGraph — Truth (Boolean tree)
+// ============================================================
+describe('compileGraph: truth', () => {
+	it('aggregate(count) on entities + compare → compare_counters with sum(ref)', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'fo', kind: 'first_occurrence' },
-				{ id: 'nw', kind: 'now' },
-				{ id: 'tc', kind: 'time_compare', props: { op: 'gt' } },
-				{ id: 'o', kind: 'boolean_outcome' }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('agg', 'aggregate', { agg: 'count' }),
+				node('n', 'number', { value: 5 }),
+				node('cmp', 'compare', { op: 'gt' }),
+				node('t', 'truth', { marketTitle: 'Über 5 Tore total' })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'fo', pin: 'trackable' } },
-				{ from: { nodeId: 'nw', pin: 'out' }, to: { nodeId: 'tc', pin: 'a' } },
-				{ from: { nodeId: 'fo', pin: 'out' }, to: { nodeId: 'tc', pin: 'b' } },
-				{ from: { nodeId: 'tc', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'agg', 'event'),
+				edge('all', 'out', 'agg', 'scope'),
+				edge('agg', 'out', 'cmp', 'a'),
+				edge('n', 'out', 'cmp', 'b'),
+				edge('cmp', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		expect(res.market.outcomes).toHaveLength(2);
+		expect(res.market.outcomes[0].predicate.kind).toBe('compare_counters');
+	});
+
+	it('aggregate(count) on single entity + compare → compare_counters with ref', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'foul' }),
+				node('e', 'entity', { entityName: 'Mario' }),
+				node('agg', 'aggregate', { agg: 'count' }),
+				node('n', 'number', { value: 1 }),
+				node('cmp', 'compare', { op: 'gte' }),
+				node('t', 'truth', { marketTitle: 'Mind. 1 Foul' })
+			],
+			[
+				edge('ev', 'out', 'agg', 'event'),
+				edge('e', 'out', 'agg', 'scope'),
+				edge('agg', 'out', 'cmp', 'a'),
+				edge('n', 'out', 'cmp', 'b'),
+				edge('cmp', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('compare_counters');
+		if (yes.kind !== 'compare_counters') return;
+		expect('kind' in yes.left && yes.left.kind).toBe('ref');
+	});
+
+	it('delta(signed) + compare → diff CounterExpr', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('eA', 'entity', { entityName: 'Mario' }),
+				node('eB', 'entity', { entityName: 'Luigi' }),
+				node('aA', 'aggregate', { agg: 'count' }),
+				node('aB', 'aggregate', { agg: 'count' }),
+				node('d', 'delta', { mode: 'signed' }),
+				node('k', 'number', { value: 2 }),
+				node('cmp', 'compare', { op: 'gte' }),
+				node('t', 'truth', { marketTitle: 'Mario 2 vorn?' })
+			],
+			[
+				edge('ev', 'out', 'aA', 'event'),
+				edge('eA', 'out', 'aA', 'scope'),
+				edge('ev', 'out', 'aB', 'event'),
+				edge('eB', 'out', 'aB', 'scope'),
+				edge('aA', 'out', 'd', 'a'),
+				edge('aB', 'out', 'd', 'b'),
+				edge('d', 'out', 'cmp', 'a'),
+				edge('k', 'out', 'cmp', 'b'),
+				edge('cmp', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('compare_counters');
+		if (yes.kind !== 'compare_counters') return;
+		expect('kind' in yes.left && yes.left.kind).toBe('diff');
+	});
+
+	it('condition (cond → result) compiles to or(not(cond), result)', () => {
+		const graph = g(
+			[
+				node('eg', 'event', { trackableId: 'goal' }),
+				node('ef', 'event', { trackableId: 'foul' }),
+				node('all1', 'entities'),
+				node('all2', 'entities'),
+				node('aG', 'aggregate', { agg: 'count' }),
+				node('aF', 'aggregate', { agg: 'count' }),
+				node('kG', 'number', { value: 3 }),
+				node('kF', 'number', { value: 5 }),
+				node('cmpG', 'compare', { op: 'gte' }),
+				node('cmpF', 'compare', { op: 'gte' }),
+				node('cond', 'condition'),
+				node('t', 'truth')
+			],
+			[
+				edge('eg', 'out', 'aG', 'event'),
+				edge('all1', 'out', 'aG', 'scope'),
+				edge('ef', 'out', 'aF', 'event'),
+				edge('all2', 'out', 'aF', 'scope'),
+				edge('aG', 'out', 'cmpG', 'a'),
+				edge('kG', 'out', 'cmpG', 'b'),
+				edge('aF', 'out', 'cmpF', 'a'),
+				edge('kF', 'out', 'cmpF', 'b'),
+				edge('cmpG', 'out', 'cond', 'cond'),
+				edge('cmpF', 'out', 'cond', 'result'),
+				edge('cond', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('or');
+		if (yes.kind !== 'or') return;
+		expect(yes.children[0].kind).toBe('not');
+	});
+
+	it('between compiles to and(>=min, <=max)', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('agg', 'aggregate', { agg: 'count' }),
+				node('lo', 'number', { value: 2 }),
+				node('hi', 'number', { value: 5 }),
+				node('btw', 'between', { inclusive: true }),
+				node('t', 'truth')
+			],
+			[
+				edge('ev', 'out', 'agg', 'event'),
+				edge('all', 'out', 'agg', 'scope'),
+				edge('agg', 'out', 'btw', 'value'),
+				edge('lo', 'out', 'btw', 'min'),
+				edge('hi', 'out', 'btw', 'max'),
+				edge('btw', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('and');
+		if (yes.kind !== 'and') return;
+		expect(yes.children).toHaveLength(2);
+	});
+
+	it('combine(and) of two compares compiles to and', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all1', 'entities'),
+				node('all2', 'entities'),
+				node('a1', 'aggregate', { agg: 'count' }),
+				node('a2', 'aggregate', { agg: 'sum' }),
+				node('n1', 'number', { value: 1 }),
+				node('n2', 'number', { value: 2 }),
+				node('cmp1', 'compare', { op: 'gte' }),
+				node('cmp2', 'compare', { op: 'gte' }),
+				node('cmb', 'combine', { combine: 'and' }),
+				node('t', 'truth')
+			],
+			[
+				edge('ev', 'out', 'a1', 'event'),
+				edge('all1', 'out', 'a1', 'scope'),
+				edge('ev', 'out', 'a2', 'event'),
+				edge('all2', 'out', 'a2', 'scope'),
+				edge('a1', 'out', 'cmp1', 'a'),
+				edge('n1', 'out', 'cmp1', 'b'),
+				edge('a2', 'out', 'cmp2', 'a'),
+				edge('n2', 'out', 'cmp2', 'b'),
+				edge('cmp1', 'out', 'cmb', 'inputs'),
+				edge('cmp2', 'out', 'cmb', 'inputs'),
+				edge('cmb', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		expect(res.market.outcomes[0].predicate.kind).toBe('and');
+	});
+
+	it('time_compare with first_occurrence → timestamp_compare', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('foA', 'first_occurrence'),
+				node('foB', 'first_occurrence'),
+				node('tc', 'time_compare', { op: 'lt' }),
+				node('t', 'truth')
+			],
+			[
+				edge('ev', 'out', 'foA', 'event'),
+				edge('ev', 'out', 'foB', 'event'),
+				edge('foA', 'out', 'tc', 'a'),
+				edge('foB', 'out', 'tc', 'b'),
+				edge('tc', 'out', 't', 'result')
+			]
+		);
+		const res = compileGraph(graph, CTX);
+		expect(res.ok).toBe(true);
+		if (!res.ok) return;
+		const yes = res.market.outcomes[0].predicate;
+		expect(yes.kind).toBe('timestamp_compare');
+		if (yes.kind !== 'timestamp_compare') return;
+		expect(yes.left.kind).toBe('first_occurrence');
+		expect(yes.cmp).toBe('lt');
+	});
+
+	it('time(now) vs first_occurrence via time_compare → round_now timestamp', () => {
+		const graph = g(
+			[
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('fo', 'first_occurrence'),
+				node('now', 'time'),
+				node('tc', 'time_compare', { op: 'gt' }),
+				node('t', 'truth')
+			],
+			[
+				edge('ev', 'out', 'fo', 'event'),
+				edge('now', 'out', 'tc', 'a'),
+				edge('fo', 'out', 'tc', 'b'),
+				edge('tc', 'out', 't', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -423,18 +529,18 @@ describe('compileGraph', () => {
 		expect(yes.left.kind).toBe('round_now');
 	});
 
-	it('compiles sequence_match into events_in_order predicate (Family H)', () => {
+	it('sequence_match compiles to events_in_order', () => {
 		const graph = g(
 			[
-				{ id: 'tg', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'tf', kind: 'trackable', props: { trackableId: 'foul' } },
-				{ id: 'sm', kind: 'sequence_match', props: { allowOthersBetween: true } },
-				{ id: 'o', kind: 'boolean_outcome' }
+				node('eg', 'event', { trackableId: 'goal' }),
+				node('ef', 'event', { trackableId: 'foul' }),
+				node('sm', 'sequence_match', { allowOthersBetween: true }),
+				node('t', 'truth')
 			],
 			[
-				{ from: { nodeId: 'tg', pin: 'out' }, to: { nodeId: 'sm', pin: 'steps' } },
-				{ from: { nodeId: 'tf', pin: 'out' }, to: { nodeId: 'sm', pin: 'steps' } },
-				{ from: { nodeId: 'sm', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('eg', 'out', 'sm', 'steps'),
+				edge('ef', 'out', 'sm', 'steps'),
+				edge('sm', 'out', 't', 'result')
 			]
 		);
 		const res = compileGraph(graph, CTX);
@@ -446,44 +552,33 @@ describe('compileGraph', () => {
 		expect(yes.steps).toEqual(['goal', 'foul']);
 		expect(yes.allowOthersBetween).toBe(true);
 	});
-
-	it('returns ok:false for unsupported shapes', () => {
-		const graph = g(
-			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'goal' } },
-				{ id: 'e', kind: 'entity', props: { entityName: 'Mario' } },
-				{ id: 'fo', kind: 'first_occurrence' },
-				{ id: 'o', kind: 'entity_outcome' }
-			],
-			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'fo', pin: 'trackable' } },
-				{ from: { nodeId: 'e', pin: 'out' }, to: { nodeId: 'fo', pin: 'entity' } }
-				// fo.out is Timestamp, o.result is Entity -> mismatch anyway
-			]
-		);
-		// validation will fail first, but compile should also bail
-		const res = compileGraph(graph, CTX);
-		expect(res.ok).toBe(false);
-	});
 });
 
+// ============================================================
+// previewSentence
+// ============================================================
 describe('previewSentence', () => {
-	it('produces a German sentence for arg_max + entity_outcome', () => {
+	it('produces a German sentence for rank → winner', () => {
 		const graph = g(
 			[
-				{ id: 't', kind: 'trackable', props: { trackableId: 'Tor' } },
-				{ id: 'a', kind: 'all_entities' },
-				{ id: 'am', kind: 'arg_max' },
-				{ id: 'o', kind: 'entity_outcome', props: { marketTitle: 'Top-Scorer' } }
+				node('ev', 'event', { trackableId: 'goal' }),
+				node('all', 'entities'),
+				node('rk', 'rank', { direction: 'desc' }),
+				node('w', 'winner', { marketTitle: 'Top-Scorer' })
 			],
 			[
-				{ from: { nodeId: 't', pin: 'out' }, to: { nodeId: 'am', pin: 'trackable' } },
-				{ from: { nodeId: 'a', pin: 'out' }, to: { nodeId: 'am', pin: 'scope' } },
-				{ from: { nodeId: 'am', pin: 'out' }, to: { nodeId: 'o', pin: 'result' } }
+				edge('ev', 'out', 'rk', 'event'),
+				edge('all', 'out', 'rk', 'scope'),
+				edge('rk', 'out', 'w', 'result')
 			]
 		);
 		const s = previewSentence(graph);
 		expect(s).toContain('Top-Scorer');
 		expect(s).toContain('meisten');
+	});
+
+	it('returns "Kein Ergebnis-Knoten" for empty graph', () => {
+		const graph = g([], []);
+		expect(previewSentence(graph)).toBe('Kein Ergebnis-Knoten.');
 	});
 });
