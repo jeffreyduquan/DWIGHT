@@ -673,6 +673,7 @@
 		onclick={(e) => {
 			if (e.target === e.currentTarget) {
 				selectedNodeId = null;
+				closePinPopover();
 				pendingOutPin = null;
 			}
 		}}
@@ -826,6 +827,70 @@
 							onclick={(ev) => onOutputPinClick(ev, n, p)}
 						></button>
 					{/each}
+
+			<!-- Pin popover (spawn-matching + connect-to-existing) -->
+			{#if pinPopover}
+				{@const popKinds = compatibleKinds(pinPopover.type, pinPopover.isOutput)}
+				{@const popExisting = compatibleExistingPins(pinPopover.type, pinPopover.isOutput, pinPopover.nodeId)}
+				<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+				<div
+					class="pin-popover"
+					style:left="{pinPopover.x + (pinPopover.isOutput ? 14 : -250)}px"
+					style:top="{pinPopover.y - 8}px"
+					onclick={(ev) => ev.stopPropagation()}
+				>
+					<header class="pin-popover-head">
+						<span class="text-xs font-semibold">
+							{pinPopover.isOutput ? 'Verbinde Output' : 'Verbinde Input'} <span class="opacity-60">({pinPopover.type})</span>
+						</span>
+						<button
+							type="button"
+							class="btn btn-ghost btn-xs btn-circle"
+							aria-label="Schließen"
+							onclick={closePinPopover}
+						>
+							<Icon name="X" size={12} />
+						</button>
+					</header>
+
+					{#if popExisting.length > 0}
+						<div class="pin-popover-section">
+							<div class="pin-popover-section-title">Mit existierendem verbinden</div>
+							<div class="pin-popover-list">
+								{#each popExisting as item, i (item.node.id + ':' + item.pin.name + ':' + i)}
+									{@const espec = NODE_CATALOG[item.node.kind]}
+									<button
+										type="button"
+										class="pin-popover-item"
+										onclick={() => connectFromPopover(item.node.id, item.pin.name, item.pin.multi === true)}
+									>
+										{#if espec.icon}<Icon name={espec.icon} size={12} />{/if}
+										<span class="flex-1 truncate">{espec.label} · {item.pin.name}</span>
+										<span class="opacity-50">{item.pin.type}</span>
+									</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<div class="pin-popover-section">
+						<div class="pin-popover-section-title">Neuen passenden Node spawnen</div>
+						<div class="pin-popover-list">
+							{#each popKinds as k (k)}
+								{@const kspec = NODE_CATALOG[k]}
+								<button
+									type="button"
+									class="pin-popover-item"
+									onclick={() => spawnAndWireFromPopover(k)}
+								>
+									{#if kspec.icon}<Icon name={kspec.icon} size={12} />{/if}
+									<span class="flex-1 truncate">{kspec.label}</span>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/if}
 				</div>
 			{/each}
 		</div>
@@ -1128,7 +1193,61 @@
 		transition: box-shadow 0.12s ease, transform 0.08s ease;
 	}
 	.tile:hover {
-		box-shadow: 0 6px 14px color-mix(in oklab, black 35%, transparent);
+		
+
+	/* ---------- Pin popover ---------- */
+	.pin-popover {
+		position: absolute;
+		width: 240px;
+		max-height: 280px;
+		overflow-y: auto;
+		background: var(--color-base-100);
+		border: 1px solid var(--color-base-300);
+		border-radius: 0.5rem;
+		box-shadow: 0 6px 22px color-mix(in oklab, black 35%, transparent);
+		z-index: 10;
+		padding: 0.4rem 0;
+		font-size: 0.72rem;
+	}
+	.pin-popover-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.2rem 0.5rem 0.35rem;
+		border-bottom: 1px solid var(--color-base-300);
+		margin-bottom: 0.25rem;
+	}
+	.pin-popover-section {
+		padding: 0.25rem 0;
+	}
+	.pin-popover-section-title {
+		font-size: 0.62rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		padding: 0.3rem 0.5rem;
+		color: var(--color-base-content);
+		opacity: 0.65;
+	}
+	.pin-popover-list {
+		display: flex;
+		flex-direction: column;
+	}
+	.pin-popover-item {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.3rem 0.6rem;
+		text-align: left;
+		background: transparent;
+		border: 0;
+		color: var(--color-base-content);
+		cursor: pointer;
+		transition: background 0.1s ease;
+	}
+	.pin-popover-item:hover {
+		background: var(--color-base-200);
+	}box-shadow: 0 6px 14px color-mix(in oklab, black 35%, transparent);
 		transform: translateY(-1px);
 	}
 	.tile:active {

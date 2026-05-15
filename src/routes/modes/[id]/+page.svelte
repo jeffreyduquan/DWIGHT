@@ -43,6 +43,14 @@
 		return data.mode.trackables;
 	});
 
+	/** Whether a template can be used given the current mode's trackable setup. */
+	function templateAvailable(tplId: string): boolean {
+		if (templateRequiresEntityScope(tplId as TemplateId)) {
+			return data.mode.trackables.some((t) => t.scope === 'entity');
+		}
+		return data.mode.trackables.length > 0;
+	}
+
 	function openPicker() {
 		selectedTplId = null;
 		pickerOpen = true;
@@ -233,15 +241,24 @@
 					<ul class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 						{#each TEMPLATES as t (t.id)}
 							{@const Icon = TPL_ICONS[t.icon]}
+							{@const avail = templateAvailable(t.id)}
+							{@const needsEntity = templateRequiresEntityScope(t.id as TemplateId)}
 							<li>
 								<button
 									type="button"
-									class="glass hover:ring-primary hover:ring-2 flex w-full items-start gap-2 rounded-xl p-3 text-left transition"
+									class="glass hover:ring-primary hover:ring-2 flex w-full items-start gap-2 rounded-xl p-3 text-left transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:ring-0"
 									onclick={() => (selectedTplId = t.id)}
+									disabled={!avail}
+									title={!avail ? (needsEntity ? 'Kein einzel-Event vorhanden — diese Vorlage braucht ein pro-Entität gezähltes Event.' : 'Kein Event vorhanden.') : ''}
 								>
 									<IconBubble tone="primary" size="sm"><Icon size={16} /></IconBubble>
 									<div class="flex-1 min-w-0">
-										<div class="text-sm font-medium">{t.title}</div>
+										<div class="text-sm font-medium flex items-center gap-1">
+											{t.title}
+											{#if needsEntity}
+												<span class="badge badge-ghost badge-xs">einzel</span>
+											{/if}
+										</div>
 										<p class="text-base-content/60 mt-0.5 text-[11px] leading-tight">
 											{t.tagline}
 										</p>
