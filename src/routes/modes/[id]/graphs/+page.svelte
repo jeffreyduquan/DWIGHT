@@ -8,15 +8,21 @@
 	import type { PageData } from './$types';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
-	import GraphCanvas from '$lib/graph/GraphCanvas.svelte';
+	import SlotGraphEditor from '$lib/graph/SlotGraphEditor.svelte';
 	import type { BetGraph } from '$lib/server/db/schema';
+	import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
 
 	let { data }: { data: PageData } = $props();
 
 	let editingId = $state<string | null>(null);
 	let draftName = $state('');
 	let draftDesc = $state('');
-	let draftGraph = $state<BetGraph>({ version: 1, nodes: [], edges: [] });
+	let draftGraph = $state<BetGraph>({
+		version: 2,
+		grid: { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS },
+		nodes: [],
+		edges: []
+	});
 	let showJson = $state(false);
 
 	function startEdit(g: PageData['graphs'][number]) {
@@ -45,7 +51,8 @@
 		const raw = (ev.target as HTMLTextAreaElement).value;
 		try {
 			const parsed = JSON.parse(raw);
-			if (parsed?.version === 1 && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+			if (parsed?.version === 2 && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+				if (!parsed.grid) parsed.grid = { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS };
 				draftGraph = parsed;
 			}
 		} catch {
@@ -99,9 +106,13 @@
 							<input name="description" type="text" bind:value={draftDesc} maxlength="200" />
 						</label>
 
-						<GraphCanvas
+						<SlotGraphEditor
 							bind:graph={draftGraph}
-							mode={{ trackables: data.mode.trackables, defaultEntities: data.mode.defaultEntities }}
+							mode={{
+								entities: data.mode.defaultEntities,
+								trackables: data.mode.trackables,
+								defaultEntities: data.mode.defaultEntities
+							}}
 						/>
 
 						<details bind:open={showJson} class="json-fallback">

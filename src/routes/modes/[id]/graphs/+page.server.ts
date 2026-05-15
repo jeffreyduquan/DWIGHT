@@ -22,8 +22,14 @@ import {
 import { validateGraph } from '$lib/graph/validate';
 import { previewSentence } from '$lib/graph/preview';
 import type { BetGraph } from '$lib/server/db/schema';
+import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
 
-const EMPTY_GRAPH: BetGraph = { version: 1, nodes: [], edges: [] };
+const EMPTY_GRAPH: BetGraph = {
+	version: 2,
+	grid: { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS },
+	nodes: [],
+	edges: []
+};
 
 export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!locals.user) throw redirect(303, '/login');
@@ -50,10 +56,11 @@ function parseGraphJson(raw: string): { ok: true; graph: BetGraph } | { ok: fals
 	try {
 		const parsed = JSON.parse(raw) as BetGraph;
 		if (parsed == null || typeof parsed !== 'object') return { ok: false, error: 'Graph muss ein Objekt sein' };
-		if (parsed.version !== 1) return { ok: false, error: 'Graph version != 1' };
+		if (parsed.version !== 2) return { ok: false, error: 'Graph version != 2' };
 		if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
 			return { ok: false, error: 'Graph braucht nodes[] und edges[]' };
 		}
+		if (!parsed.grid) parsed.grid = { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS };
 		return { ok: true, graph: parsed };
 	} catch (e) {
 		return { ok: false, error: 'JSON-Parse-Fehler: ' + (e as Error).message };

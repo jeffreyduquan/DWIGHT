@@ -454,6 +454,7 @@
 	</aside>
 
 	<!-- ============ CANVAS (center) ============ -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 	<div
 		class="canvas-scroll"
 		bind:this={canvasEl}
@@ -505,7 +506,10 @@
 						{@const tp = inputPinPos(toNode, e.to.pin)}
 						{@const spec = NODE_CATALOG[fromNode.kind]}
 						{@const pin = spec.outputs.find((p) => p.name === e.from.pin)}
+						<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 						<path
+							role="button"
+							aria-label="Verbindung löschen"
 							d={bezierPath(fp.x, fp.y, tp.x, tp.y)}
 							stroke={pin ? pinColor(pin.type) : '#888'}
 							stroke-width="2.5"
@@ -539,6 +543,7 @@
 			{#each graph.nodes as n (n.id)}
 				{@const spec = NODE_CATALOG[n.kind]}
 				{@const o = nodeOrigin(n)}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<div
 					class="tile"
 					class:selected={selectedNodeId === n.id}

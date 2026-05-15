@@ -40,13 +40,11 @@ export const actions: Actions = {
 		const threshold = Number(form.get('threshold') ?? NaN);
 		const topK = Number(form.get('topK') ?? NaN);
 		const seconds = Number(form.get('seconds') ?? NaN);
-		const direction = String(form.get('direction') ?? '').trim();
 		if (trackableId) params2.trackable = trackableId;
 		if (entityName) params2.entity = entityName;
 		if (Number.isFinite(threshold)) params2.threshold = threshold;
 		if (Number.isFinite(topK)) params2.topK = topK;
 		if (Number.isFinite(seconds)) params2.seconds = seconds;
-		if (direction === 'up' || direction === 'down') params2.direction = direction;
 
 		const trackableLabel = mode.trackables.find((t) => t.id === trackableId)?.label ?? trackableId;
 		const built = buildGraph(templateId, params2, {
