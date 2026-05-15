@@ -60,7 +60,7 @@
 						</div>
 						<div class="flex items-center justify-between text-xs">
 							<span class="text-base-content/40">
-								{m.entityCount} Spieler
+								{m.entityCount} Entitäten
 							</span>
 							<div class="flex items-center gap-3">
 								<a

@@ -6,14 +6,13 @@
 	import ModeForm from '$lib/components/ModeForm.svelte';
 	import Logo from '$lib/components/Logo.svelte';
 	import IconBubble from '$lib/components/IconBubble.svelte';
-	import { TEMPLATES } from '$lib/graph/templates';
+	import { TEMPLATES, templateRequiresEntityScope, type TemplateId } from '$lib/graph/templates';
 	import {
 		ArrowLeft,
 		Trash2,
 		CheckCircle2,
 		Sparkles,
 		Pencil,
-		Plus,
 		Wand2,
 		Flag,
 		Trophy,
@@ -34,6 +33,15 @@
 	let pickerOpen = $state(false);
 	let selectedTplId = $state<string | null>(null);
 	const selectedTpl = $derived(TEMPLATES.find((t) => t.id === selectedTplId) ?? null);
+
+	/** Trackables compatible with the selected template (filter by scope). */
+	const compatibleTrackables = $derived.by(() => {
+		if (!selectedTpl) return data.mode.trackables;
+		if (templateRequiresEntityScope(selectedTpl.id as TemplateId)) {
+			return data.mode.trackables.filter((t) => t.scope === 'entity');
+		}
+		return data.mode.trackables;
+	});
 
 	function openPicker() {
 		selectedTplId = null;
@@ -140,20 +148,14 @@
 				</ul>
 			{/if}
 
-			<div class="flex flex-col gap-2 sm:flex-row">
+			<div class="flex flex-col gap-2">
 				<button
 					type="button"
 					onclick={openPicker}
-					class="btn btn-primary flex-1 gap-2 rounded-xl"
+					class="btn btn-primary w-full gap-2 rounded-xl"
 				>
 					<Wand2 size={14} /> Wette aus Vorlage
 				</button>
-				<a
-					href="/modes/{data.mode.id}/graphs"
-					class="btn btn-ghost flex-1 gap-2 rounded-xl text-sm"
-				>
-					<Plus size={14} /> Frei zeichnen (Erweitert)
-				</a>
 			</div>
 		</section>
 
@@ -269,13 +271,19 @@
 								{#if f.kind === 'trackable'}
 									<select name="trackable" required class="select select-bordered select-sm w-full">
 										<option value="">— Event wählen —</option>
-										{#each data.mode.trackables as t (t.id)}
+										{#each compatibleTrackables as t (t.id)}
 											<option value={t.id}>{t.emoji ?? ''} {t.label}</option>
 										{/each}
 									</select>
+									{#if compatibleTrackables.length === 0}
+										<p class="text-warning mt-1 text-[11px]">
+											Keine passenden Events vorhanden. Diese Vorlage braucht ein „einzel"-Event
+											(pro Entität gezählt).
+										</p>
+									{/if}
 								{:else if f.kind === 'entity'}
 									<select name="entity" required class="select select-bordered select-sm w-full">
-										<option value="">— Spieler wählen —</option>
+										<option value="">— Entität wählen —</option>
 										{#each data.mode.defaultEntities as e (e.name)}
 											<option value={e.name}>{e.name}</option>
 										{/each}

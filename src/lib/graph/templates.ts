@@ -94,9 +94,9 @@ export const TEMPLATES: TemplateSpec[] = [
 		id: 'will_player',
 		icon: 'Target',
 		title: 'Schafft der das?',
-		tagline: 'Schafft Spieler X mindestens N Events?',
+		tagline: 'Schafft eine Entität mindestens N Events?',
 		fields: [
-			{ name: 'entity', kind: 'entity', label: 'Spieler', required: true },
+			{ name: 'entity', kind: 'entity', label: 'Entität', required: true },
 			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
 			{ name: 'threshold', kind: 'number', label: 'Schwelle (N)', defaultValue: 3, min: 1, required: true }
 		],
@@ -140,6 +140,23 @@ export const TEMPLATES: TemplateSpec[] = [
 
 export function findTemplate(id: string): TemplateSpec | null {
 	return TEMPLATES.find((t) => t.id === id) ?? null;
+}
+
+/**
+ * Templates that need a per-entity counter (compare entities against each other).
+ * Templates not in this set sum/aggregate over all entities and work with both
+ * global and entity-scoped trackables.
+ */
+const ENTITY_SCOPE_REQUIRED: ReadonlySet<TemplateId> = new Set([
+	'race',
+	'champion',
+	'loser',
+	'will_player',
+	'podium'
+]);
+
+export function templateRequiresEntityScope(id: TemplateId): boolean {
+	return ENTITY_SCOPE_REQUIRED.has(id);
 }
 
 export type TemplateParams = {
@@ -243,7 +260,7 @@ function buildWillPlayer(
 	labels: { trackable?: string; entity?: string }
 ): BuildResult {
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
-	if (!p.entity) return { ok: false, error: 'Spieler fehlt' };
+	if (!p.entity) return { ok: false, error: 'Entität fehlt' };
 	if (!p.threshold || p.threshold < 1) return { ok: false, error: 'Schwelle muss ≥ 1 sein' };
 	const t = nid('trk', 'main');
 	const e = nid('ent', 'main');
@@ -251,7 +268,7 @@ function buildWillPlayer(
 	const k = nid('k', 'th');
 	const cmp = nid('cmp', 'gte');
 	const out = nid('out', 'res');
-	const title = `Schafft ${labels.entity ?? 'Spieler'} ${p.threshold} × ${labels.trackable ?? 'Event'}?`;
+	const title = `Schafft ${labels.entity ?? 'Entität'} ${p.threshold} × ${labels.trackable ?? 'Event'}?`;
 	const nodes: GraphNode[] = [
 		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
 		{ id: e, kind: 'entity', props: { entityName: p.entity } },

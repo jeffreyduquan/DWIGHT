@@ -104,7 +104,7 @@
 					</select>
 				{:else if f.kind === 'entity'}
 					<select name="entity" required class="select select-bordered w-full">
-						<option value="">— Spieler wählen —</option>
+						<option value="">— Entität wählen —</option>
 						{#each data.entities as e (e.name)}
 							<option value={e.name}>{e.name}</option>
 						{/each}

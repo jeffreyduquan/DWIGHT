@@ -514,6 +514,21 @@ Acceptance:
 
 ---
 
+## Phase 20a — Mode-Vocab + Wetten-Dedupe ☑
+**Goal:** Doppelte Bet-Graph-Einstiegspunkte aus dem Mode-Editor entfernen, Vokabular im Editor von "Spieler" auf "Entitäten" / "Events" / "einzel" umstellen, und Template-Picker so filtern, dass nur scope-passende Trackables vorgeschlagen werden.
+
+Tasks:
+- ☑ **20a Dedupe + Vocab (REQ-UI-048):** ModeForm Section 4 (Bet-Graphs-Link-Block) komplett raus. Auf `/modes/[id]` nur noch ein CTA "+ Wette aus Vorlage" (kein "Frei zeichnen" mehr). Headlines im ModeForm umbenannt: "Spieler" → "Entitäten", "Was zählen wir mit?" → "Events". Scope-Toggle-Button "pro" → "einzel". Listenansicht `/modes` zeigt "N Entitäten". `templates.ts` benennt Entity-Feld-Label + Fehlermeldungen + Title-Fallback auf "Entität".
+- ☑ **20a Scope-Filter (REQ-BET-023):** `templates.ts` exportiert `templateRequiresEntityScope(id)` (true für `race`, `champion`, `loser`, `will_player`, `podium`). Picker-Modal-Dropdown filtert `data.mode.trackables` auf `scope === 'entity'` wenn nötig; Warnhinweis bei leerer Liste.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 102/102.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ Mode-Editor hat exakt einen Bet-Graph-Einstiegspunkt.
+- ☑ Beim Auswählen von `champion` zeigt das Trackable-Dropdown nur entity-scoped Events.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

@@ -123,11 +123,11 @@
 		</label>
 	</section>
 
-	<!-- 2 — Spieler / Entitäten -->
+	<!-- 2 — Entitäten -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-secondary/15 text-secondary inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">2</span>
-			<h2 class="flex-1 text-base font-semibold">Spieler</h2>
+			<h2 class="flex-1 text-base font-semibold">Entitäten</h2>
 			<button type="button" onclick={addEntity} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
 		</header>
 		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
@@ -166,11 +166,11 @@
 		</ul>
 	</section>
 
-	<!-- 3 — Trackables -->
+	<!-- 3 — Events -->
 	<section class="glass glass-xl space-y-3 p-5">
 		<header class="flex items-baseline gap-2">
 			<span class="bg-accent/15 text-accent inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">3</span>
-			<h2 class="flex-1 text-base font-semibold">Was zählen wir mit?</h2>
+			<h2 class="flex-1 text-base font-semibold">Events</h2>
 			<button type="button" onclick={addTrackable} class="btn btn-ghost btn-xs">+ Hinzufügen</button>
 		</header>
 		<p class="text-base-content/45 -mt-1 text-[0.7rem]">
@@ -205,9 +205,9 @@
 							type="button"
 							class="btn btn-xs join-item {t.scope === 'entity' ? 'btn-primary' : 'btn-ghost'}"
 							onclick={() => (t.scope = 'entity')}
-							title="Zähler pro Spieler (z.B. jeder Spieler eigene Tore)"
+							title="Zähler einzeln pro Entität (z.B. jeder Spieler eigene Tore)"
 						>
-							pro
+							einzel
 						</button>
 						<button
 							type="button"
@@ -235,36 +235,7 @@
 		</ul>
 	</section>
 
-	<!-- 4 — Bet-Graphs -->
-	<section class="glass glass-xl space-y-3 p-4 sm:p-5">
-		<header class="flex items-baseline gap-2">
-			<span class="bg-warning/15 text-warning inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold">4</span>
-			<h2 class="flex-1 text-base font-semibold">Wetten (Bet-Graphs)</h2>
-		</header>
-		<p class="text-base-content/55 text-xs">
-			Wetten werden als visueller <strong>Bet-Graph</strong> definiert &mdash; Knoten
-			ablegen und Pins per Drag-to-Connect verbinden.
-		</p>
-		{#if modeId}
-			<a
-				href={'/modes/' + modeId + '/graphs'}
-				class="from-primary/20 to-success/20 border-primary/40 flex w-full items-center justify-between gap-3 rounded-xl border-2 bg-gradient-to-r p-4 transition hover:shadow-lg"
-			>
-				<div class="flex items-center gap-3">
-					<span class="text-2xl" aria-hidden="true">📐</span>
-					<div class="flex flex-col text-left">
-						<strong class="text-base">Bet-Graphs öffnen</strong>
-						<small class="text-base-content/70">Visueller Wett-Builder (Drag-to-Connect)</small>
-					</div>
-				</div>
-				<span class="text-xl">→</span>
-			</a>
-		{:else}
-			<div class="border-base-content/15 bg-base-200/30 rounded-xl border border-dashed p-4 text-center text-sm">
-				<span class="text-base-content/60 block">Bet-Graphs verfügbar nach dem ersten Speichern.</span>
-			</div>
-		{/if}
-	</section>
+	<!-- Phase 20a: Bet-Graphs-Section komplett entfernt; einzige Wetten-CTA lebt in /modes/[id]/+page.svelte (Template-Modal). -->
 
 	<div class="glass border-base-300 fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-md gap-2 rounded-2xl border p-2 shadow-xl">
 		<a href="/modes" class="btn btn-ghost h-12 flex-1 rounded-xl text-sm">Abbrechen</a>

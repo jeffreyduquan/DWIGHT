@@ -240,12 +240,14 @@
 | REQ-BET-020 | Phase 18b | `src/lib/graph/templates.ts` (7 Templates + `buildGraph` + `findTemplate`), `src/lib/graph/templates.test.ts` (8 Smoke-Tests) | vitest | ☑ |
 | REQ-BET-021 | Phase 18b | `src/lib/graph/compile.ts` (`buildRaceOutcomes` mit N>1 Pfad), `src/lib/graph/graph.test.ts` (Test "race_to_threshold N>1") | vitest | ☑ |
 | REQ-BET-022 | Phase 18b | `src/lib/graph/validate.ts` (`isNumberToTime` Coercion-Exception) | vitest (templates.test.ts) | ☑ |
+| REQ-BET-023 | Phase 20a | `src/lib/graph/templates.ts` (`ENTITY_SCOPE_REQUIRED` Set + `templateRequiresEntityScope()`), `src/routes/modes/[id]/+page.svelte` (`compatibleTrackables` `$derived` + Warnhinweis bei leerer Liste) | manual | ☑ |
 | REQ-UI-042 | Phase 18b | `src/routes/modes/[id]/graphs/new/+page.server.ts`, `src/routes/modes/[id]/graphs/new/+page.svelte` (Lucide-Cards + dynamisches Form) | manual | ☑ |
 | REQ-UI-043 | Phase 18c | `src/routes/modes/[id]/+page.server.ts` (lädt `listByMode`, `deleteGraph`-Action), `src/routes/modes/[id]/+page.svelte` (Wetten-Section + CTAs) | manual | ☑ |
 | REQ-UI-044 | Phase 18d | `src/lib/graph/catalog.ts` (`ENUM_LABELS` + `enumLabel()`), `src/lib/graph/GraphCanvas.svelte` (`enumLabel(p.name, v)` in enum-Options) | manual | ☑ |
 | REQ-UI-045 | Phase 18e | `src/lib/graph/catalog.ts` (`advanced?` Flag auf `now`/`first_occurrence`/`delta`/`between`/`time_compare`/`not`/`if_then`/`sequence_match`), `src/lib/graph/GraphCanvas.svelte` (`showAdvanced` State + Filter in `suggestionsForInput`/`suggestionsForOutput`/`SOURCE_NODES` + Checkbox in beiden Sheet-Headern) | manual | ☑ |
 | REQ-UI-046 | Phase 19a | `src/routes/modes/[id]/+page.svelte` (Inline-Modal + Picker), `src/routes/modes/[id]/+page.server.ts` (`createGraphFromTemplate` Action) | manual | ☑ |
 | REQ-UI-047 | Phase 19b | `src/lib/graph/outcomeIcon.ts` (Helper), `src/routes/modes/[id]/+page.server.ts` (`icon` im Load), `src/routes/modes/[id]/+page.svelte` (Icon-Bubble + `?edit=` Link), `src/routes/modes/[id]/graphs/+page.svelte` (`$effect` liest `page.url.searchParams.get('edit')` + ruft `startEdit`) | manual | ☑ |
+| REQ-UI-048 | Phase 20a | `src/lib/components/ModeForm.svelte` (Section-4 entfernt, Headlines "Entitäten"/"Events", Button "einzel"), `src/routes/modes/[id]/+page.svelte` ("Frei zeichnen" entfernt, Modal-Title "Entität wählen"), `src/routes/modes/+page.svelte` ("N Entitäten"), `src/routes/modes/[id]/graphs/new/+page.svelte` ("Entität wählen"), `src/lib/graph/templates.ts` (Field-Label/Errors/Title-Fallback auf "Entität") | manual | ☑ |
 
 ## REQ-DATA — Data
 
