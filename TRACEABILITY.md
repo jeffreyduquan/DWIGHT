@@ -241,6 +241,11 @@
 | REQ-BET-021 | Phase 18b | `src/lib/graph/compile.ts` (`buildRaceOutcomes` mit N>1 Pfad), `src/lib/graph/graph.test.ts` (Test "race_to_threshold N>1") | vitest | ☑ |
 | REQ-BET-022 | Phase 18b | `src/lib/graph/validate.ts` (`isNumberToTime` Coercion-Exception) | vitest (templates.test.ts) | ☑ |
 | REQ-BET-023 | Phase 20a | `src/lib/graph/templates.ts` (`ENTITY_SCOPE_REQUIRED` Set + `templateRequiresEntityScope()`), `src/routes/modes/[id]/+page.svelte` (`compatibleTrackables` `$derived` + Warnhinweis bei leerer Liste) | manual | ☑ |
+| REQ-BET-024 | Phase 21 | `src/lib/server/db/schema.ts` (`BetGraph v2`, `GraphNodePos`, `GRAPH_GRID_COLS/ROWS`), `drizzle/0011_graph_2_reset.sql`, `drizzle/meta/_journal.json`, `src/routes/modes/[id]/graphs/+page.server.ts` (`parseGraphJson` rejectet version!=2) | vitest | ☑ |
+| REQ-BET-025 | Phase 21 | `src/lib/server/db/schema.ts` (`GraphNodeKind` 13 Core), `src/lib/graph/catalog.ts` (`CORE_KINDS`, `NODE_CATALOG`, `FAMILY_*`), `src/lib/graph/validate.ts` (`Entity→EntityList` Coercion) | `graph.test.ts` validate cases | ☑ |
+| REQ-BET-026 | Phase 21 | `src/lib/graph/catalog.ts` (`ADVANCED_KINDS` + `advanced: true` Specs), `src/lib/graph/compile.ts` (delta/abs + first_occurrence/entity Reject-Pfade), `src/lib/graph/SlotGraphEditor.svelte` (Erweitert-Toggle in Sidebar) | `graph.test.ts` advanced cases | ☑ |
+| REQ-BET-027 | Phase 21 | `src/lib/graph/compile.ts` (`buildWinnerFromRank`, `buildPodiumFromRank`, `compileBoolean`, `compileCounterExpr`, `compileTimestampExpr`, `cmpFromOp`), `src/lib/graph/graph.test.ts` (16 compileGraph cases) | vitest | ☑ |
+| REQ-BET-028 | Phase 21 | `src/lib/graph/templates.ts` (7 v2-Builder mit `pos`), `src/lib/graph/templates.test.ts` (7 build+validate+compile smokes), Routes ohne `direction`-Param (`+page.server.ts`, `graphs/new/+page.server.ts`) | vitest | ☑ |
 | REQ-UI-042 | Phase 18b | `src/routes/modes/[id]/graphs/new/+page.server.ts`, `src/routes/modes/[id]/graphs/new/+page.svelte` (Lucide-Cards + dynamisches Form) | manual | ☑ |
 | REQ-UI-043 | Phase 18c | `src/routes/modes/[id]/+page.server.ts` (lädt `listByMode`, `deleteGraph`-Action), `src/routes/modes/[id]/+page.svelte` (Wetten-Section + CTAs) | manual | ☑ |
 | REQ-UI-044 | Phase 18d | `src/lib/graph/catalog.ts` (`ENUM_LABELS` + `enumLabel()`), `src/lib/graph/GraphCanvas.svelte` (`enumLabel(p.name, v)` in enum-Options) | manual | ☑ |
@@ -248,6 +253,13 @@
 | REQ-UI-046 | Phase 19a | `src/routes/modes/[id]/+page.svelte` (Inline-Modal + Picker), `src/routes/modes/[id]/+page.server.ts` (`createGraphFromTemplate` Action) | manual | ☑ |
 | REQ-UI-047 | Phase 19b | `src/lib/graph/outcomeIcon.ts` (Helper), `src/routes/modes/[id]/+page.server.ts` (`icon` im Load), `src/routes/modes/[id]/+page.svelte` (Icon-Bubble + `?edit=` Link), `src/routes/modes/[id]/graphs/+page.svelte` (`$effect` liest `page.url.searchParams.get('edit')` + ruft `startEdit`) | manual | ☑ |
 | REQ-UI-048 | Phase 20a | `src/lib/components/ModeForm.svelte` (Section-4 entfernt, Headlines "Entitäten"/"Events", Button "einzel"), `src/routes/modes/[id]/+page.svelte` ("Frei zeichnen" entfernt, Modal-Title "Entität wählen"), `src/routes/modes/+page.svelte` ("N Entitäten"), `src/routes/modes/[id]/graphs/new/+page.svelte` ("Entität wählen"), `src/lib/graph/templates.ts` (Field-Label/Errors/Title-Fallback auf "Entität") | manual | ☑ |
+| REQ-UI-049 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (4-Region Grid-Layout, Catalog 280px, Inspector 320px, Statusbar) | manual | ☑ |
+| REQ-UI-050 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (HTML5 DnD Sidebar→Canvas, Move existierender Tiles, Wire-Drag via Pointer-Events, `canConnect`, `findFreeSlotNear` Spiral-Search) | manual | ☑ |
+| REQ-UI-051 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (Bezier-Path-Builder, Klick-zum-Löschen, `PIN_COLORS`/`FAMILY_COLORS` aus Catalog) | manual | ☑ |
+| REQ-UI-052 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (`onkeydown` Handler: Entf/Backspace löscht, Ctrl+D dupliziert) | manual | ☑ |
+| REQ-UI-053 | Phase 21 | `src/lib/components/Icon.svelte` (Lucide-Dispatcher), `src/lib/graph/catalog.ts` (`icon`-Feld pro Spec), `src/lib/graph/outcomeIcon.ts` (Trophy/CheckCircle2/Medal/Sparkles) | manual | ☑ |
+| REQ-UI-054 | Phase 21 | `src/lib/graph/preview.ts` (`previewSentence` via `inputSource` + `result`-Pin), `src/lib/graph/graph.test.ts` (previewSentence cases) | vitest | ☑ |
+| REQ-UI-055 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (kein `transform: scale`, nur `overflow: auto` auf Canvas) | manual | ☑ |
 
 ## REQ-DATA — Data
 

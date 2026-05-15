@@ -529,6 +529,27 @@ Acceptance:
 
 ---
 
+## Phase 21 — Graph 2.0 Big-Bang ☑
+**Goal:** Bet-Graph-Editor komplett ersetzen: 2D 20×10 Slot-Grid (X = Datenfluss, Y = parallele Ketten), Drag&Drop mit Snap-to-Slot, Bezier-Wires, kein Zoom, neue 13 Core + 5 Advanced Bausteine, opake DB-Persistenz. Branch `graph-2.0`, ein Big-Bang-Migration (`0011_graph_2_reset.sql`) droppt die alte `bet_graphs` Tabelle und Session-Snapshots. Predicate-AST der Runtime-Engine bleibt unverändert.
+
+Tasks:
+- ☑ **21a Foundation:** `schema.ts` neue `GraphNodeKind` (13+5), `GraphNodePos`, `BetGraph v2` mit `grid`; `GRAPH_GRID_COLS=20`/`GRAPH_GRID_ROWS=10`. `catalog.ts` neu mit `NODE_CATALOG`, `FAMILY_LABELS`, `FAMILY_COLORS`, `PIN_COLORS`, `CORE_KINDS`, `ADVANCED_KINDS`, `ENUM_LABELS`, jeder Spec hat `icon: <LucideName>`. (REQ-BET-024, REQ-BET-025, REQ-BET-026)
+- ☑ **21b Compiler+Validator:** `compile.ts` mit `buildWinnerFromRank` (threshold>0 → `count` per Entity, sonst `compare_counters` self vs others), `buildPodiumFromRank` (withOrder=true → topK×N log_rank, sonst per-entity OR), `compileBoolean` Cases compare/between/combine/condition/sequence_match/time_compare, `compileCounterExpr` aggregate (entities→sum, entity→ref) + delta (signed→diff). `validate.ts` Coercions `Number→Timestamp`, `EntityList→Entity`, `Entity→EntityList`. (REQ-BET-027)
+- ☑ **21c Templates:** `templates.ts` 7 Templates auf v2-Graph mit Slot-`pos`. `TemplateParams` ohne `direction`/`mode`. Neuer Core-Kind `entity` (mit `entityName: modeRef` Prop) damit will_player single-entity scope geht. (REQ-BET-028)
+- ☑ **21d Editor-UI:** `SlotGraphEditor.svelte` (~700 LOC) ersetzt alten Free-Canvas: 4-Region Layout (Catalog 280px / Canvas / Inspector 320px / Statusbar), HTML5-DnD aus Sidebar + Move existierender Tiles + Wire-Drag via Pointer-Events mit Bezier-Pfad, Inspector mit prop-typ-spezifischen Editoren. `Icon.svelte` als Lucide-Dispatcher. Keyboard: `Entf`/`Backspace` löscht, `Ctrl+D` dupliziert. **Kein Zoom — nur Scroll.** (REQ-UI-049, REQ-UI-050, REQ-UI-051, REQ-UI-052, REQ-UI-053, REQ-UI-055)
+- ☑ **21e Migration + Routes + Preview:** `drizzle/0011_graph_2_reset.sql` droppt + legt `bet_graphs` neu an, resettet `sessions.bet_graphs_snapshot`. Journal-Eintrag idx 11. `/modes/[id]/graphs/+page.{svelte,server}.ts` importieren `SlotGraphEditor`, JSON-Paste rejectet version!=2. Routes ohne `direction`-Param. `preview.ts` neu via `inputSource` über `result`-Pin. `outcomeIcon.ts` neu (Trophy/CheckCircle2/Medal/Sparkles). Alter `GraphCanvas.svelte` gelöscht. (REQ-BET-024, REQ-UI-054)
+- ☑ **21f Tests:** `graph.test.ts` 23 Cases (validateGraph 6, compileGraph 16, previewSentence 2) auf 2.0-Kinds; `templates.test.ts` smoke alle 7 Templates (build+validate+compile). 31/31 green.
+- ☑ **21g Docs + Merge:** REQUIREMENTS.md (REQ-BET-024..028, REQ-UI-049..055), SPRINT_PLAN.md, TRACEABILITY.md aktualisiert; Branch nach `main` gemerged.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105 (+3 vs Phase 20a).
+- ☑ `pnpm check`: 0 Errors.
+- ☑ Editor scrollt im 20×10 Grid ohne Zoom; Drag&Drop snapt zum Slot.
+- ☑ Migration 0011 droppt alte `bet_graphs` und legt sie identisch neu an; Session-Snapshots reset.
+- ☑ Alle 7 Templates bauen v2-Graphen mit gültigen `pos`-Slots.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
