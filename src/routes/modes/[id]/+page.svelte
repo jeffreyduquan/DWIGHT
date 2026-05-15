@@ -89,7 +89,7 @@
 			error={form && 'error' in form ? form.error : null}
 		/>
 
-		<section class="mt-8 space-y-3">
+		<section class="mt-4 border-t border-base-300 pt-4 space-y-3">
 			<div class="flex items-end justify-between">
 				<div>
 					<p class="eyebrow">Wetten</p>

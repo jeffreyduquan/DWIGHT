@@ -263,6 +263,9 @@
 | REQ-UI-056 | Phase 22 | `src/routes/modes/[id]/+page.svelte` ("Eigene Wette bauen" Outline-Button unter Template-CTA, verlinkt `/modes/[id]/graphs`) | manual | ☑ |
 | REQ-UI-057 | Phase 22 | `src/lib/graph/SlotGraphEditor.svelte` `<style>`-Block (DaisyUI-CSS-Vars `--color-base-*`/`--color-primary`/`color-mix`) | manual | ☑ |
 | REQ-UI-058 | Phase 22 | `src/lib/graph/SlotGraphEditor.svelte` (`mobileCatalogOpen`/`mobileInspectorOpen` $state, `mobile-only` Toggle-Buttons in Statusbar, `@media (max-width: 767px)` Drawer-Layout), `src/lib/components/Icon.svelte` (X/Menu/Settings2), `src/lib/graph/grid.ts` (build-fix: Konstanten raus aus `$lib/server`) | manual | ☑ |
+| REQ-UI-059 | Phase 23 | `src/lib/graph/SlotGraphEditor.svelte` (`spawnFromCatalog(kind)` Helper, `onclick` auf `.catalog-item` Button, `mobileCatalogOpen=false` nach Spawn) | manual | ☑ |
+| REQ-UI-060 | Phase 23 | `src/lib/graph/SlotGraphEditor.svelte` (`visibleCols`/`visibleRows` $derived, ersetzt `COLS`/`ROWS` in `.canvas-grid`/`.grid-dots`/`.wires` width+height) | manual | ☑ |
+| REQ-UI-061 | Phase 23 | `src/routes/modes/[id]/+page.svelte` (Wetten-Section: `mt-8` → `mt-4 border-t border-base-300 pt-4`) | manual | ☑ |
 
 ## REQ-DATA — Data
 

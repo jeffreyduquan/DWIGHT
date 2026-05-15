@@ -97,6 +97,20 @@
 		selectedNodeId ? (graph.nodes.find((n) => n.id === selectedNodeId) ?? null) : null
 	);
 
+	// Auto-fit visible grid to occupied content (+ buffer), bounded by full grid.
+	const visibleCols = $derived(
+		Math.min(
+			COLS,
+			Math.max(6, graph.nodes.reduce((m, n) => Math.max(m, n.pos.col), 0) + 3)
+		)
+	);
+	const visibleRows = $derived(
+		Math.min(
+			ROWS,
+			Math.max(4, graph.nodes.reduce((m, n) => Math.max(m, n.pos.row), 0) + 2)
+		)
+	);
+
 	// ---------- catalog filtered ----------
 	const catalogKinds = $derived(
 		[...CORE_KINDS, ...(showAdvanced ? ADVANCED_KINDS : [])].filter((k) => {
@@ -205,6 +219,20 @@
 		};
 		graph.nodes.push(newNode);
 		selectedNodeId = newNode.id;
+	}
+
+	/** Spawn from sidebar click (mobile-friendly fallback to DnD). */
+	function spawnFromCatalog(kind: GraphNodeKind) {
+		// First free slot scanning row-major.
+		for (let r = 0; r < ROWS; r++) {
+			for (let c = 0; c < COLS; c++) {
+				if (!getOccupant(c, r)) {
+					addNodeAt(kind, { col: c, row: r });
+					mobileCatalogOpen = false;
+					return;
+				}
+			}
+		}
 	}
 
 	function moveNode(id: string, pos: GraphNodePos) {
@@ -453,7 +481,8 @@
 									style:--fam={familyColor(spec.family)}
 									draggable="true"
 									ondragstart={(ev) => onSidebarDragStart(ev, kind)}
-									title={spec.description}
+									onclick={() => spawnFromCatalog(kind)}
+									title="{spec.description} — Klick um zu spawnen, oder ziehen"
 								>
 									{#if spec.icon}
 										<Icon name={spec.icon} size={14} />
@@ -482,15 +511,13 @@
 		}}
 	>
 		<div
-			class="canvas-grid"
-			style:width="{COLS * SLOT_W}px"
-			style:height="{ROWS * SLOT_H}px"
+			class="canvas-visibleCols * SLOT_W}px"
+			style:height="{visibleRows * SLOT_H}px"
 		>
 			<!-- background grid dots -->
-			<svg class="grid-dots" width={COLS * SLOT_W} height={ROWS * SLOT_H}>
-				{#each Array(COLS) as _, c}
-					{#each Array(ROWS) as _, r}
-						<circle cx={c * SLOT_W + SLOT_W / 2} cy={r * SLOT_H + SLOT_H / 2} r="1.5" />
+			<svg class="grid-dots" width={visibleCols * SLOT_W} height={visibleRows * SLOT_H}>
+				{#each Array(visibleCols) as _, c}
+					{#each Array(visibleRowsSLOT_W + SLOT_W / 2} cy={r * SLOT_H + SLOT_H / 2} r="1.5" />
 					{/each}
 				{/each}
 			</svg>
@@ -509,8 +536,8 @@
 			<!-- wires -->
 			<svg
 				class="wires"
-				width={COLS * SLOT_W}
-				height={ROWS * SLOT_H}
+				width={visibleCols * SLOT_W}
+				height={visibleRows * SLOT_H}
 				pointer-events="none"
 			>
 				{#each graph.edges as e, i (i + e.from.nodeId + e.to.nodeId)}

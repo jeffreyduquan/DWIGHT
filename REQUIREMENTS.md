@@ -310,6 +310,9 @@
 - **REQ-UI-056** **Phase 22 Eigene-Wette-Einstieg.** Auf `/modes/[id]/+page.svelte` gibt es unter dem "Wette aus Vorlage"-CTA einen sekundären Button "Eigene Wette bauen" (`btn-outline btn-sm`), der nach `/modes/[id]/graphs` führt. Damit ist der Freeform-Editor wieder erreichbar.
 - **REQ-UI-057** **Phase 22 SlotGraphEditor DaisyUI-Tokens.** `SlotGraphEditor.svelte` verwendet ausschließlich DaisyUI CSS-Variablen (`var(--color-base-100|200|300)`, `var(--color-base-content)`, `var(--color-primary|success|warning)`) statt eigene `oklch()`-Werte. Editor-Root hat `border`, `border-radius`, sitzt sauber im App-Theme.
 - **REQ-UI-058** **Phase 22 Mobile Drawer-Layout.** Unter `768px` kollabiert das 3-Spalten-Grid auf eine Canvas-Spalte; Catalog und Inspector werden absolute Drawer (`width: min(85vw, 320px)`) mit `transform: translateX(±100%)` und werden via Toggle-Buttons in der Statusbar (`mobile-only`) geöffnet. Tippen auf eine Tile öffnet den Inspector-Drawer automatisch.
+- **REQ-UI-059** **Phase 23 Click-to-Spawn.** Catalog-Items im `SlotGraphEditor` reagieren zusätzlich zum HTML5-Drag auf `onclick`: ein Klick spawnt den Node am ersten freien Slot (row-major). Mobile-Catalog schließt sich nach Spawn. Damit ist der Editor auch auf Touch-Geräten und ohne DnD-Support nutzbar.
+- **REQ-UI-060** **Phase 23 Auto-Fit Canvas.** Sichtbare Canvas-Größe (`visibleCols`/`visibleRows`) ergibt sich aus `max(occupiedCol)+3` bzw. `max(occupiedRow)+2`, untergrenze `6×4`, obergrenze `COLS×ROWS` (20×10). Leerer Graph zeigt nur `6×4` Slots; Wachstum bei neuen Nodes ist automatisch.
+- **REQ-UI-061** **Phase 23 Events↔Wetten Flow.** Auf `/modes/[id]/+page.svelte` ist der visuelle Bruch zwischen Events-Sektion (in `ModeForm`) und Wetten-Sektion durch einen `border-t border-base-300 pt-4` ersetzt — die Sektionen wirken als ein zusammenhängender Bearbeitungsfluss.
 
 ---
 

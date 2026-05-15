@@ -566,6 +566,23 @@ Acceptance:
 
 ---
 
+## Phase 23 — Graph 2.0 UX-Fixes ☑
+**Goal:** Nach Phase 22 meldete Tester drei Probleme: (a) sichtbare Lücke zwischen Events- und Wetten-Sektion auf `/modes/[id]`, (b) Canvas zeigt immer das volle 20×10-Grid (3600×1100px) — selbst leere Graphen wirken riesig und Drop-Targets sind schwer zu finden, (c) Tap auf Catalog-Items spawnt nichts — Touch-Geräte feuern keinen `dragstart`, also war der Editor auf Mobile faktisch tot.
+
+Tasks:
+- ☑ **23a Events↔Wetten Flow (REQ-UI-061):** `mt-8` zwischen `ModeForm` und Wetten-Section ersetzt durch `mt-4 border-t border-base-300 pt-4` → Sektionen lesen sich als ein zusammenhängender Bearbeitungsfluss.
+- ☑ **23b Auto-Fit Canvas (REQ-UI-060):** `visibleCols`/`visibleRows` als `$derived` aus `max(occupiedCol)+3` bzw. `max(occupiedRow)+2` (min 6×4, max COLS×ROWS). `.canvas-grid`, `.grid-dots`, `.wires` skalieren mit. Leerer Graph zeigt 6×4 statt 20×10. Logische Drop-Range bleibt COLS×ROWS.
+- ☑ **23c Click-to-Spawn (REQ-UI-059):** Catalog-Item-Button bekommt `onclick={() => spawnFromCatalog(kind)}` zusätzlich zum HTML5-DnD. `spawnFromCatalog` sucht row-major nach erstem freien Slot, ruft `addNodeAt`, schließt `mobileCatalogOpen`. Title-Tooltip angepasst.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+- ☑ Auf Touch + Desktop: Klick auf Catalog-Item legt sofort einen Node ins Canvas.
+- ☑ Leerer Graph rendert kompakt (≈1080×440px statt 3600×1100px).
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
