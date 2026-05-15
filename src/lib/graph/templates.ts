@@ -181,6 +181,76 @@ export const TEMPLATES: TemplateSpec[] = [
 			}
 		],
 		sentence: (p) => `Schafft jemand ${p.threshold} × ${p.trackableLabel} vor ${p.seconds}s?`
+	},
+	{
+		id: 'finish_first',
+		icon: 'Flag',
+		title: 'Wer kommt zuerst?',
+		tagline: 'Wer erreicht als Erstes N Events?',
+		fields: [
+			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 1,
+				min: 1,
+				required: true
+			}
+		],
+		sentence: (p) => `Wer kommt zuerst ins Ziel (${p.threshold} × ${p.trackableLabel})?`
+	},
+	{
+		id: 'finish_last',
+		icon: 'Skull',
+		title: 'Wer kommt zuletzt?',
+		tagline: 'Wer hat am Ende die wenigsten Events?',
+		fields: [{ name: 'trackable', kind: 'trackable', label: 'Event', required: true }],
+		sentence: (p) => `Wer kommt als Letztes (${p.trackableLabel})?`
+	},
+	{
+		id: 'count_zero',
+		icon: 'X',
+		title: 'Null Events?',
+		tagline: 'Passiert das Event gar nicht?',
+		fields: [{ name: 'trackable', kind: 'trackable', label: 'Event', required: true }],
+		sentence: (p) => `Passiert ${p.trackableLabel} gar nicht?`
+	},
+	{
+		id: 'count_less_than',
+		icon: 'Minus',
+		title: 'Weniger als N?',
+		tagline: 'Passiert das Event weniger als N-mal?',
+		fields: [
+			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 3,
+				min: 1,
+				required: true
+			}
+		],
+		sentence: (p) => `Passiert ${p.trackableLabel} weniger als ${p.threshold}-mal?`
+	},
+	{
+		id: 'count_more_than',
+		icon: 'Hash',
+		title: 'Mehr als N?',
+		tagline: 'Passiert das Event mehr als N-mal?',
+		fields: [
+			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 5,
+				min: 1,
+				required: true
+			}
+		],
+		sentence: (p) => `Passiert ${p.trackableLabel} mehr als ${p.threshold}-mal?`
 	}
 ];
 
@@ -197,7 +267,9 @@ const ENTITY_SCOPE_REQUIRED: ReadonlySet<TemplateId> = new Set([
 	'champion',
 	'loser',
 	'will_player',
-	'podium'
+	'podium',
+	'finish_first',
+	'finish_last'
 ]);
 
 export function templateRequiresEntityScope(id: TemplateId): boolean {
@@ -236,6 +308,16 @@ export function buildGraph(
 			return buildPodium(params, labels);
 		case 'race_vs_time':
 			return buildRaceVsTime(params, labels);
+		case 'finish_first':
+			return buildRace(params, labels);
+		case 'finish_last':
+			return buildRankWinner(params, labels, 'asc', 'Letzter:');
+		case 'count_zero':
+			return buildCountCompare(params, labels, 'eq', 0, (l) => `${l}: null?`);
+		case 'count_less_than':
+			return buildCountCompare(params, labels, 'lt', params.threshold ?? 3, (l) => `${l}: weniger als ${params.threshold ?? 3}?`);
+		case 'count_more_than':
+			return buildCountCompare(params, labels, 'gt', params.threshold ?? 5, (l) => `${l}: mehr als ${params.threshold ?? 5}?`);
 		default:
 			return { ok: false, error: `Unbekannte Vorlage: ${templateId}` };
 	}

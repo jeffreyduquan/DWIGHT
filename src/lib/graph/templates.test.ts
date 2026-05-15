@@ -31,9 +31,22 @@ const LABELS = { trackable: 'Tor', entity: 'Mario' };
 const ALL_IDS: TemplateId[] = TEMPLATES.map((t) => t.id);
 
 describe('bet-graph templates', () => {
-	it('lists exactly the 7 expected templates', () => {
+	it('lists exactly the 12 expected templates', () => {
 		expect(ALL_IDS.sort()).toEqual(
-			['champion', 'loser', 'podium', 'race', 'race_vs_time', 'will_happen', 'will_player'].sort()
+			[
+				'champion',
+				'count_less_than',
+				'count_more_than',
+				'count_zero',
+				'finish_first',
+				'finish_last',
+				'loser',
+				'podium',
+				'race',
+				'race_vs_time',
+				'will_happen',
+				'will_player'
+			].sort()
 		);
 	});
 
