@@ -10,7 +10,7 @@
  *   - col 5: outcome (winner, truth, podium)
  */
 import type { BetGraph, GraphEdge, GraphNode } from '$lib/server/db/schema';
-import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
+import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/graph/grid';
 
 export type TemplateId =
 	| 'race'

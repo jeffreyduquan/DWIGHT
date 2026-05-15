@@ -36,7 +36,7 @@
 		GraphNodeKind,
 		GraphNodePos
 	} from '$lib/server/db/schema';
-	import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
+	import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/graph/grid';
 	import Icon from '$lib/components/Icon.svelte';
 
 	type ModeContext = {

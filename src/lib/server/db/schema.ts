@@ -355,9 +355,8 @@ export type BetGraph = {
 	edges: GraphEdge[];
 };
 
-/** Hard grid dimensions (Phase 21a). */
-export const GRAPH_GRID_COLS = 20;
-export const GRAPH_GRID_ROWS = 10;
+// Hard grid dimensions live in `$lib/graph/grid.ts` (re-exported for back-compat).
+export { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/graph/grid';
 
 /** Session-snapshot mirror of a Mode's bet-graphs at session-create time. */
 export type SessionBetGraph = {

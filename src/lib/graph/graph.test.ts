@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { BetGraph, GraphNode, GraphEdge, Trackable } from '$lib/server/db/schema';
-import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
+import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/graph/grid';
 import { validateGraph } from './validate';
 import { compileGraph, type CompileContext } from './compile';
 import { previewSentence } from './preview';

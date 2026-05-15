@@ -10,7 +10,7 @@
 	import { page } from '$app/state';
 	import SlotGraphEditor from '$lib/graph/SlotGraphEditor.svelte';
 	import type { BetGraph } from '$lib/server/db/schema';
-	import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
+	import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/graph/grid';
 
 	let { data }: { data: PageData } = $props();
 
