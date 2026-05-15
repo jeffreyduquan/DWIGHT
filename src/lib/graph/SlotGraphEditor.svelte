@@ -542,7 +542,10 @@
 		bind:this={canvasEl}
 		role="region"
 		aria-label="Bet-Graph Canvas"
-		ondragover={onCanvasDragOver}{
+		ondragover={onCanvasDragOver}
+		ondrop={onCanvasDrop}
+		onclick={(e) => {
+			if (e.target === e.currentTarget) {
 				selectedNodeId = null;
 				pendingOutPin = null;
 			}
@@ -550,10 +553,7 @@
 	>
 		<div
 			class="canvas-grid"
-			style:width="{
-	>
-		<div
-			class="canvas-visibleCols * SLOT_W}px"
+			style:width="{visibleCols * SLOT_W}px"
 			style:height="{visibleRows * SLOT_H}px"
 		>
 			<!-- background grid dots -->
@@ -713,7 +713,10 @@
 				type="button"
 				class="btn btn-ghost btn-xs btn-circle"
 				aria-label="Schließen"
-				onclick={() => (mobileInspectorOpen = false)}
+				onclick={() => {
+					mobileInspectorOpen = false;
+					selectedNodeId = null;
+				}}
 			>
 				<Icon name="X" size={14} />
 			</button>
@@ -851,11 +854,11 @@
 <style>
 	.editor-root {
 		display: grid;
-		grid-template-columns: 200px 1fr 240px;
+		grid-template-columns: 200px 1fr;
 		grid-template-rows: 1fr auto;
 		grid-template-areas:
-			'catalog canvas inspector'
-			'status status status';
+			'catalog canvas'
+			'status status';
 		gap: 0;
 		height: 100%;
 		min-height: 540px;
@@ -1069,12 +1072,31 @@
 
 	/* ---------- Inspector ---------- */
 	.inspector {
-		grid-area: inspector;
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 2.25rem; /* leave room for statusbar */
+		width: 280px;
+		max-width: 90vw;
 		border-left: 1px solid var(--color-base-300);
 		background: var(--color-base-200);
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
+		transform: translateX(100%);
+		transition: transform 0.18s ease;
+		z-index: 5;
+		box-shadow: -2px 0 8px color-mix(in oklab, black 18%, transparent);
+	}
+	.inspector.visible {
+		transform: translateX(0);
+	}
+	/* Inspector close button is always visible (also on desktop), since
+	 * inspector is now an overlay that needs an explicit close affordance. */
+	.inspector .mobile-drawer-head {
+		display: flex;
+		padding: 0.5rem 0.75rem;
+		margin-bottom: 0;
 	}
 	.inspector-header {
 		display: flex;

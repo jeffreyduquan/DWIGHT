@@ -619,6 +619,21 @@ Acceptance:
 
 ---
 
+## Phase 26 — Editor Pass-2 ⏳ (in-progress)
+**Goal:** Inspector + Catalog dominierten das Interface. Diese Phase macht den Inspector zu einem on-demand Overlay, lässt den Canvas voll atmen, und legt 26b/26c als Folge-Sub-Phasen an.
+
+Tasks:
+- ☑ **26a Inspector-Overlay (REQ-UI-066):** Inspector ist `position: absolute` overlay statt Grid-Spalte. Slides in/out via `transform: translateX` + `.visible` (gebunden an `selectedNode !== null`). Desktop hat permanenten X-Close-Button. Canvas-leer-Click cleart Selektion → Inspector verschwindet.
+- ⏳ **26b Pin-Popover:** Click auf leeren Pin öffnet kleines Popover mit "passenden Node spawnen" + "mit existierendem verbinden".
+- ⏳ **26c Template-Wizard:** Modal nach Template-Klick fragt Trackable-Scope (single vs. global) und passt Graph entsprechend an.
+
+Acceptance (26a):
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

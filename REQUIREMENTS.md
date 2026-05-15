@@ -317,6 +317,7 @@
 - **REQ-UI-063** **Phase 24 Vertical-Default Spawn.** `spawnFromCatalog` füllt **spaltenweise** (column-major) — Default-Layouts wachsen vertikal nach unten; horizontale Verzweigungen sind opt-in (Drag/Drop in spätere Spalte).
 - **REQ-UI-064** **Phase 24 Schlanke Sidebars.** `grid-template-columns: 200px 1fr 240px` (vorher 260/300). Catalog-Items kleiner padding (`0.25rem 0.4rem`) und font (`0.7rem`). Inspector und Catalog blocken weniger Canvas-Fläche; Pins bleiben besser sichtbar.
 - **REQ-UI-065** **Phase 25 Tap-to-Wire.** Pins lassen sich per Tap1 (Output) → Tap2 (Input) verbinden, zusätzlich zum Drag. Aktiver Source-Pin zeigt einen Primary-Ring (`.tap-active`); kompatible Ziel-Inputs pulsieren (`.tap-target` Animation). `Escape` oder Klick auf leeren Canvas bricht ab. Touch-first nutzbar.
+- **REQ-UI-066** **Phase 26a Inspector als Overlay.** Inspector ist auf Desktop kein permanenter Grid-Spaltenrahmen mehr, sondern ein `position: absolute` Overlay, das nur erscheint wenn `selectedNode !== null` (`.inspector.visible` triggert `translateX(0)`). Canvas bekommt volle Breite zurück. Inspector hat immer einen sichtbaren `X` Close-Button (auf Desktop und Mobile).
 
 ---
 
