@@ -371,10 +371,6 @@
 					<ul class="glass space-y-2 rounded-xl p-3 text-sm">
 						{#each selectedMode.defaultEntities as e (e.name)}
 							<li class="flex items-center gap-3">
-								<span
-									class="inline-block h-3 w-3 shrink-0 rounded-full"
-									style="background: {(e.attributes as { color?: string })?.color ?? '#888'}"
-								></span>
 								<input
 									type="text"
 									name={`entityOverride__${e.name}`}
@@ -382,11 +378,6 @@
 									maxlength="32"
 									class="flex-1 bg-transparent outline-none placeholder:text-base-content/30"
 								/>
-								{#if (e.attributes as { emoji?: string })?.emoji}
-									<span class="text-base">
-										{(e.attributes as { emoji?: string }).emoji}
-									</span>
-								{/if}
 							</li>
 						{/each}
 					</ul>

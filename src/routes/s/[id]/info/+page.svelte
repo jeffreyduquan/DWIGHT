@@ -35,12 +35,6 @@
 			{#each data.entities as e (e.id)}
 				{@const attrs = (e.attributes as { color?: string; emoji?: string; kind?: string }) ?? {}}
 				<li class="glass flex items-center gap-3 rounded-2xl px-4 py-3">
-					<span
-						class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1 ring-base-300"
-						style="background: {attrs.color ?? 'oklch(92% 0.004 90)'}; color: oklch(20% 0 0);"
-					>
-						{attrs.emoji ?? e.name.charAt(0).toUpperCase()}
-					</span>
 					<span class="min-w-0 flex-1">
 						<p class="text-sm font-semibold">{e.name}</p>
 						{#if attrs.kind && attrs.kind !== 'generic'}
@@ -70,12 +64,6 @@
 			{#each data.trackables as t (t.id)}
 				<li class="glass rounded-2xl px-4 py-3">
 					<div class="flex items-center gap-3">
-						<span
-							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ring-1 ring-base-300"
-							style="background: {t.color ?? 'oklch(92% 0.004 90)'};"
-						>
-							{t.emoji ?? '·'}
-						</span>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-semibold">{t.label}</p>
 							<p class="text-base-content/45 text-[0.65rem] uppercase tracking-wider">

@@ -102,7 +102,7 @@
 					<select name="trackable" required class="select select-bordered w-full">
 						<option value="">— Event wählen —</option>
 						{#each data.trackables as t (t.id)}
-							<option value={t.id}>{t.emoji ?? ''} {t.label}</option>
+							<option value={t.id}>{t.label}</option>
 						{/each}
 					</select>
 				{:else if f.kind === 'entity'}

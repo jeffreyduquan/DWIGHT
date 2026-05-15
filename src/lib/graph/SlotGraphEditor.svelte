@@ -170,12 +170,11 @@
 	}
 
 	// ---------- pin position math ----------
-	function pinY(pinIndex: number, totalPins: number): number {
-		if (totalPins === 0) return TILE_H / 2;
-		// distribute pins evenly along left/right edge
-		const margin = 16;
-		const avail = TILE_H - 2 * margin;
-		if (totalPins === 1) return TILE_H / 2;
+	function pinX(pinIndex: number, totalPins: number): number {
+		if (totalPins === 0) return TILE_W / 2;
+		const margin = 18;
+		const avail = TILE_W - 2 * margin;
+		if (totalPins === 1) return TILE_W / 2;
 		return margin + (avail * pinIndex) / (totalPins - 1);
 	}
 
@@ -190,14 +189,14 @@
 		const spec = NODE_CATALOG[n.kind];
 		const idx = spec.inputs.findIndex((p) => p.name === pinName);
 		const o = nodeOrigin(n);
-		return { x: o.x, y: o.y + pinY(idx < 0 ? 0 : idx, spec.inputs.length) };
+		return { x: o.x + pinX(idx < 0 ? 0 : idx, spec.inputs.length), y: o.y };
 	}
 
 	function outputPinPos(n: GraphNode, pinName: string): { x: number; y: number } {
 		const spec = NODE_CATALOG[n.kind];
 		const idx = spec.outputs.findIndex((p) => p.name === pinName);
 		const o = nodeOrigin(n);
-		return { x: o.x + TILE_W, y: o.y + pinY(idx < 0 ? 0 : idx, spec.outputs.length) };
+		return { x: o.x + pinX(idx < 0 ? 0 : idx, spec.outputs.length), y: o.y + TILE_H };
 	}
 
 	// ---------- node operations ----------
@@ -808,7 +807,7 @@
 							type="button"
 							class="pin pin-in"
 							class:tap-target={pendingOutPin && canConnect(pendingOutPin.type, p.type) && pendingOutPin.nodeId !== n.id}
-							style:top="{pinY(idx, spec.inputs.length) - 6}px"
+							style:left="{pinX(idx, spec.inputs.length) - 7}px"
 							style:background={pinColor(p.type)}
 							title="{p.name} ({p.type}){p.required ? ' *' : ''}"
 							onpointerup={(ev) => onInputPinPointerUp(ev, n, p)}
@@ -821,7 +820,7 @@
 							type="button"
 							class="pin pin-out"
 							class:tap-active={pendingOutPin?.nodeId === n.id && pendingOutPin?.pin === p.name}
-							style:top="{pinY(idx, spec.outputs.length) - 6}px"
+							style:left="{pinX(idx, spec.outputs.length) - 7}px"
 							style:background={pinColor(p.type)}
 							title="{p.name} ({p.type}) — Tap zum Verbinden, oder Ziehen"
 							onpointerdown={(ev) => onOutputPinPointerDown(ev, n, p)}
@@ -1312,10 +1311,10 @@
 		z-index: 2;
 	}
 	.pin-in {
-		left: -7px;
+		top: -7px;
 	}
 	.pin-out {
-		right: -7px;
+		bottom: -7px;
 	}
 	.pin:hover {
 		transform: scale(1.4);

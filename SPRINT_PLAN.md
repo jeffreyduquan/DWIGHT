@@ -665,6 +665,21 @@ Acceptance:
 
 ---
 
+## Phase 29 — Senior UX Refinement Pass-4 ☑
+
+User-Feedback nach Phase 28: drei UX-Schmerzpunkte im Graph-Editor und in den Entity/Event-Anzeigen.
+
+- ☑ **29a Pins oben/unten (REQ-UI-074).** Pins sitzen jetzt auf der oberen (Inputs) bzw. unteren (Outputs) Kante des Node-Tiles, da der Graph konzeptionell von oben nach unten verläuft. `pinX(idx, total)` ersetzt das alte `pinY`-Layout, `inputPinPos`/`outputPinPos`/`bezierPath` arbeiten vertikal (Kontrollpunkte über `dy`). CSS und Pin-Popover-Positionierung angepasst.
+- ☑ **29b Inline Node Editor (REQ-UI-075).** Die Tile-Body ist nicht mehr nur eine Read-only-Vorschau, sondern enthält ein editierbares Control für die primäre Property des Nodes (`input`/`select`/`checkbox` je nach `prop.kind`). Bei mehr als einer Property kennzeichnet ein `+N`-Badge weitere im Inspektor verfügbare Eigenschaften. Neue Helper-Funktion `setNodeProp(node, key, value)` erlaubt Editing ohne Selektion; Click/Pointerdown/Dragstart-Propagation wird gestoppt damit Editing nicht mit Node-Drag/Select kollidiert.
+- ☑ **29c Farbige Entity/Event-Icons entfernt (REQ-UI-076).** Die runden Farbbadges und Emoji-Avatare bei Entitäten und Events (Trackables) sind UI-weit entfernt — sie waren reine Dekoration, vom User nicht editierbar und führten zu Verwirrung. Betrifft `ModeForm.svelte`, `s/[id]/info/+page.svelte`, `s/create/+page.svelte`, `s/[id]/round/+page.svelte`, `modes/[id]/+page.svelte`, `modes/[id]/graphs/new/+page.svelte`.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

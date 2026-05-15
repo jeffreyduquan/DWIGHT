@@ -137,12 +137,6 @@
 			{#each entities as e, i (i)}
 				{@const eColor = colorFor(e.name, i, e.color)}
 				<li class="glass flex items-center gap-2 rounded-xl p-2">
-					<span
-						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold uppercase"
-						style="background-color: {eColor}33; border-color: {eColor}99; color: {eColor};"
-					>
-						{initialFor(e.name, e.emoji)}
-					</span>
 					<input
 						type="text"
 						bind:value={e.name}
@@ -188,12 +182,6 @@
 			{#each trackables as t, i (i)}
 				{@const tColor = colorFor(t.label, i, t.color)}
 				<li class="glass flex items-center gap-2 rounded-xl p-2">
-					<span
-						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold uppercase"
-						style="background-color: {tColor}33; border-color: {tColor}99; color: {tColor};"
-					>
-						{initialFor(t.label, t.emoji)}
-					</span>
 					<input
 						type="text"
 						bind:value={t.label}

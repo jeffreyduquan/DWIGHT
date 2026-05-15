@@ -455,7 +455,6 @@
 			{#each data.session.trackables as t (t.id)}
 				<details class="glass rounded-2xl">
 					<summary class="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm">
-						{#if t.emoji}<span>{t.emoji}</span>{/if}
 						<span class="flex-1 font-medium">{t.label}</span>
 						<span class="text-base-content/40 text-[0.65rem] uppercase tracking-wider"
 							>{t.scope === 'global' ? 'global' : 'pro Entität'}</span
@@ -497,7 +496,6 @@
 										<input type="hidden" name="entityId" value={e.id} />
 										<button
 											class="btn btn-sm btn-outline w-full justify-between gap-1 px-2"
-											style="border-color: {(e.attributes as { color?: string })?.color ?? undefined}"
 										>
 											<span class="truncate">{e.name}</span>
 											<span class="flex items-center gap-1 tabular text-[0.65rem]">
