@@ -277,6 +277,7 @@
 | REQ-UI-070 | Phase 27 | `src/lib/graph/SlotGraphEditor.svelte` (`class:empty={graph.nodes.length === 0}` an `.canvas-scroll`, `.canvas-scroll.empty { overflow-x: hidden }` + `.canvas-scroll.empty .canvas-grid { width: 100% !important; min-width: 100% }`) | manual | ☑ |
 | REQ-UI-071 | Phase 27 | `src/lib/graph/SlotGraphEditor.svelte` (`.editor-root grid-template-columns: 1fr`, `.catalog` als `position: absolute; transform: translateX(-100%); transition`, `.catalog.mobile-open { transform: translateX(0) }`, `.mobile-only` und `.mobile-drawer-head` immer sichtbar; alte `@media (max-width: 767px)` Drawer-Logik entfernt) | manual | ☑ |
 | REQ-UI-072 | Phase 27 | `src/routes/modes/[id]/+page.svelte` (`selectedTrackableId` $state, `selectedTrackable` $derived, `trackableCompatibleTemplates` $derived, `personalizedTitle(tplId, label)` Helper; Picker-UI als 2-Step Wizard mit Trackable→Template→Form; hidden input für Trackable in Form) | manual | ☑ |
+| REQ-UI-073 | Phase 28 | `src/lib/graph/templates.ts` (TemplateId-Union erweitert um `finish_first`, `finish_last`, `count_zero`, `count_less_than`, `count_more_than`; neue `buildCountCompare()` builder; `ENTITY_SCOPE_REQUIRED` erweitert; icon-union erweitert um `X`, `Minus`, `Hash`), `src/routes/modes/[id]/+page.svelte` (`TPL_ICONS` + `personalizedTitle()` für neue IDs), `src/routes/modes/[id]/graphs/new/+page.svelte` (`ICONS` für neue IDs) | manual | ☑ |
 
 ## REQ-DATA — Data
 

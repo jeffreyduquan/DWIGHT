@@ -652,6 +652,19 @@ Acceptance:
 
 ---
 
+## Phase 28 — Renn-Templates & Count-Brackets ☑
+
+User-Feedback: "im template möchte ich für renn wetten noch folgendes: Wer wird gewinnen? Einzel; Wie oft wird überholt? 0, weniger als X, mehr als X." Drei Bracket-Wetten werden bewusst als drei separate binäre Templates angelegt — kein Schema-Umbau für Multi-Outcome.
+
+- ☑ **28 Fünf neue Templates (REQ-UI-073):** `templates.ts` erweitert um `finish_first` (entity-scope, Schwelle N standardmäßig 1, Wiederverwendung der `buildRace`-Engine), `finish_last` (entity-scope, `buildRankWinner(direction='asc')`), `count_zero` (global/entity, neuer `buildCountCompare(op='eq', threshold=0)`), `count_less_than` (`op='lt'`) und `count_more_than` (`op='gt'`). `ENTITY_SCOPE_REQUIRED` umfasst die zwei Renn-Templates. Icon-Set in `TPL_ICONS` (`modes/[id]/+page.svelte`) und `ICONS` (`modes/[id]/graphs/new/+page.svelte`) sowie `personalizedTitle()` (`modes/[id]/+page.svelte`) decken die neuen IDs ab.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

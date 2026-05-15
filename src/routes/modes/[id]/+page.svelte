@@ -22,12 +22,14 @@
 		Medal,
 		Timer,
 		X,
+		Minus,
+		Hash,
 		AlertCircle
 	} from '@lucide/svelte';
 
 	let { data, form } = $props();
 
-	const TPL_ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer } as const;
+	const TPL_ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer, X, Minus, Hash } as const;
 	const OUTCOME_ICONS = { Trophy, CheckCircle2, Medal, Sparkles } as const;
 
 	let pickerOpen = $state(false);
@@ -81,6 +83,16 @@
 				return `Wie viele „${label}" in N Sekunden?`;
 			case 'will_happen':
 				return `Passiert „${label}" mindestens N-mal?`;
+			case 'finish_first':
+				return `Wer kommt zuerst ins Ziel („${label}“)?`;
+			case 'finish_last':
+				return `Wer kommt als Letztes („${label}“)?`;
+			case 'count_zero':
+				return `Passiert „${label}“ gar nicht?`;
+			case 'count_less_than':
+				return `Passiert „${label}“ weniger als N-mal?`;
+			case 'count_more_than':
+				return `Passiert „${label}“ mehr als N-mal?`;
 			default:
 				return label;
 		}

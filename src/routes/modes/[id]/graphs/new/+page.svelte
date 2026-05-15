@@ -18,12 +18,15 @@
 		Zap,
 		Medal,
 		Timer,
-		Sparkles
+		Sparkles,
+		X,
+		Minus,
+		Hash
 	} from '@lucide/svelte';
 
 	let { data, form } = $props();
 
-	const ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer } as const;
+	const ICONS = { Flag, Trophy, Skull, Target, Zap, Medal, Timer, X, Minus, Hash } as const;
 
 	let selectedId = $state<string | null>(null);
 	const selected = $derived(TEMPLATES.find((t) => t.id === selectedId) ?? null);

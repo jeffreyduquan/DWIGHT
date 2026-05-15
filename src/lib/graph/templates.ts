@@ -19,7 +19,12 @@ export type TemplateId =
 	| 'will_player'
 	| 'will_happen'
 	| 'podium'
-	| 'race_vs_time';
+	| 'race_vs_time'
+	| 'finish_first'
+	| 'finish_last'
+	| 'count_zero'
+	| 'count_less_than'
+	| 'count_more_than';
 
 export type TemplateField =
 	| { name: string; kind: 'trackable'; label: string; required: true }
@@ -44,7 +49,7 @@ export type TemplateField =
 
 export type TemplateSpec = {
 	id: TemplateId;
-	icon: 'Flag' | 'Trophy' | 'Skull' | 'Target' | 'Zap' | 'Medal' | 'Timer';
+	icon: 'Flag' | 'Trophy' | 'Skull' | 'Target' | 'Zap' | 'Medal' | 'Timer' | 'X' | 'Minus' | 'Hash';
 	title: string;
 	tagline: string;
 	fields: TemplateField[];
