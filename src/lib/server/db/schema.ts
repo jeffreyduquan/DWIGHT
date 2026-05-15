@@ -287,53 +287,55 @@ export type EntityAttributes = {
 	[k: string]: unknown;
 };
 
-// ---------- BetGraph (visual market builder, Phase 6) ----------
+// ---------- BetGraph 2.0 (slot-grid market builder, Phase 21) ----------
 
 /**
- * Kinds of nodes available in the visual bet-graph editor.
+ * Kinds of nodes available in the Graph 2.0 slot-grid editor.
  * See `src/lib/graph/catalog.ts` for the full pin spec per node.
  *
+ * 12 core kinds + 5 advanced (hidden behind "Erweitert"-toggle).
+ *
  * Families:
- *  - Source: produce values, no inputs
- *  - Compute: aggregate / reduce
- *  - Logic: comparisons + boolean combinators
- *  - Outcome: terminal node (exactly one per graph)
+ *  - source: produce values, no inputs (column 0 by convention)
+ *  - compute: aggregate / reduce / math
+ *  - logic: comparisons + boolean combinators + branching
+ *  - outcome: terminal node (exactly one per graph, rightmost column)
  */
 export type GraphNodeKind =
-	// Sources
-	| 'entity'
-	| 'all_entities'
-	| 'trackable'
-	| 'constant'
-	| 'now'
-	// Compute
-	| 'count'
-	| 'sum'
-	| 'arg_max'
-	| 'arg_min'
-	| 'rank'
+	// Sources (Tier 1)
+	| 'entities' // all configured entities of this mode
+	| 'event' // a trackable event counter
+	| 'number' // a numeric constant
+	| 'time' // current session time / now
+	// Compute (Tier 2)
+	| 'aggregate' // sum/count via prop dropdown
+	| 'rank' // sort entities by counter; replaces arg_max/arg_min/rank
+	// Logic (Tier 3a)
+	| 'compare' // a op b (=/≠/>/</≥/≤)
+	| 'condition' // if cond then X (¬cond ∨ X)
+	| 'combine' // and/or/not via prop dropdown
+	// Outcome (Tier 3b)
+	| 'winner' // single Entity outcome
+	| 'truth' // Boolean (Ja/Nein) outcome
+	| 'podium' // ranking / top-K outcome
+	// Advanced (hidden by default)
 	| 'first_occurrence'
 	| 'delta'
-	| 'race_to_threshold'
-	// Logic
-	| 'compare'
 	| 'between'
-	| 'entity_equals'
 	| 'time_compare'
-	| 'and'
-	| 'or'
-	| 'not'
-	| 'if_then'
-	| 'sequence_match'
-	// Outcome
-	| 'entity_outcome'
-	| 'boolean_outcome'
-	| 'ranking_outcome';
+	| 'sequence_match';
 
-/** One node in a bet-graph. `props` carries kind-specific configuration. */
+/** Slot position on the 20-col × 10-row grid. */
+export type GraphNodePos = {
+	col: number;
+	row: number;
+};
+
+/** One node in a bet-graph 2.0. `props` carries kind-specific config; `pos` snaps to the grid. */
 export type GraphNode = {
 	id: string;
 	kind: GraphNodeKind;
+	pos: GraphNodePos;
 	props?: Record<string, unknown>;
 };
 
@@ -343,12 +345,18 @@ export type GraphEdge = {
 	to: { nodeId: string; pin: string };
 };
 
-/** Serializable bet-graph. Stored in `bet_graphs.graph_json`. */
+/** Serializable bet-graph 2.0. Stored in `bet_graphs.graph_json`. */
 export type BetGraph = {
-	version: 1;
+	version: 2;
+	/** Grid dimensions; constants for Phase 21 (20×10). */
+	grid: { cols: number; rows: number };
 	nodes: GraphNode[];
 	edges: GraphEdge[];
 };
+
+/** Hard grid dimensions (Phase 21a). */
+export const GRAPH_GRID_COLS = 20;
+export const GRAPH_GRID_ROWS = 10;
 
 /** Session-snapshot mirror of a Mode's bet-graphs at session-create time. */
 export type SessionBetGraph = {

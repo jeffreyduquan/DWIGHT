@@ -1,14 +1,22 @@
 /**
- * @file graph/catalog.ts -- Node specification catalogue for the bet-graph editor.
+ * @file graph/catalog.ts -- Node specification catalogue for Graph 2.0.
  *
- * Defines, for each `GraphNodeKind`, the list of input pins, output pins, and
- * configurable properties. Drives validation, auto-layout, and the editor UI.
+ * Phase 21 (Graph 2.0) — consolidated from the original ~20 kinds to 12 core
+ * kinds (always visible) + 5 advanced kinds (hidden behind "Erweitert"-toggle).
  *
- * Phase 6 (foundation).
+ * Families:
+ *  - source:  produce values, no inputs (Spalte 0 by convention)
+ *  - compute: aggregation / ranking
+ *  - logic:   comparisons, boolean combinators, branching
+ *  - outcome: terminal node (exactly one per graph)
+ *
+ * Hard-coded family colors live in `FAMILY_COLORS` and are consumed by the
+ * SlotGraphEditor for tile fill + pin ring. Pin types get individual fill
+ * colors in `PIN_COLORS`.
  */
 import type { GraphNodeKind } from '$lib/server/db/schema';
 
-/** Pin data types. Connections only legal when output type === input type. */
+/** Pin data types. Connections are valid when output type === input type. */
 export type PinType =
 	| 'Entity'
 	| 'EntityList'
@@ -22,7 +30,7 @@ export type PinDef = {
 	type: PinType;
 	/** Required pins must be connected for the graph to be valid. */
 	required?: boolean;
-	/** Allow multiple incoming edges (e.g. `and.inputs`). */
+	/** Allow multiple incoming edges (e.g. `combine.inputs`). */
 	multi?: boolean;
 };
 
@@ -46,10 +54,10 @@ export type NodeSpec = {
 	inputs: PinDef[];
 	outputs: PinDef[];
 	props: PropDef[];
-	/** Macro nodes get a small "M" badge in the editor. */
-	macro?: boolean;
-	/** Advanced nodes are hidden behind the "Erweitert"-toggle (Phase 18e). */
+	/** Advanced specs are hidden behind the "Erweitert"-toggle. */
 	advanced?: boolean;
+	/** Lucide icon name for the catalog sidebar + tile. */
+	icon?: string;
 };
 
 const CMP_OPS = ['eq', 'neq', 'gt', 'lt', 'gte', 'lte'] as const;
@@ -61,7 +69,13 @@ export type TimeOp = (typeof TIME_OPS)[number];
 const TRIGGERS = ['OnRoundEnd', 'OnFirstSatisfied'] as const;
 export type Trigger = (typeof TRIGGERS)[number];
 
-/** Human-readable symbols / words for enum prop values (Phase 18d). */
+const AGG_OPS = ['sum', 'count'] as const;
+export type AggOp = (typeof AGG_OPS)[number];
+
+const COMBINE_OPS = ['and', 'or', 'not'] as const;
+export type CombineOp = (typeof COMBINE_OPS)[number];
+
+/** Human-readable symbols / words for enum prop values. */
 export const ENUM_LABELS: Record<string, Record<string, string>> = {
 	op: {
 		eq: '=',
@@ -84,6 +98,15 @@ export const ENUM_LABELS: Record<string, Record<string, string>> = {
 	mode: {
 		signed: 'mit Vorzeichen',
 		abs: 'absolut'
+	},
+	agg: {
+		sum: 'Summe',
+		count: 'Anzahl'
+	},
+	combine: {
+		and: 'UND',
+		or: 'ODER',
+		not: 'NICHT'
 	}
 };
 
@@ -91,113 +114,83 @@ export function enumLabel(propName: string, value: string): string {
 	return ENUM_LABELS[propName]?.[value] ?? value;
 }
 
-/** Full node catalogue. Indexed by `kind`. */
+/** Full node catalogue. Indexed by `kind`. 12 core + 5 advanced. */
 export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
-	// ---------- Sources ----------
-	entity: {
-		kind: 'entity',
+	// ---------- Tier 1 — Quellen (4) ----------
+	entities: {
+		kind: 'entities',
 		family: 'source',
-		label: 'Entity-Auswahl',
-		description: 'Eine konkrete Entity aus dem Mode.',
-		inputs: [],
-		outputs: [{ name: 'out', type: 'Entity' }],
-		props: [{ name: 'entityName', kind: 'modeRef', modeRefKind: 'entity', label: 'Entity' }]
-	},
-	all_entities: {
-		kind: 'all_entities',
-		family: 'source',
-		label: 'Alle Entities',
-		description: 'Liste aller Entities in der Runde.',
+		icon: 'Users',
+		label: 'Entitäten',
+		description: 'Alle konfigurierten Entitäten dieses Modes.',
 		inputs: [],
 		outputs: [{ name: 'out', type: 'EntityList' }],
 		props: []
 	},
-	trackable: {
-		kind: 'trackable',
+	event: {
+		kind: 'event',
 		family: 'source',
-		label: 'Trackable',
-		description: 'Ein Counter / Event-Typ aus dem Mode.',
+		icon: 'Sparkle',
+		label: 'Event',
+		description: 'Ein Counter (Trackable) aus dem Mode.',
 		inputs: [],
 		outputs: [{ name: 'out', type: 'Trackable' }],
 		props: [
-			{ name: 'trackableId', kind: 'modeRef', modeRefKind: 'trackable', label: 'Trackable' }
+			{ name: 'trackableId', kind: 'modeRef', modeRefKind: 'trackable', label: 'Event' }
 		]
 	},
-	constant: {
-		kind: 'constant',
+	number: {
+		kind: 'number',
 		family: 'source',
-		label: 'Konstante Zahl',
+		icon: 'Hash',
+		label: 'Zahl',
 		description: 'Eine feste Zahl.',
 		inputs: [],
 		outputs: [{ name: 'out', type: 'Number' }],
 		props: [{ name: 'value', kind: 'number', label: 'Wert', defaultValue: 0 }]
 	},
-	now: {
-		kind: 'now',
+	time: {
+		kind: 'time',
 		family: 'source',
-		advanced: true,
-		label: 'Jetzt',
-		description: 'Zeitpunkt der Auswertung (Sekunden seit Rundenstart).',
+		icon: 'Clock',
+		label: 'Zeit',
+		description: 'Sekunden seit Rundenstart.',
 		inputs: [],
 		outputs: [{ name: 'out', type: 'Timestamp' }],
 		props: []
 	},
-	// ---------- Compute ----------
-	count: {
-		kind: 'count',
+
+	// ---------- Tier 2 — Rechnen (2) ----------
+	aggregate: {
+		kind: 'aggregate',
 		family: 'compute',
-		label: 'Zähle Trackable',
-		description: 'Anzahl Vorkommen, optional gefiltert auf eine Entity.',
+		icon: 'Calculator',
+		label: 'Aggregat',
+		description: 'Summe oder Anzahl eines Events über einen Bereich.',
 		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
-			{ name: 'entity', type: 'Entity' }
-		],
-		outputs: [{ name: 'out', type: 'Number' }],
-		props: []
-	},
-	sum: {
-		kind: 'sum',
-		family: 'compute',
-		label: 'Summe über Entities',
-		description: 'Summe eines Trackables über alle übergebenen Entities.',
-		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
+			{ name: 'event', type: 'Trackable', required: true },
 			{ name: 'scope', type: 'EntityList', required: true }
 		],
 		outputs: [{ name: 'out', type: 'Number' }],
-		props: []
-	},
-	arg_max: {
-		kind: 'arg_max',
-		family: 'compute',
-		label: 'Entity mit Maximum',
-		description: 'Liefert die Entity mit dem höchsten Counter.',
-		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
-			{ name: 'scope', type: 'EntityList', required: true }
-		],
-		outputs: [{ name: 'out', type: 'Entity' }],
-		props: []
-	},
-	arg_min: {
-		kind: 'arg_min',
-		family: 'compute',
-		label: 'Entity mit Minimum',
-		description: 'Liefert die Entity mit dem niedrigsten Counter.',
-		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
-			{ name: 'scope', type: 'EntityList', required: true }
-		],
-		outputs: [{ name: 'out', type: 'Entity' }],
-		props: []
+		props: [
+			{
+				name: 'agg',
+				kind: 'enum',
+				enumValues: [...AGG_OPS],
+				label: 'Operation',
+				defaultValue: 'count'
+			}
+		]
 	},
 	rank: {
 		kind: 'rank',
 		family: 'compute',
+		icon: 'ListOrdered',
 		label: 'Ranking',
-		description: 'Sortiert Entities nach Counter; optional Top-K.',
+		description:
+			'Sortiert Entitäten nach Event-Counter. Mit Schwelle = Wettrennen (wer erreicht zuerst N).',
 		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
+			{ name: 'event', type: 'Trackable', required: true },
 			{ name: 'scope', type: 'EntityList', required: true }
 		],
 		outputs: [{ name: 'out', type: 'EntityList' }],
@@ -209,17 +202,143 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 				label: 'Richtung',
 				defaultValue: 'desc'
 			},
-			{ name: 'topK', kind: 'number', label: 'Top-K (0 = alle)', defaultValue: 0 }
+			{ name: 'topK', kind: 'number', label: 'Top-K (0 = alle)', defaultValue: 0 },
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (0 = aktueller Stand)',
+				defaultValue: 0
+			}
 		]
 	},
+
+	// ---------- Tier 3a — Logik (3) ----------
+	compare: {
+		kind: 'compare',
+		family: 'logic',
+		icon: 'Scale',
+		label: 'Vergleich',
+		description: 'a Operator b → wahr/falsch.',
+		inputs: [
+			{ name: 'a', type: 'Number', required: true },
+			{ name: 'b', type: 'Number', required: true }
+		],
+		outputs: [{ name: 'out', type: 'Boolean' }],
+		props: [
+			{
+				name: 'op',
+				kind: 'enum',
+				enumValues: [...CMP_OPS],
+				label: 'Operator',
+				defaultValue: 'gte'
+			}
+		]
+	},
+	condition: {
+		kind: 'condition',
+		family: 'logic',
+		icon: 'GitBranch',
+		label: 'Bedingung',
+		description: 'Wenn cond, dann result. (¬cond ∨ result)',
+		inputs: [
+			{ name: 'cond', type: 'Boolean', required: true },
+			{ name: 'result', type: 'Boolean', required: true }
+		],
+		outputs: [{ name: 'out', type: 'Boolean' }],
+		props: []
+	},
+	combine: {
+		kind: 'combine',
+		family: 'logic',
+		icon: 'Merge',
+		label: 'Verknüpfung',
+		description: 'UND / ODER / NICHT mehrerer Booleans.',
+		inputs: [{ name: 'inputs', type: 'Boolean', multi: true, required: true }],
+		outputs: [{ name: 'out', type: 'Boolean' }],
+		props: [
+			{
+				name: 'combine',
+				kind: 'enum',
+				enumValues: [...COMBINE_OPS],
+				label: 'Operation',
+				defaultValue: 'and'
+			}
+		]
+	},
+
+	// ---------- Tier 3b — Ergebnis (3) ----------
+	winner: {
+		kind: 'winner',
+		family: 'outcome',
+		icon: 'Trophy',
+		label: 'Gewinner',
+		description: 'Eine Entität gewinnt diese Wette.',
+		inputs: [{ name: 'result', type: 'Entity', required: true }],
+		outputs: [],
+		props: [
+			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Neue Wette' },
+			{
+				name: 'trigger',
+				kind: 'enum',
+				enumValues: [...TRIGGERS],
+				label: 'Auswerten wann?',
+				defaultValue: 'OnRoundEnd'
+			}
+		]
+	},
+	truth: {
+		kind: 'truth',
+		family: 'outcome',
+		icon: 'CheckCircle2',
+		label: 'Ja/Nein',
+		description: 'Trifft die Bedingung zu?',
+		inputs: [{ name: 'result', type: 'Boolean', required: true }],
+		outputs: [],
+		props: [
+			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Neue Wette' },
+			{
+				name: 'trigger',
+				kind: 'enum',
+				enumValues: [...TRIGGERS],
+				label: 'Auswerten wann?',
+				defaultValue: 'OnRoundEnd'
+			},
+			{ name: 'yesLabel', kind: 'string', label: 'Ja-Label', defaultValue: 'Ja' },
+			{ name: 'noLabel', kind: 'string', label: 'Nein-Label', defaultValue: 'Nein' }
+		]
+	},
+	podium: {
+		kind: 'podium',
+		family: 'outcome',
+		icon: 'Medal',
+		label: 'Podium',
+		description: 'Top-K Ranking, mit oder ohne Reihenfolge.',
+		inputs: [{ name: 'result', type: 'EntityList', required: true }],
+		outputs: [],
+		props: [
+			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Podium' },
+			{
+				name: 'trigger',
+				kind: 'enum',
+				enumValues: [...TRIGGERS],
+				label: 'Auswerten wann?',
+				defaultValue: 'OnRoundEnd'
+			},
+			{ name: 'topK', kind: 'number', label: 'Top-K', defaultValue: 3 },
+			{ name: 'withOrder', kind: 'boolean', label: 'Mit Reihenfolge', defaultValue: true }
+		]
+	},
+
+	// ---------- Advanced (hidden by default) ----------
 	first_occurrence: {
 		kind: 'first_occurrence',
 		family: 'compute',
 		advanced: true,
+		icon: 'Flag',
 		label: 'Erstes Vorkommen',
-		description: 'Zeitpunkt des ersten Events, optional pro Entity.',
+		description: 'Zeitpunkt des ersten Events, optional pro Entität.',
 		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
+			{ name: 'event', type: 'Trackable', required: true },
 			{ name: 'entity', type: 'Entity' }
 		],
 		outputs: [{ name: 'out', type: 'Timestamp' }],
@@ -229,6 +348,7 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 		kind: 'delta',
 		family: 'compute',
 		advanced: true,
+		icon: 'Minus',
 		label: 'Differenz',
 		description: 'Differenz zweier Zahlen.',
 		inputs: [
@@ -246,56 +366,11 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 			}
 		]
 	},
-	race_to_threshold: {
-		kind: 'race_to_threshold',
-		family: 'compute',
-		macro: true,
-		label: 'Wettrennen zur Schwelle',
-		description: 'Welche Entity erreicht zuerst N? Macro über Count + ArgMin(Timestamp).',
-		inputs: [
-			{ name: 'trackable', type: 'Trackable', required: true },
-			{ name: 'scope', type: 'EntityList', required: true },
-			{ name: 'threshold', type: 'Number', required: true }
-		],
-		outputs: [
-			{ name: 'winner', type: 'Entity' },
-			{ name: 'whenSatisfied', type: 'Timestamp' }
-		],
-		props: [
-			{
-				name: 'direction',
-				kind: 'enum',
-				enumValues: ['up', 'down'],
-				label: 'Richtung',
-				defaultValue: 'up'
-			}
-		]
-	},
-	// ---------- Logic ----------
-	compare: {
-		kind: 'compare',
-		family: 'logic',
-		label: 'Zahlenvergleich',
-		description: 'a OP b -> Boolean.',
-		inputs: [
-			{ name: 'a', type: 'Number', required: true },
-			{ name: 'b', type: 'Number', required: true }
-		],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: [
-			{
-				name: 'op',
-				kind: 'enum',
-				enumValues: [...CMP_OPS],
-				label: 'Operator',
-				defaultValue: 'gte'
-			}
-		]
-	},
 	between: {
 		kind: 'between',
 		family: 'logic',
 		advanced: true,
+		icon: 'ArrowLeftRight',
 		label: 'Zwischen',
 		description: 'value ∈ [min..max].',
 		inputs: [
@@ -306,22 +381,11 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 		outputs: [{ name: 'out', type: 'Boolean' }],
 		props: [{ name: 'inclusive', kind: 'boolean', label: 'Inklusiv', defaultValue: true }]
 	},
-	entity_equals: {
-		kind: 'entity_equals',
-		family: 'logic',
-		label: 'Entity-Vergleich',
-		description: 'a == b (Entity).',
-		inputs: [
-			{ name: 'a', type: 'Entity', required: true },
-			{ name: 'b', type: 'Entity', required: true }
-		],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: []
-	},
 	time_compare: {
 		kind: 'time_compare',
 		family: 'logic',
 		advanced: true,
+		icon: 'TimerReset',
 		label: 'Zeitvergleich',
 		description: 't1 OP t2 (Timestamps).',
 		inputs: [
@@ -339,117 +403,22 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 			}
 		]
 	},
-	and: {
-		kind: 'and',
-		family: 'logic',
-		label: 'UND',
-		description: 'Alle Eingänge wahr.',
-		inputs: [{ name: 'inputs', type: 'Boolean', multi: true, required: true }],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: []
-	},
-	or: {
-		kind: 'or',
-		family: 'logic',
-		label: 'ODER',
-		description: 'Mind. ein Eingang wahr.',
-		inputs: [{ name: 'inputs', type: 'Boolean', multi: true, required: true }],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: []
-	},
-	not: {
-		kind: 'not',
-		family: 'logic',
-		advanced: true,
-		label: 'NICHT',
-		description: 'Negation.',
-		inputs: [{ name: 'in', type: 'Boolean', required: true }],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: []
-	},
-	if_then: {
-		kind: 'if_then',
-		family: 'logic',
-		advanced: true,
-		label: 'Wenn-Dann',
-		description: 'cond -> then (entspricht ¬cond ∨ then).',
-		inputs: [
-			{ name: 'cond', type: 'Boolean', required: true },
-			{ name: 'then', type: 'Boolean', required: true }
-		],
-		outputs: [{ name: 'out', type: 'Boolean' }],
-		props: []
-	},
 	sequence_match: {
 		kind: 'sequence_match',
 		family: 'logic',
-		macro: true,
 		advanced: true,
-		label: 'Reihenfolgenmuster',
-		description: 'Muster aus Trackable-Events in Reihenfolge.',
+		icon: 'ListChecks',
+		label: 'Reihenfolge',
+		description: 'Muster aus Events in Reihenfolge.',
 		inputs: [{ name: 'steps', type: 'Trackable', multi: true, required: true }],
 		outputs: [{ name: 'out', type: 'Boolean' }],
 		props: [
-			{ name: 'allowOthersBetween', kind: 'boolean', label: 'Andere Events erlaubt', defaultValue: false }
-		]
-	},
-	// ---------- Outcomes ----------
-	entity_outcome: {
-		kind: 'entity_outcome',
-		family: 'outcome',
-		label: 'Entity-Wette',
-		description: 'Wer gewinnt? (eine Entity).',
-		inputs: [{ name: 'result', type: 'Entity', required: true }],
-		outputs: [],
-		props: [
-			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Neue Wette' },
 			{
-				name: 'trigger',
-				kind: 'enum',
-				enumValues: [...TRIGGERS],
-				label: 'Auswerten wann?',
-				defaultValue: 'OnRoundEnd'
+				name: 'allowOthersBetween',
+				kind: 'boolean',
+				label: 'Andere Events erlaubt',
+				defaultValue: false
 			}
-		]
-	},
-	boolean_outcome: {
-		kind: 'boolean_outcome',
-		family: 'outcome',
-		label: 'Ja/Nein-Wette',
-		description: 'Trifft die Bedingung zu?',
-		inputs: [{ name: 'result', type: 'Boolean', required: true }],
-		outputs: [],
-		props: [
-			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Neue Wette' },
-			{
-				name: 'trigger',
-				kind: 'enum',
-				enumValues: [...TRIGGERS],
-				label: 'Auswerten wann?',
-				defaultValue: 'OnRoundEnd'
-			},
-			{ name: 'yesLabel', kind: 'string', label: 'Ja-Label', defaultValue: 'Ja' },
-			{ name: 'noLabel', kind: 'string', label: 'Nein-Label', defaultValue: 'Nein' }
-		]
-	},
-	ranking_outcome: {
-		kind: 'ranking_outcome',
-		family: 'outcome',
-		label: 'Ranking-Wette',
-		description: 'Top-K in Reihenfolge.',
-		inputs: [{ name: 'result', type: 'EntityList', required: true }],
-		outputs: [],
-		props: [
-			{ name: 'marketTitle', kind: 'string', label: 'Titel', defaultValue: 'Podium' },
-			{
-				name: 'trigger',
-				kind: 'enum',
-				enumValues: [...TRIGGERS],
-				label: 'Auswerten wann?',
-				defaultValue: 'OnRoundEnd'
-			},
-			{ name: 'topK', kind: 'number', label: 'Top-K', defaultValue: 3 },
-			{ name: 'withOrder', kind: 'boolean', label: 'Mit Reihenfolge', defaultValue: true }
 		]
 	}
 };
@@ -461,11 +430,52 @@ export const FAMILY_LABELS: Record<NodeFamily, string> = {
 	outcome: 'Ergebnis'
 };
 
-export const PIN_COLORS: Record<PinType, string> = {
-	Entity: 'oklch(85% 0.04 220)',
-	EntityList: 'oklch(78% 0.05 220)',
-	Trackable: 'oklch(88% 0.08 80)',
-	Number: 'oklch(78% 0.07 148)',
-	Boolean: 'oklch(78% 0.08 250)',
-	Timestamp: 'oklch(78% 0.08 320)'
+/** Per-family tile fill (Quantum Plasma palette). */
+export const FAMILY_COLORS: Record<NodeFamily, string> = {
+	source: 'oklch(60% 0.055 148)', // sage
+	compute: 'oklch(65% 0.08 295)', // lavendel
+	logic: 'oklch(70% 0.12 70)', // bernstein
+	outcome: 'oklch(58% 0.10 50)' // bronze
 };
+
+export const PIN_COLORS: Record<PinType, string> = {
+	Entity: 'oklch(78% 0.10 220)', // blau
+	EntityList: 'oklch(72% 0.10 220)', // blau-tiefer
+	Trackable: 'oklch(82% 0.13 80)', // amber
+	Number: 'oklch(75% 0.12 148)', // grün
+	Boolean: 'oklch(75% 0.13 330)', // rosa
+	Timestamp: 'oklch(70% 0.13 295)' // violett
+};
+
+/** Core kinds (always visible in the catalog). */
+export const CORE_KINDS: GraphNodeKind[] = [
+	'entities',
+	'event',
+	'number',
+	'time',
+	'aggregate',
+	'rank',
+	'compare',
+	'condition',
+	'combine',
+	'winner',
+	'truth',
+	'podium'
+];
+
+/** Advanced kinds (revealed by the "Erweitert"-toggle). */
+export const ADVANCED_KINDS: GraphNodeKind[] = [
+	'first_occurrence',
+	'delta',
+	'between',
+	'time_compare',
+	'sequence_match'
+];
+
+export function specOf(kind: GraphNodeKind): NodeSpec {
+	return NODE_CATALOG[kind];
+}
+
+export function isOutcomeKind(kind: GraphNodeKind): boolean {
+	return NODE_CATALOG[kind].family === 'outcome';
+}
