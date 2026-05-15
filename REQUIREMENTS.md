@@ -313,6 +313,9 @@
 - **REQ-UI-059** **Phase 23 Click-to-Spawn.** Catalog-Items im `SlotGraphEditor` reagieren zusätzlich zum HTML5-Drag auf `onclick`: ein Klick spawnt den Node am ersten freien Slot (row-major). Mobile-Catalog schließt sich nach Spawn. Damit ist der Editor auch auf Touch-Geräten und ohne DnD-Support nutzbar.
 - **REQ-UI-060** **Phase 23 Auto-Fit Canvas.** Sichtbare Canvas-Größe (`visibleCols`/`visibleRows`) ergibt sich aus `max(occupiedCol)+3` bzw. `max(occupiedRow)+2`, untergrenze `6×4`, obergrenze `COLS×ROWS` (20×10). Leerer Graph zeigt nur `6×4` Slots; Wachstum bei neuen Nodes ist automatisch.
 - **REQ-UI-061** **Phase 23 Events↔Wetten Flow.** Auf `/modes/[id]/+page.svelte` ist der visuelle Bruch zwischen Events-Sektion (in `ModeForm`) und Wetten-Sektion durch einen `border-t border-base-300 pt-4` ersetzt — die Sektionen wirken als ein zusammenhängender Bearbeitungsfluss.
+- **REQ-UI-062** **Phase 24 Compact Tile-Geometrie.** SlotGraphEditor verwendet `SLOT_W=140 / SLOT_H=80 / TILE_W=120 / TILE_H=60` (vorher 180/110/160/90). Tiles wirken kompakt, mehr Nodes pro Viewport sichtbar.
+- **REQ-UI-063** **Phase 24 Vertical-Default Spawn.** `spawnFromCatalog` füllt **spaltenweise** (column-major) — Default-Layouts wachsen vertikal nach unten; horizontale Verzweigungen sind opt-in (Drag/Drop in spätere Spalte).
+- **REQ-UI-064** **Phase 24 Schlanke Sidebars.** `grid-template-columns: 200px 1fr 240px` (vorher 260/300). Catalog-Items kleiner padding (`0.25rem 0.4rem`) und font (`0.7rem`). Inspector und Catalog blocken weniger Canvas-Fläche; Pins bleiben besser sichtbar.
 
 ---
 

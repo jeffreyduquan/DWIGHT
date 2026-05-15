@@ -583,6 +583,24 @@ Acceptance:
 
 ---
 
+## Phase 24 — Editor Densification (Pass 1) ☑
+**Goal:** Tester meldete (a) Nodes zu groß, (b) Catalog & Inspector verstopfen das Interface und verdecken Pins beim Wiring, (c) Default-Layout sollte vertikal statt horizontal wachsen. Diese Phase verdichtet Tile- und Sidebar-Geometrie und ändert die Spawn-Reihenfolge auf column-major. Template-Konsistenz (Single/Global Events) wird in einer Folge-Phase angegangen.
+
+Tasks:
+- ☑ **24a Compact Tiles (REQ-UI-062):** `SLOT_W/H` 180/110→140/80, `TILE_W/H` 160/90→120/60. Header-Padding und Body unverändert, font bleibt 0.7rem.
+- ☑ **24b Vertical-Default Spawn (REQ-UI-063):** `spawnFromCatalog` Schleife auf column-major umgestellt. Erste 10 Click-Spawns landen in Spalte 0 untereinander.
+- ☑ **24c Schlanke Sidebars (REQ-UI-064):** Grid-Columns 260/300→200/240; Catalog-Item Padding `0.4rem 0.55rem`→`0.25rem 0.4rem`, Font 0.78→0.7rem.
+
+Open (Phase 25):
+- Template-Konsistenz: "Standard-Wetten sagen teils dasselbe, je nach Event-Setup (single/global)" — braucht User-Input zur konkreten Soll-Liste.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

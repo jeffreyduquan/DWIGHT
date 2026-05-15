@@ -266,6 +266,9 @@
 | REQ-UI-059 | Phase 23 | `src/lib/graph/SlotGraphEditor.svelte` (`spawnFromCatalog(kind)` Helper, `onclick` auf `.catalog-item` Button, `mobileCatalogOpen=false` nach Spawn) | manual | ☑ |
 | REQ-UI-060 | Phase 23 | `src/lib/graph/SlotGraphEditor.svelte` (`visibleCols`/`visibleRows` $derived, ersetzt `COLS`/`ROWS` in `.canvas-grid`/`.grid-dots`/`.wires` width+height) | manual | ☑ |
 | REQ-UI-061 | Phase 23 | `src/routes/modes/[id]/+page.svelte` (Wetten-Section: `mt-8` → `mt-4 border-t border-base-300 pt-4`) | manual | ☑ |
+| REQ-UI-062 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`SLOT_W/H`=140/80, `TILE_W/H`=120/60) | manual | ☑ |
+| REQ-UI-063 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`spawnFromCatalog` column-major scan) | manual | ☑ |
+| REQ-UI-064 | Phase 24 | `src/lib/graph/SlotGraphEditor.svelte` (`.editor-grid grid-template-columns: 200px 1fr 240px`, `.catalog-item` padding/font) | manual | ☑ |
 
 ## REQ-DATA — Data
 

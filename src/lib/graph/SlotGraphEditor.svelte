@@ -54,10 +54,10 @@
 	} = $props();
 
 	// ---------- layout constants ----------
-	const SLOT_W = 180;
-	const SLOT_H = 110;
-	const TILE_W = 160;
-	const TILE_H = 90;
+	const SLOT_W = 140;
+	const SLOT_H = 80;
+	const TILE_W = 120;
+	const TILE_H = 60;
 	const COLS = GRAPH_GRID_COLS;
 	const ROWS = GRAPH_GRID_ROWS;
 
@@ -223,9 +223,11 @@
 
 	/** Spawn from sidebar click (mobile-friendly fallback to DnD). */
 	function spawnFromCatalog(kind: GraphNodeKind) {
-		// First free slot scanning row-major.
-		for (let r = 0; r < ROWS; r++) {
-			for (let c = 0; c < COLS; c++) {
+		// First free slot scanning column-major (vertical fill first, then
+		// next column) so default layouts grow downward; horizontal use the
+		// user reserves for complex/wider graphs.
+		for (let c = 0; c < COLS; c++) {
+			for (let r = 0; r < ROWS; r++) {
 				if (!getOccupant(c, r)) {
 					addNodeAt(kind, { col: c, row: r });
 					mobileCatalogOpen = false;
@@ -805,7 +807,7 @@
 <style>
 	.editor-root {
 		display: grid;
-		grid-template-columns: 260px 1fr 300px;
+		grid-template-columns: 200px 1fr 240px;
 		grid-template-rows: 1fr auto;
 		grid-template-areas:
 			'catalog canvas inspector'
@@ -879,14 +881,14 @@
 	.catalog-item {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.4rem 0.55rem;
-		font-size: 0.78rem;
+		gap: 0.3rem;
+		padding: 0.25rem 0.4rem;
+		font-size: 0.7rem;
 		border: 1px solid var(--color-base-300);
 		border-left: 3px solid var(--fam);
 		background: var(--color-base-100);
 		color: var(--color-base-content);
-		border-radius: 0.4rem;
+		border-radius: 0.35rem;
 		cursor: grab;
 		text-align: left;
 		transition: background 0.12s ease, transform 0.08s ease;
