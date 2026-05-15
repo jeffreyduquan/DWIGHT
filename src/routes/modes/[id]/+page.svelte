@@ -156,6 +156,12 @@
 				>
 					<Wand2 size={14} /> Wette aus Vorlage
 				</button>
+				<a
+					href={`/modes/${data.mode.id}/graphs`}
+					class="btn btn-outline btn-sm w-full gap-2 rounded-xl"
+				>
+					<Pencil size={14} /> Eigene Wette bauen
+				</a>
 			</div>
 		</section>
 

@@ -307,6 +307,9 @@
 - **REQ-UI-053** **Phase 21 Icon-System Lucide.** Neuer `src/lib/components/Icon.svelte` (Lucide-Name → Component Dispatcher). Catalog-Specs tragen ein `icon`-Feld (Lucide-Name); SVG ausschließlich, **keine Emojis**. Fallback ist `HelpCircle`. `outcomeIcon.ts` mapped winner→`Trophy`, truth→`CheckCircle2`, podium→`Medal`.
 - **REQ-UI-054** **Phase 21 Preview-Sentence v2.** `previewSentence(graph)` findet den Outcome-Knoten (winner/truth/podium), liest dessen `result`-Pin via `inputSource` und beschreibt rekursiv Entitäten/Events/Numbers/Times/Booleans/Ranks auf Deutsch (z. B. „Top-Scorer: Wer die meisten Tor hat"). Bei fehlendem Outcome: „Kein Ergebnis-Knoten.".
 - **REQ-UI-055** **Phase 21 No-Zoom Policy.** Der Slot-Canvas hat kein Zoom und keine `transform: scale()` — nur Scroll. Grid bleibt 1:1 Pixel-stabil für reproduzierbare Drop-Targets.
+- **REQ-UI-056** **Phase 22 Eigene-Wette-Einstieg.** Auf `/modes/[id]/+page.svelte` gibt es unter dem "Wette aus Vorlage"-CTA einen sekundären Button "Eigene Wette bauen" (`btn-outline btn-sm`), der nach `/modes/[id]/graphs` führt. Damit ist der Freeform-Editor wieder erreichbar.
+- **REQ-UI-057** **Phase 22 SlotGraphEditor DaisyUI-Tokens.** `SlotGraphEditor.svelte` verwendet ausschließlich DaisyUI CSS-Variablen (`var(--color-base-100|200|300)`, `var(--color-base-content)`, `var(--color-primary|success|warning)`) statt eigene `oklch()`-Werte. Editor-Root hat `border`, `border-radius`, sitzt sauber im App-Theme.
+- **REQ-UI-058** **Phase 22 Mobile Drawer-Layout.** Unter `768px` kollabiert das 3-Spalten-Grid auf eine Canvas-Spalte; Catalog und Inspector werden absolute Drawer (`width: min(85vw, 320px)`) mit `transform: translateX(±100%)` und werden via Toggle-Buttons in der Statusbar (`mobile-only`) geöffnet. Tippen auf eine Tile öffnet den Inspector-Drawer automatisch.
 
 ---
 

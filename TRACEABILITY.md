@@ -260,6 +260,9 @@
 | REQ-UI-053 | Phase 21 | `src/lib/components/Icon.svelte` (Lucide-Dispatcher), `src/lib/graph/catalog.ts` (`icon`-Feld pro Spec), `src/lib/graph/outcomeIcon.ts` (Trophy/CheckCircle2/Medal/Sparkles) | manual | ☑ |
 | REQ-UI-054 | Phase 21 | `src/lib/graph/preview.ts` (`previewSentence` via `inputSource` + `result`-Pin), `src/lib/graph/graph.test.ts` (previewSentence cases) | vitest | ☑ |
 | REQ-UI-055 | Phase 21 | `src/lib/graph/SlotGraphEditor.svelte` (kein `transform: scale`, nur `overflow: auto` auf Canvas) | manual | ☑ |
+| REQ-UI-056 | Phase 22 | `src/routes/modes/[id]/+page.svelte` ("Eigene Wette bauen" Outline-Button unter Template-CTA, verlinkt `/modes/[id]/graphs`) | manual | ☑ |
+| REQ-UI-057 | Phase 22 | `src/lib/graph/SlotGraphEditor.svelte` `<style>`-Block (DaisyUI-CSS-Vars `--color-base-*`/`--color-primary`/`color-mix`) | manual | ☑ |
+| REQ-UI-058 | Phase 22 | `src/lib/graph/SlotGraphEditor.svelte` (`mobileCatalogOpen`/`mobileInspectorOpen` $state, `mobile-only` Toggle-Buttons in Statusbar, `@media (max-width: 767px)` Drawer-Layout), `src/lib/components/Icon.svelte` (X/Menu/Settings2), `src/lib/graph/grid.ts` (build-fix: Konstanten raus aus `$lib/server`) | manual | ☑ |
 
 ## REQ-DATA — Data
 

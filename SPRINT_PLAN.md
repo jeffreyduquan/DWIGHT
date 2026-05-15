@@ -550,6 +550,22 @@ Acceptance:
 
 ---
 
+## Phase 22 — Graph 2.0 UX-Polish ☑
+**Goal:** Nach Phase 21 fehlte (a) der Einstieg zum Freeform-Editor, (b) der Editor-Style passte nicht zum App-Theme, (c) auf Mobile war der Editor unbenutzbar. Diese Phase fügt einen sekundären "Eigene Wette bauen"-CTA hinzu, swappt alle `oklch()`-Hardcodes auf DaisyUI-Tokens, und macht das 3-Spalten-Layout responsive mit Drawer-Pattern.
+
+Tasks:
+- ☑ **22a "Eigene Wette" CTA (REQ-UI-056):** Auf `/modes/[id]/+page.svelte` unter dem Primary-CTA "Wette aus Vorlage" einen Outline-Button mit Pencil-Icon, der nach `/modes/[id]/graphs` führt.
+- ☑ **22b DaisyUI-Tokens (REQ-UI-057):** `SlotGraphEditor.svelte` Style-Block komplett umgestellt auf `var(--color-base-*)`, `var(--color-primary)`, `color-mix(in oklab, …)` für Schatten. Editor-Root hat Rahmen + Radius. Funktioniert in Light- und Dark-Theme.
+- ☑ **22c Mobile-Drawer (REQ-UI-058):** Media-Query `@media (max-width: 767px)`: Grid kollabiert auf eine Spalte, Catalog/Inspector werden absolute Drawers mit Slide-Transition, Statusbar bekommt zwei `mobile-only` Toggle-Buttons (Menu + Settings2). Tile-Click öffnet Inspector automatisch. Neue Lucide-Icons (`X`, `Menu`, `Settings2`) im `Icon.svelte` registriert.
+
+Acceptance:
+- ☑ `pnpm vitest run`: 105/105.
+- ☑ `pnpm check`: 0 Errors.
+- ☑ `pnpm exec vite build`: erfolgreich (vorher: `vite-plugin-sveltekit-guard` lehnte `$lib/server/db/schema` Value-Import in `.svelte` ab → Fix in der gleichen Phase: Konstanten `GRAPH_GRID_COLS/ROWS` nach `src/lib/graph/grid.ts` verschoben; schema.ts re-exportiert für Server-Code).
+- ☑ Eigene Wette ist von `/modes/[id]` aus erreichbar.
+
+---
+
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):

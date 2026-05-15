@@ -27,7 +27,10 @@
 		ListChecks,
 		Trash2,
 		AlertTriangle,
-		HelpCircle
+		HelpCircle,
+		X,
+		Menu,
+		Settings2
 	} from '@lucide/svelte';
 
 	const MAP: Record<string, typeof Users> = {
@@ -52,7 +55,10 @@
 		ListChecks,
 		Trash2,
 		AlertTriangle,
-		HelpCircle
+		HelpCircle,
+		X,
+		Menu,
+		Settings2
 	};
 
 	let { name, size = 16 }: { name: string; size?: number } = $props();

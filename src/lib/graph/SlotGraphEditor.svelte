@@ -86,6 +86,10 @@
 	/** Hover slot during drag (for preview). */
 	let hoverSlot = $state<GraphNodePos | null>(null);
 
+	/** Mobile drawer toggles (hidden on desktop via CSS). */
+	let mobileCatalogOpen = $state(false);
+	let mobileInspectorOpen = $state(false);
+
 	const validation = $derived(validateGraph(graph));
 	const preview = $derived(previewSentence(graph));
 
@@ -406,8 +410,19 @@
 
 <div class="editor-root">
 	<!-- ============ CATALOG SIDEBAR (left) ============ -->
-	<aside class="catalog">
+	<aside class="catalog" class:mobile-open={mobileCatalogOpen}>
 		<header class="catalog-header">
+			<div class="mobile-drawer-head">
+				<span class="text-xs font-semibold uppercase opacity-70">Bausteine</span>
+				<button
+					type="button"
+					class="btn btn-ghost btn-xs btn-circle"
+					aria-label="Schließen"
+					onclick={() => (mobileCatalogOpen = false)}
+				>
+					<Icon name="X" size={14} />
+				</button>
+			</div>
 			<input
 				type="text"
 				class="input input-bordered input-sm w-full"
@@ -557,6 +572,7 @@
 					onclick={(e) => {
 						e.stopPropagation();
 						selectedNodeId = n.id;
+						mobileInspectorOpen = true;
 					}}
 					role="button"
 					tabindex="0"
@@ -616,7 +632,18 @@
 	</div>
 
 	<!-- ============ INSPECTOR (right) ============ -->
-	<aside class="inspector" class:visible={selectedNode !== null}>
+	<aside class="inspector" class:visible={selectedNode !== null} class:mobile-open={mobileInspectorOpen}>
+		<div class="mobile-drawer-head">
+			<span class="text-xs font-semibold uppercase opacity-70">Eigenschaften</span>
+			<button
+				type="button"
+				class="btn btn-ghost btn-xs btn-circle"
+				aria-label="Schließen"
+				onclick={() => (mobileInspectorOpen = false)}
+			>
+				<Icon name="X" size={14} />
+			</button>
+		</div>
 		{#if selectedNode}
 			{@const spec = NODE_CATALOG[selectedNode.kind]}
 			<header class="inspector-header" style:--fam={familyColor(spec.family)}>
@@ -711,6 +738,14 @@
 
 	<!-- ============ STATUS BAR (bottom) ============ -->
 	<footer class="statusbar">
+		<button
+			type="button"
+			class="btn btn-ghost btn-xs gap-1 mobile-only"
+			onclick={() => (mobileCatalogOpen = true)}
+			aria-label="Bausteine öffnen"
+		>
+			<Icon name="Menu" size={14} />
+		</button>
 		<div class="status-preview" title={preview}>
 			<Icon name="Sparkles" size={14} />
 			<span>{preview || '(noch keine vollständige Wette)'}</span>
@@ -719,22 +754,30 @@
 			{#if validation.errors.length === 0}
 				<span class="text-success">
 					<Icon name="CheckCircle2" size={14} />
-					{graph.nodes.length} Knoten · {graph.edges.length} Verbindungen
+					<span class="status-stats">{graph.nodes.length} Knoten · {graph.edges.length} Verbindungen</span>
 				</span>
 			{:else}
 				<span class="text-warning">
 					<Icon name="AlertTriangle" size={14} />
-					{validation.errors.length} Problem{validation.errors.length === 1 ? '' : 'e'}
+					<span class="status-stats">{validation.errors.length} Problem{validation.errors.length === 1 ? '' : 'e'}</span>
 				</span>
 			{/if}
 		</div>
+		<button
+			type="button"
+			class="btn btn-ghost btn-xs gap-1 mobile-only"
+			onclick={() => (mobileInspectorOpen = true)}
+			aria-label="Eigenschaften öffnen"
+		>
+			<Icon name="Settings2" size={14} />
+		</button>
 	</footer>
 </div>
 
 <style>
 	.editor-root {
 		display: grid;
-		grid-template-columns: 280px 1fr 320px;
+		grid-template-columns: 260px 1fr 300px;
 		grid-template-rows: 1fr auto;
 		grid-template-areas:
 			'catalog canvas inspector'
@@ -742,25 +785,41 @@
 		gap: 0;
 		height: 100%;
 		min-height: 540px;
-		background: oklch(20% 0.005 220);
-		color: oklch(95% 0.005 220);
+		background: var(--color-base-100);
+		color: var(--color-base-content);
+		border-radius: 0.75rem;
+		overflow: hidden;
+		border: 1px solid var(--color-base-300);
+		position: relative;
+	}
+
+	.mobile-drawer-head {
+		display: none;
+		align-items: center;
+		justify-content: space-between;
+		padding-bottom: 0.4rem;
+		margin-bottom: 0.4rem;
+		border-bottom: 1px solid var(--color-base-300);
+	}
+	.mobile-only {
+		display: none;
 	}
 
 	/* ---------- Catalog sidebar ---------- */
 	.catalog {
 		grid-area: catalog;
-		border-right: 1px solid oklch(30% 0.01 220);
-		background: oklch(18% 0.005 220);
+		border-right: 1px solid var(--color-base-300);
+		background: var(--color-base-200);
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 	}
 	.catalog-header {
 		padding: 0.625rem;
-		border-bottom: 1px solid oklch(30% 0.01 220);
+		border-bottom: 1px solid var(--color-base-300);
 		position: sticky;
 		top: 0;
-		background: inherit;
+		background: var(--color-base-200);
 		z-index: 2;
 	}
 	.catalog-body {
@@ -793,17 +852,20 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
-		padding: 0.35rem 0.5rem;
+		padding: 0.4rem 0.55rem;
 		font-size: 0.78rem;
-		border: 1px solid oklch(30% 0.01 220);
+		border: 1px solid var(--color-base-300);
 		border-left: 3px solid var(--fam);
-		background: oklch(22% 0.005 220);
-		border-radius: 4px;
+		background: var(--color-base-100);
+		color: var(--color-base-content);
+		border-radius: 0.4rem;
 		cursor: grab;
 		text-align: left;
+		transition: background 0.12s ease, transform 0.08s ease;
 	}
 	.catalog-item:hover {
-		background: oklch(26% 0.01 220);
+		background: var(--color-base-300);
+		transform: translateX(2px);
 	}
 	.catalog-item:active {
 		cursor: grabbing;
@@ -813,7 +875,7 @@
 	.canvas-scroll {
 		grid-area: canvas;
 		overflow: auto;
-		background: oklch(15% 0.005 220);
+		background: var(--color-base-100);
 		position: relative;
 	}
 	.canvas-grid {
@@ -824,9 +886,10 @@
 		top: 0;
 		left: 0;
 		pointer-events: none;
+		opacity: 0.4;
 	}
 	.grid-dots :global(circle) {
-		fill: oklch(28% 0.005 220);
+		fill: var(--color-base-300);
 	}
 	.wires {
 		position: absolute;
@@ -841,9 +904,9 @@
 	}
 	.slot-ghost {
 		position: absolute;
-		border: 2px dashed oklch(60% 0.055 148);
-		border-radius: 6px;
-		background: oklch(60% 0.055 148 / 0.1);
+		border: 2px dashed var(--color-primary);
+		border-radius: 0.4rem;
+		background: color-mix(in oklab, var(--color-primary) 12%, transparent);
 		pointer-events: none;
 	}
 
@@ -851,24 +914,25 @@
 	.tile {
 		position: absolute;
 		background: var(--fam);
-		color: oklch(15% 0.005 220);
-		border-radius: 6px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+		color: var(--color-base-100);
+		border-radius: 0.5rem;
+		box-shadow: 0 2px 6px color-mix(in oklab, black 25%, transparent);
 		cursor: grab;
 		display: flex;
 		flex-direction: column;
 		font-size: 0.72rem;
 		user-select: none;
-		transition: box-shadow 0.12s ease;
+		transition: box-shadow 0.12s ease, transform 0.08s ease;
 	}
 	.tile:hover {
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+		box-shadow: 0 6px 14px color-mix(in oklab, black 35%, transparent);
+		transform: translateY(-1px);
 	}
 	.tile:active {
 		cursor: grabbing;
 	}
 	.tile.selected {
-		outline: 2px solid oklch(85% 0.15 80);
+		outline: 2px solid var(--color-primary);
 		outline-offset: 2px;
 	}
 	.tile-header {
@@ -878,7 +942,7 @@
 		padding: 0.3rem 0.45rem;
 		font-weight: 600;
 		font-size: 0.7rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+		border-bottom: 1px solid color-mix(in oklab, black 18%, transparent);
 	}
 	.tile-label {
 		flex: 1;
@@ -892,25 +956,25 @@
 		font-size: 0.7rem;
 		display: flex;
 		align-items: center;
-		opacity: 0.92;
+		opacity: 0.95;
 	}
 
 	.pin {
 		position: absolute;
-		width: 12px;
-		height: 12px;
+		width: 14px;
+		height: 14px;
 		border-radius: 50%;
-		border: 2px solid oklch(15% 0.005 220);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+		border: 2px solid var(--color-base-100);
+		box-shadow: 0 1px 3px color-mix(in oklab, black 40%, transparent);
 		cursor: crosshair;
 		padding: 0;
 		z-index: 2;
 	}
 	.pin-in {
-		left: -6px;
+		left: -7px;
 	}
 	.pin-out {
-		right: -6px;
+		right: -7px;
 	}
 	.pin:hover {
 		transform: scale(1.4);
@@ -919,8 +983,8 @@
 	/* ---------- Inspector ---------- */
 	.inspector {
 		grid-area: inspector;
-		border-left: 1px solid oklch(30% 0.01 220);
-		background: oklch(18% 0.005 220);
+		border-left: 1px solid var(--color-base-300);
+		background: var(--color-base-200);
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
@@ -930,14 +994,14 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.625rem 0.75rem;
-		border-bottom: 1px solid oklch(30% 0.01 220);
+		border-bottom: 1px solid var(--color-base-300);
 		border-left: 3px solid var(--fam);
 	}
 	.inspector-desc {
 		padding: 0.5rem 0.75rem;
 		font-size: 0.72rem;
 		opacity: 0.75;
-		border-bottom: 1px solid oklch(28% 0.01 220);
+		border-bottom: 1px solid var(--color-base-300);
 	}
 	.inspector-props {
 		padding: 0.75rem;
@@ -960,11 +1024,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.35rem 0.75rem;
-		background: oklch(16% 0.005 220);
-		border-top: 1px solid oklch(30% 0.01 220);
+		gap: 0.5rem;
+		padding: 0.4rem 0.75rem;
+		background: var(--color-base-200);
+		border-top: 1px solid var(--color-base-300);
 		font-size: 0.75rem;
-		min-height: 36px;
+		min-height: 40px;
 	}
 	.status-preview {
 		display: flex;
@@ -976,14 +1041,70 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	.status-preview span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 	.status-errors {
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
+		flex-shrink: 0;
 	}
 	.status-errors :global(span) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
+	}
+
+	/* ---------- Mobile (< 768px): drawers instead of fixed sidebars ---------- */
+	@media (max-width: 767px) {
+		.editor-root {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr auto;
+			grid-template-areas:
+				'canvas'
+				'status';
+			min-height: 70vh;
+		}
+		.mobile-only {
+			display: inline-flex;
+		}
+		.mobile-drawer-head {
+			display: flex;
+		}
+		.catalog,
+		.inspector {
+			position: absolute;
+			top: 0;
+			bottom: 40px;
+			width: min(85vw, 320px);
+			z-index: 30;
+			transition: transform 0.18s ease;
+			box-shadow: 0 4px 24px color-mix(in oklab, black 35%, transparent);
+		}
+		.catalog {
+			left: 0;
+			transform: translateX(-100%);
+			border-right: 1px solid var(--color-base-300);
+		}
+		.catalog.mobile-open {
+			transform: translateX(0);
+		}
+		.inspector {
+			right: 0;
+			transform: translateX(100%);
+			border-left: 1px solid var(--color-base-300);
+		}
+		.inspector.mobile-open {
+			transform: translateX(0);
+		}
+		.status-stats {
+			display: none;
+		}
+		.status-preview {
+			font-size: 0.7rem;
+		}
 	}
 </style>
