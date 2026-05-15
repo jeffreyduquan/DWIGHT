@@ -412,18 +412,26 @@ function compileCounterExpr(
 			const eSrc = inSrc(graph, node.id, 'event');
 			const trackableId = resolveTrackableId(eSrc);
 			if (!trackableId) return { ok: false, error: 'Aggregat: kein Event verbunden' };
-			// scope: must be `entities` (all) — we don't support custom EntityLists yet.
 			const scopeSrc = inSrc(graph, node.id, 'scope');
-			if (!scopeSrc || scopeSrc.kind !== 'entities') {
-				return { ok: false, error: 'Aggregat: scope muss "Entitäten" sein' };
+			if (!scopeSrc) return { ok: false, error: 'Aggregat: scope nicht verbunden' };
+			if (scopeSrc.kind === 'entities') {
+				// All entities — sum across all (== count for counter-trackables).
+				const operands: CounterExpr[] = ctx.entities.map((e) => ({
+					kind: 'ref',
+					trackableId,
+					entityId: e.id
+				}));
+				return { ok: true, value: { kind: 'sum', operands } };
 			}
-			// sum/count are equivalent for counter trackables (DWIGHT trackables are counters).
-			const operands: CounterExpr[] = ctx.entities.map((e) => ({
-				kind: 'ref',
-				trackableId,
-				entityId: e.id
-			}));
-			return { ok: true, value: { kind: 'sum', operands } };
+			if (scopeSrc.kind === 'entity') {
+				const entityName = propStr(scopeSrc, 'entityName', '');
+				const ent = ctx.entities.find((e) => e.name === entityName);
+				if (!ent) {
+					return { ok: false, error: `Aggregat: Entität "${entityName}" nicht gefunden` };
+				}
+				return { ok: true, value: { kind: 'ref', trackableId, entityId: ent.id } };
+			}
+			return { ok: false, error: `Aggregat: scope-Knoten "${scopeSrc.kind}" nicht unterstützt` };
 		}
 		case 'delta': {
 			const aSrc = inSrc(graph, node.id, 'a');

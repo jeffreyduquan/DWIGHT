@@ -127,6 +127,16 @@ export const NODE_CATALOG: Record<GraphNodeKind, NodeSpec> = {
 		outputs: [{ name: 'out', type: 'EntityList' }],
 		props: []
 	},
+	entity: {
+		kind: 'entity',
+		family: 'source',
+		icon: 'User',
+		label: 'Entität',
+		description: 'Eine konkrete Entität (per Name gewählt).',
+		inputs: [],
+		outputs: [{ name: 'out', type: 'Entity' }],
+		props: [{ name: 'entityName', kind: 'modeRef', modeRefKind: 'entity', label: 'Entität' }]
+	},
 	event: {
 		kind: 'event',
 		family: 'source',
@@ -450,6 +460,7 @@ export const PIN_COLORS: Record<PinType, string> = {
 /** Core kinds (always visible in the catalog). */
 export const CORE_KINDS: GraphNodeKind[] = [
 	'entities',
+	'entity',
 	'event',
 	'number',
 	'time',

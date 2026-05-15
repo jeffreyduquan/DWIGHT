@@ -1,12 +1,16 @@
 /**
- * @file graph/templates.ts -- High-level bet-graph templates ("Wett-Vorlagen").
+ * @file graph/templates.ts -- High-level bet-graph templates ("Wett-Vorlagen") for Graph 2.0.
  *
- * Phase 18b: instead of building bet-graphs node-by-node, users pick one of a
- * handful of templates and fill a small form. Each template produces a valid
- * `BetGraph` JSON that the existing compiler already understands, so no
- * compiler / runtime changes are required.
+ * Phase 21c: templates emit Graph 2.0 nodes with slot positions on the 20×10
+ * grid. Slot convention:
+ *   - col 0: entity-list / single-entity sources
+ *   - col 1: event sources, number constants, time
+ *   - col 2-3: compute (aggregate, rank, delta)
+ *   - col 4: logic (compare, combine, condition, time_compare)
+ *   - col 5: outcome (winner, truth, podium)
  */
-import type { BetGraph, GraphNode, GraphEdge } from '$lib/server/db/schema';
+import type { BetGraph, GraphEdge, GraphNode } from '$lib/server/db/schema';
+import { GRAPH_GRID_COLS, GRAPH_GRID_ROWS } from '$lib/server/db/schema';
 
 export type TemplateId =
 	| 'race'
@@ -20,28 +24,33 @@ export type TemplateId =
 export type TemplateField =
 	| { name: string; kind: 'trackable'; label: string; required: true }
 	| { name: string; kind: 'entity'; label: string; required: true }
-	| { name: string; kind: 'number'; label: string; min?: number; max?: number; defaultValue: number; required: true }
-	| { name: string; kind: 'enum'; label: string; options: { value: string; label: string }[]; defaultValue: string; required: true };
+	| {
+			name: string;
+			kind: 'number';
+			label: string;
+			min?: number;
+			max?: number;
+			defaultValue: number;
+			required: true;
+	  }
+	| {
+			name: string;
+			kind: 'enum';
+			label: string;
+			options: { value: string; label: string }[];
+			defaultValue: string;
+			required: true;
+	  };
 
 export type TemplateSpec = {
 	id: TemplateId;
-	/** Lucide icon name. */
-	icon:
-		| 'Flag'
-		| 'Trophy'
-		| 'Skull'
-		| 'Target'
-		| 'Zap'
-		| 'Medal'
-		| 'Timer';
+	icon: 'Flag' | 'Trophy' | 'Skull' | 'Target' | 'Zap' | 'Medal' | 'Timer';
 	title: string;
 	tagline: string;
 	fields: TemplateField[];
-	/** Pretty German sentence describing the resulting bet for the UI. */
 	sentence: (params: Record<string, string>) => string;
 };
 
-/** Stable, human-readable node-id helper. */
 function nid(prefix: string, suffix: string): string {
 	return `${prefix}_${suffix}`;
 }
@@ -50,7 +59,15 @@ function edge(fromId: string, fromPin: string, toId: string, toPin: string): Gra
 	return { from: { nodeId: fromId, pin: fromPin }, to: { nodeId: toId, pin: toPin } };
 }
 
-/** All available templates. */
+function makeGraph(nodes: GraphNode[], edges: GraphEdge[]): BetGraph {
+	return {
+		version: 2,
+		grid: { cols: GRAPH_GRID_COLS, rows: GRAPH_GRID_ROWS },
+		nodes,
+		edges
+	};
+}
+
 export const TEMPLATES: TemplateSpec[] = [
 	{
 		id: 'race',
@@ -59,16 +76,12 @@ export const TEMPLATES: TemplateSpec[] = [
 		tagline: 'Wer schafft zuerst N × Event?',
 		fields: [
 			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
-			{ name: 'threshold', kind: 'number', label: 'Schwelle (N)', defaultValue: 3, min: 1, required: true },
 			{
-				name: 'direction',
-				kind: 'enum',
-				label: 'Richtung',
-				options: [
-					{ value: 'up', label: 'Aufwärts (zuerst N erreichen)' },
-					{ value: 'down', label: 'Abwärts (zuerst auf N fallen)' }
-				],
-				defaultValue: 'up',
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 3,
+				min: 1,
 				required: true
 			}
 		],
@@ -98,7 +111,14 @@ export const TEMPLATES: TemplateSpec[] = [
 		fields: [
 			{ name: 'entity', kind: 'entity', label: 'Entität', required: true },
 			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
-			{ name: 'threshold', kind: 'number', label: 'Schwelle (N)', defaultValue: 3, min: 1, required: true }
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 3,
+				min: 1,
+				required: true
+			}
 		],
 		sentence: (p) => `Schafft ${p.entityLabel} mindestens ${p.threshold} × ${p.trackableLabel}?`
 	},
@@ -109,7 +129,14 @@ export const TEMPLATES: TemplateSpec[] = [
 		tagline: 'Tritt Event mind. N-mal ein? (egal wer)',
 		fields: [
 			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
-			{ name: 'threshold', kind: 'number', label: 'Schwelle (N)', defaultValue: 5, min: 1, required: true }
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 5,
+				min: 1,
+				required: true
+			}
 		],
 		sentence: (p) => `Passiert ${p.trackableLabel} mindestens ${p.threshold}-mal?`
 	},
@@ -131,8 +158,22 @@ export const TEMPLATES: TemplateSpec[] = [
 		tagline: 'Schafft jemand N Events vor T Sekunden?',
 		fields: [
 			{ name: 'trackable', kind: 'trackable', label: 'Event', required: true },
-			{ name: 'threshold', kind: 'number', label: 'Schwelle (N)', defaultValue: 3, min: 1, required: true },
-			{ name: 'seconds', kind: 'number', label: 'Sekunden (T)', defaultValue: 60, min: 5, required: true }
+			{
+				name: 'threshold',
+				kind: 'number',
+				label: 'Schwelle (N)',
+				defaultValue: 3,
+				min: 1,
+				required: true
+			},
+			{
+				name: 'seconds',
+				kind: 'number',
+				label: 'Sekunden (T)',
+				defaultValue: 60,
+				min: 5,
+				required: true
+			}
 		],
 		sentence: (p) => `Schafft jemand ${p.threshold} × ${p.trackableLabel} vor ${p.seconds}s?`
 	}
@@ -143,9 +184,8 @@ export function findTemplate(id: string): TemplateSpec | null {
 }
 
 /**
- * Templates that need a per-entity counter (compare entities against each other).
- * Templates not in this set sum/aggregate over all entities and work with both
- * global and entity-scoped trackables.
+ * Templates that need per-entity counters (compare entities against each other).
+ * Templates not in this set work with both global and entity-scoped trackables.
  */
 const ENTITY_SCOPE_REQUIRED: ReadonlySet<TemplateId> = new Set([
 	'race',
@@ -165,22 +205,24 @@ export type TemplateParams = {
 	threshold?: number;
 	topK?: number;
 	seconds?: number;
-	direction?: 'up' | 'down';
 };
 
 export type BuildResult =
 	| { ok: true; graph: BetGraph; name: string }
 	| { ok: false; error: string };
 
-/** Build a full BetGraph from a template + params. */
-export function buildGraph(templateId: TemplateId, params: TemplateParams, labels: { trackable?: string; entity?: string }): BuildResult {
+export function buildGraph(
+	templateId: TemplateId,
+	params: TemplateParams,
+	labels: { trackable?: string; entity?: string }
+): BuildResult {
 	switch (templateId) {
 		case 'race':
 			return buildRace(params, labels);
 		case 'champion':
-			return buildChampion(params, labels, 'arg_max');
+			return buildRankWinner(params, labels, 'desc', 'Champion: meiste');
 		case 'loser':
-			return buildChampion(params, labels, 'arg_min');
+			return buildRankWinner(params, labels, 'asc', 'Letzter: wenigste');
 		case 'will_player':
 			return buildWillPlayer(params, labels);
 		case 'will_happen':
@@ -194,65 +236,77 @@ export function buildGraph(templateId: TemplateId, params: TemplateParams, label
 	}
 }
 
-function buildRace(p: TemplateParams, labels: { trackable?: string }): BuildResult {
+// ---------- template builders ----------
+
+function buildRace(
+	p: TemplateParams,
+	labels: { trackable?: string }
+): BuildResult {
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
 	if (!p.threshold || p.threshold < 1) return { ok: false, error: 'Schwelle muss ≥ 1 sein' };
-	const direction = p.direction === 'down' ? 'down' : 'up';
-	const t = nid('trk', 'main');
-	const scope = nid('ents', 'all');
-	const k = nid('k', 'th');
-	const race = nid('race', 'main');
+	const ents = nid('ents', 'all');
+	const evt = nid('evt', 'main');
+	const rk = nid('rank', 'race');
 	const out = nid('out', 'res');
+	const title = `Wettrennen: zuerst ${p.threshold} × ${labels.trackable ?? 'Event'}`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: scope, kind: 'all_entities' },
-		{ id: k, kind: 'constant', props: { value: p.threshold } },
-		{ id: race, kind: 'race_to_threshold', props: { direction } },
+		{ id: ents, kind: 'entities', pos: { col: 0, row: 4 } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+		{
+			id: rk,
+			kind: 'rank',
+			pos: { col: 3, row: 3 },
+			props: { direction: 'desc', topK: 1, threshold: p.threshold }
+		},
 		{
 			id: out,
-			kind: 'entity_outcome',
-			props: { marketTitle: `Wettrennen: zuerst ${p.threshold} × ${labels.trackable ?? 'Event'}`, trigger: 'OnFirstSatisfied' }
+			kind: 'winner',
+			pos: { col: 5, row: 3 },
+			props: { marketTitle: title, trigger: 'OnFirstSatisfied' }
 		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', race, 'trackable'),
-		edge(scope, 'out', race, 'scope'),
-		edge(k, 'out', race, 'threshold'),
-		edge(race, 'winner', out, 'result')
+		edge(evt, 'out', rk, 'event'),
+		edge(ents, 'out', rk, 'scope'),
+		edge(rk, 'out', out, 'result')
 	];
-	return {
-		ok: true,
-		name: `Wettrennen: zuerst ${p.threshold} × ${labels.trackable ?? 'Event'}`,
-		graph: { version: 1, nodes, edges }
-	};
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
 
-function buildChampion(
+function buildRankWinner(
 	p: TemplateParams,
 	labels: { trackable?: string },
-	kind: 'arg_max' | 'arg_min'
+	direction: 'asc' | 'desc',
+	titlePrefix: string
 ): BuildResult {
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
-	const t = nid('trk', 'main');
-	const scope = nid('ents', 'all');
-	const arg = nid('arg', kind);
+	const ents = nid('ents', 'all');
+	const evt = nid('evt', 'main');
+	const rk = nid('rank', direction);
 	const out = nid('out', 'res');
-	const isMin = kind === 'arg_min';
-	const title = isMin
-		? `Letzter: wenigste ${labels.trackable ?? 'Event'}`
-		: `Champion: meiste ${labels.trackable ?? 'Event'}`;
+	const title = `${titlePrefix} ${labels.trackable ?? 'Event'}`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: scope, kind: 'all_entities' },
-		{ id: arg, kind },
-		{ id: out, kind: 'entity_outcome', props: { marketTitle: title, trigger: 'OnRoundEnd' } }
+		{ id: ents, kind: 'entities', pos: { col: 0, row: 4 } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+		{
+			id: rk,
+			kind: 'rank',
+			pos: { col: 3, row: 3 },
+			props: { direction, topK: 1, threshold: 0 }
+		},
+		{
+			id: out,
+			kind: 'winner',
+			pos: { col: 5, row: 3 },
+			props: { marketTitle: title, trigger: 'OnRoundEnd' }
+		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', arg, 'trackable'),
-		edge(scope, 'out', arg, 'scope'),
-		edge(arg, 'out', out, 'result')
+		edge(evt, 'out', rk, 'event'),
+		edge(ents, 'out', rk, 'scope'),
+		edge(rk, 'out', out, 'result')
 	];
-	return { ok: true, name: title, graph: { version: 1, nodes, edges } };
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
 
 function buildWillPlayer(
@@ -262,123 +316,162 @@ function buildWillPlayer(
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
 	if (!p.entity) return { ok: false, error: 'Entität fehlt' };
 	if (!p.threshold || p.threshold < 1) return { ok: false, error: 'Schwelle muss ≥ 1 sein' };
-	const t = nid('trk', 'main');
-	const e = nid('ent', 'main');
-	const cnt = nid('cnt', 'main');
-	const k = nid('k', 'th');
+	const ent = nid('ent', 'pick');
+	const evt = nid('evt', 'main');
+	const agg = nid('agg', 'main');
+	const num = nid('num', 'th');
 	const cmp = nid('cmp', 'gte');
 	const out = nid('out', 'res');
 	const title = `Schafft ${labels.entity ?? 'Entität'} ${p.threshold} × ${labels.trackable ?? 'Event'}?`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: e, kind: 'entity', props: { entityName: p.entity } },
-		{ id: cnt, kind: 'count' },
-		{ id: k, kind: 'constant', props: { value: p.threshold } },
-		{ id: cmp, kind: 'compare', props: { op: 'gte' } },
-		{ id: out, kind: 'boolean_outcome', props: { marketTitle: title, trigger: 'OnFirstSatisfied', yesLabel: 'Ja', noLabel: 'Nein' } }
+		{ id: ent, kind: 'entity', pos: { col: 0, row: 4 }, props: { entityName: p.entity } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+		{ id: agg, kind: 'aggregate', pos: { col: 3, row: 3 }, props: { agg: 'count' } },
+		{ id: num, kind: 'number', pos: { col: 1, row: 5 }, props: { value: p.threshold } },
+		{ id: cmp, kind: 'compare', pos: { col: 4, row: 4 }, props: { op: 'gte' } },
+		{
+			id: out,
+			kind: 'truth',
+			pos: { col: 5, row: 4 },
+			props: {
+				marketTitle: title,
+				trigger: 'OnFirstSatisfied',
+				yesLabel: 'Ja',
+				noLabel: 'Nein'
+			}
+		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', cnt, 'trackable'),
-		edge(e, 'out', cnt, 'entity'),
-		edge(cnt, 'out', cmp, 'a'),
-		edge(k, 'out', cmp, 'b'),
+		edge(evt, 'out', agg, 'event'),
+		edge(ent, 'out', agg, 'scope'), // Entity → EntityList coercion
+		edge(agg, 'out', cmp, 'a'),
+		edge(num, 'out', cmp, 'b'),
 		edge(cmp, 'out', out, 'result')
 	];
-	return { ok: true, name: title, graph: { version: 1, nodes, edges } };
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
 
-function buildWillHappen(p: TemplateParams, labels: { trackable?: string }): BuildResult {
+function buildWillHappen(
+	p: TemplateParams,
+	labels: { trackable?: string }
+): BuildResult {
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
 	if (!p.threshold || p.threshold < 1) return { ok: false, error: 'Schwelle muss ≥ 1 sein' };
-	const t = nid('trk', 'main');
-	const scope = nid('ents', 'all');
-	const sum = nid('sum', 'main');
-	const k = nid('k', 'th');
+	const ents = nid('ents', 'all');
+	const evt = nid('evt', 'main');
+	const agg = nid('agg', 'main');
+	const num = nid('num', 'th');
 	const cmp = nid('cmp', 'gte');
 	const out = nid('out', 'res');
 	const title = `Passiert ${labels.trackable ?? 'Event'} mind. ${p.threshold}-mal?`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: scope, kind: 'all_entities' },
-		{ id: sum, kind: 'sum' },
-		{ id: k, kind: 'constant', props: { value: p.threshold } },
-		{ id: cmp, kind: 'compare', props: { op: 'gte' } },
-		{ id: out, kind: 'boolean_outcome', props: { marketTitle: title, trigger: 'OnFirstSatisfied', yesLabel: 'Ja', noLabel: 'Nein' } }
+		{ id: ents, kind: 'entities', pos: { col: 0, row: 4 } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+		{ id: agg, kind: 'aggregate', pos: { col: 3, row: 3 }, props: { agg: 'sum' } },
+		{ id: num, kind: 'number', pos: { col: 1, row: 5 }, props: { value: p.threshold } },
+		{ id: cmp, kind: 'compare', pos: { col: 4, row: 4 }, props: { op: 'gte' } },
+		{
+			id: out,
+			kind: 'truth',
+			pos: { col: 5, row: 4 },
+			props: {
+				marketTitle: title,
+				trigger: 'OnFirstSatisfied',
+				yesLabel: 'Ja',
+				noLabel: 'Nein'
+			}
+		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', sum, 'trackable'),
-		edge(scope, 'out', sum, 'scope'),
-		edge(sum, 'out', cmp, 'a'),
-		edge(k, 'out', cmp, 'b'),
+		edge(evt, 'out', agg, 'event'),
+		edge(ents, 'out', agg, 'scope'),
+		edge(agg, 'out', cmp, 'a'),
+		edge(num, 'out', cmp, 'b'),
 		edge(cmp, 'out', out, 'result')
 	];
-	return { ok: true, name: title, graph: { version: 1, nodes, edges } };
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
 
 function buildPodium(p: TemplateParams, labels: { trackable?: string }): BuildResult {
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
 	if (!p.topK || p.topK < 1) return { ok: false, error: 'Top-K muss ≥ 1 sein' };
-	const t = nid('trk', 'main');
-	const scope = nid('ents', 'all');
-	const rk = nid('rank', 'main');
+	const ents = nid('ents', 'all');
+	const evt = nid('evt', 'main');
+	const rk = nid('rank', 'desc');
 	const out = nid('out', 'res');
 	const title = `Top ${p.topK} bei ${labels.trackable ?? 'Event'}`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: scope, kind: 'all_entities' },
-		{ id: rk, kind: 'rank', props: { direction: 'desc', topK: p.topK } },
-		{ id: out, kind: 'ranking_outcome', props: { marketTitle: title, trigger: 'OnRoundEnd' } }
+		{ id: ents, kind: 'entities', pos: { col: 0, row: 4 } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+		{
+			id: rk,
+			kind: 'rank',
+			pos: { col: 3, row: 3 },
+			props: { direction: 'desc', topK: p.topK, threshold: 0 }
+		},
+		{
+			id: out,
+			kind: 'podium',
+			pos: { col: 5, row: 3 },
+			props: { marketTitle: title, trigger: 'OnRoundEnd', topK: p.topK, withOrder: true }
+		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', rk, 'trackable'),
-		edge(scope, 'out', rk, 'scope'),
+		edge(evt, 'out', rk, 'event'),
+		edge(ents, 'out', rk, 'scope'),
 		edge(rk, 'out', out, 'result')
 	];
-	return { ok: true, name: title, graph: { version: 1, nodes, edges } };
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
 
 function buildRaceVsTime(p: TemplateParams, labels: { trackable?: string }): BuildResult {
-	// "Schafft die Gruppe N × Event innerhalb T Sekunden?"
-	// Modelled as: sum(trackable, all_entities) >= N  AND  now < T.
-	// With `OnFirstSatisfied` trigger this fires the moment the threshold is
-	// crossed before the time cap. If never crossed before T, the outcome
-	// resolves to "Nein" at round end.
+	// Group-race against time: sum(event, entities) ≥ N  AND  now < T.
 	if (!p.trackable) return { ok: false, error: 'Event fehlt' };
 	if (!p.threshold || p.threshold < 1) return { ok: false, error: 'Schwelle muss ≥ 1 sein' };
 	if (!p.seconds || p.seconds < 1) return { ok: false, error: 'Sekunden müssen ≥ 1 sein' };
-	const t = nid('trk', 'main');
-	const scope = nid('ents', 'all');
-	const sum = nid('sum', 'main');
-	const k = nid('k', 'th');
-	const cmp = nid('cmp', 'gte');
-	const nowNode = nid('now', 'main');
-	const tcap = nid('k', 'time');
+	const ents = nid('ents', 'all');
+	const evt = nid('evt', 'main');
+	const agg = nid('agg', 'main');
+	const numTh = nid('num', 'th');
+	const cmpN = nid('cmp', 'gte');
+	const tNow = nid('time', 'now');
+	const numT = nid('num', 'time');
 	const tcmp = nid('tcmp', 'lt');
-	const andN = nid('and', 'main');
+	const comb = nid('comb', 'and');
 	const out = nid('out', 'res');
 	const title = `${p.threshold} × ${labels.trackable ?? 'Event'} innerhalb ${p.seconds}s?`;
 	const nodes: GraphNode[] = [
-		{ id: t, kind: 'trackable', props: { trackableId: p.trackable } },
-		{ id: scope, kind: 'all_entities' },
-		{ id: sum, kind: 'sum' },
-		{ id: k, kind: 'constant', props: { value: p.threshold } },
-		{ id: cmp, kind: 'compare', props: { op: 'gte' } },
-		{ id: nowNode, kind: 'now' },
-		{ id: tcap, kind: 'constant', props: { value: p.seconds } },
-		{ id: tcmp, kind: 'time_compare', props: { op: 'lt' } },
-		{ id: andN, kind: 'and' },
-		{ id: out, kind: 'boolean_outcome', props: { marketTitle: title, trigger: 'OnFirstSatisfied', yesLabel: 'Ja', noLabel: 'Nein' } }
+		{ id: ents, kind: 'entities', pos: { col: 0, row: 1 } },
+		{ id: evt, kind: 'event', pos: { col: 1, row: 0 }, props: { trackableId: p.trackable } },
+		{ id: agg, kind: 'aggregate', pos: { col: 3, row: 1 }, props: { agg: 'sum' } },
+		{ id: numTh, kind: 'number', pos: { col: 1, row: 2 }, props: { value: p.threshold } },
+		{ id: cmpN, kind: 'compare', pos: { col: 4, row: 2 }, props: { op: 'gte' } },
+		{ id: tNow, kind: 'time', pos: { col: 1, row: 5 } },
+		{ id: numT, kind: 'number', pos: { col: 1, row: 6 }, props: { value: p.seconds } },
+		{ id: tcmp, kind: 'time_compare', pos: { col: 4, row: 5 }, props: { op: 'lt' } },
+		{ id: comb, kind: 'combine', pos: { col: 5, row: 3 }, props: { combine: 'and' } },
+		{
+			id: out,
+			kind: 'truth',
+			pos: { col: 6, row: 3 },
+			props: {
+				marketTitle: title,
+				trigger: 'OnFirstSatisfied',
+				yesLabel: 'Ja',
+				noLabel: 'Nein'
+			}
+		}
 	];
 	const edges: GraphEdge[] = [
-		edge(t, 'out', sum, 'trackable'),
-		edge(scope, 'out', sum, 'scope'),
-		edge(sum, 'out', cmp, 'a'),
-		edge(k, 'out', cmp, 'b'),
-		edge(nowNode, 'out', tcmp, 'a'),
-		edge(tcap, 'out', tcmp, 'b'),
-		edge(cmp, 'out', andN, 'inputs'),
-		edge(tcmp, 'out', andN, 'inputs'),
-		edge(andN, 'out', out, 'result')
+		edge(evt, 'out', agg, 'event'),
+		edge(ents, 'out', agg, 'scope'),
+		edge(agg, 'out', cmpN, 'a'),
+		edge(numTh, 'out', cmpN, 'b'),
+		edge(tNow, 'out', tcmp, 'a'),
+		edge(numT, 'out', tcmp, 'b'), // Number → Timestamp coercion
+		edge(cmpN, 'out', comb, 'inputs'),
+		edge(tcmp, 'out', comb, 'inputs'),
+		edge(comb, 'out', out, 'result')
 	];
-	return { ok: true, name: title, graph: { version: 1, nodes, edges } };
+	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }

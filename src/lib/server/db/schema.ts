@@ -304,6 +304,7 @@ export type EntityAttributes = {
 export type GraphNodeKind =
 	// Sources (Tier 1)
 	| 'entities' // all configured entities of this mode
+	| 'entity' // a single configured entity (picked by name)
 	| 'event' // a trackable event counter
 	| 'number' // a numeric constant
 	| 'time' // current session time / now

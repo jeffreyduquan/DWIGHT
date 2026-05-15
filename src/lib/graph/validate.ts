@@ -121,7 +121,10 @@ export function validateGraph(graph: BetGraph): ValidationResult {
 			// Phase 21 (Graph 2.0): rank outputs EntityList; winner takes Entity.
 			// EntityList → Entity = take first element (head). Legal coercion.
 			const isListToEntity = fromPin.type === 'EntityList' && toPin.type === 'Entity';
-			if (!isNumberToTime && !isListToEntity) {
+			// Phase 21 (Graph 2.0): a single `entity` source can drive an EntityList
+			// scope (e.g. aggregate.scope) — singleton wrapping. Legal coercion.
+			const isEntityToList = fromPin.type === 'Entity' && toPin.type === 'EntityList';
+			if (!isNumberToTime && !isListToEntity && !isEntityToList) {
 				errors.push({
 					code: 'TYPE_MISMATCH',
 					message: `Typ-Konflikt: ${from.kind}.${fromPin.name} (${fromPin.type}) -> ${to.kind}.${toPin.name} (${toPin.type})`,
