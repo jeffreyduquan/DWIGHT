@@ -1,11 +1,12 @@
 /**
  * @file sessions.ts
- * @implements REQ-MODE-001, REQ-ENT-001, REQ-ECON-001, REQ-DATA-005
+ * @implements REQ-MODE-001, REQ-MODE-015, REQ-ENT-001, REQ-ECON-001, REQ-DATA-005
  */
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, not as dbNot } from 'drizzle-orm';
 import { db } from '../db';
 import {
 	entities,
+	rounds,
 	sessionPlayers,
 	sessions,
 	type SessionConfig,
@@ -195,4 +196,83 @@ export async function updateSessionConfig(
 		.where(eq(sessions.id, sessionId))
 		.returning();
 	return updated ?? null;
+}
+
+/**
+ * Switch a session's active mode. Guards:
+ * - Only callable when no non-terminal round exists (SETUP/BETTING_OPEN/LIVE/RESOLVING).
+ * - Atomically updates modeId, trackables, betGraphsSnapshot, clears entityOverrides,
+ *   deletes old entities, inserts new ones from the new mode.
+ * Players, balances, drinks, and settled rounds are untouched.
+ * @implements REQ-MODE-015
+ */
+export async function switchSessionMode(input: {
+	sessionId: string;
+	newModeId: string;
+	newTrackables: Trackable[];
+	newBetGraphsSnapshot: SessionBetGraph[];
+	newDefaultEntities: ModeDefaultEntity[];
+}): Promise<DbSession> {
+	const TERMINAL_STATUSES = ['SETTLED', 'CANCELLED'] as const;
+
+	return db.transaction(async (tx) => {
+		// Lock session row
+		const [session] = await tx
+			.select()
+			.from(sessions)
+			.where(eq(sessions.id, input.sessionId))
+			.for('update');
+		if (!session) throw new Error('SESSION_NOT_FOUND');
+		if (session.status === 'ENDED') throw new Error('SESSION_ENDED');
+
+		// Check for active (non-terminal) rounds
+		const activeRounds = await tx
+			.select({ id: rounds.id, status: rounds.status })
+			.from(rounds)
+			.where(
+				and(
+					eq(rounds.sessionId, input.sessionId),
+					dbNot(inArray(rounds.status, [...TERMINAL_STATUSES]))
+				)
+			);
+		if (activeRounds.length > 0) {
+			throw new Error('ACTIVE_ROUND_EXISTS');
+		}
+
+		// Clear entityOverrides from config
+		const nextConfig: SessionConfig = {
+			...session.config,
+			entityOverrides: {}
+		};
+
+		// Update session: modeId, trackables, betGraphsSnapshot, config
+		const [updated] = await tx
+			.update(sessions)
+			.set({
+				modeId: input.newModeId,
+				trackables: input.newTrackables,
+				betGraphsSnapshot: input.newBetGraphsSnapshot,
+				config: nextConfig
+			})
+			.where(eq(sessions.id, input.sessionId))
+			.returning();
+
+		// Delete old entities
+		await tx.delete(entities).where(eq(entities.sessionId, input.sessionId));
+
+		// Insert new entities from the new mode
+		if (input.newDefaultEntities.length > 0) {
+			await tx.insert(entities).values(
+				input.newDefaultEntities.map((e, idx) => ({
+					sessionId: input.sessionId,
+					kind: e.kind,
+					name: e.name,
+					attributes: e.attributes,
+					orderIndex: idx
+				}))
+			);
+		}
+
+		return updated;
+	});
 }

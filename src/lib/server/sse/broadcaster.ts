@@ -23,7 +23,8 @@ export type SseEventType =
 	| 'drink_cancelled'
 	| 'balance_updated'
 	| 'bet_lock_changed'
-	| 'session_ended';
+	| 'session_ended'
+	| 'mode_switched';
 
 export type SseMessage = {
 	type: SseEventType;

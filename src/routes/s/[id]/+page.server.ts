@@ -7,8 +7,8 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { users, sessionPlayers, drinkConfirmations, type DrinkType } from '$lib/server/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
-import { findById, listPlayers, getPlayer, endSession, deleteSession } from '$lib/server/repos/sessions';
-import { findById as findModeById } from '$lib/server/repos/modes';
+import { findById, listPlayers, getPlayer, endSession, deleteSession, switchSessionMode } from '$lib/server/repos/sessions';
+import { findById as findModeById, listAvailableForUser } from '$lib/server/repos/modes';
 import { getCurrentRound } from '$lib/server/repos/rounds';
 import { listForSession as listEntities } from '$lib/server/repos/entities';
 import {
@@ -18,6 +18,7 @@ import {
 	cancelDrink,
 	listDrinksForSession
 } from '$lib/server/repos/drinks';
+import { snapshotForMode } from '$lib/server/repos/betGraphs';
 import { emit } from '$lib/server/sse/broadcaster';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -37,6 +38,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	]);
 
 	const currentRound = await getCurrentRound(session.id);
+
+	// Load available modes for mode-switch picker (only for host)
+	const availableModes =
+		me.role === 'HOST'
+			? (await listAvailableForUser(locals.user.id)).map((m) => ({
+					id: m.id,
+					name: m.name
+				}))
+			: [];
 
 	const userIds = Array.from(
 		new Set([
@@ -94,7 +104,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			name: session.name,
 			inviteCode: session.inviteCode,
 			status: session.status,
-			config: session.config
+			config: session.config,
+			modeId: session.modeId
 		},
 		currentRound: currentRound
 			? { id: currentRound.id, status: currentRound.status, roundNo: currentRound.roundNumber }
@@ -104,6 +115,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 					name: mode.name
 				}
 			: null,
+		availableModes,
 		me: {
 			userId: me.userId,
 			role: me.role,
@@ -268,5 +280,40 @@ export const actions: Actions = {
 			return fail(400, { error: (e as Error).message });
 		}
 		return { ok: true };
+	},
+
+	switchMode: async ({ locals, params, request }) => {
+		if (!locals.user) throw redirect(303, '/login');
+		const me = await getPlayer(params.id, locals.user.id);
+		if (!me || me.role !== 'HOST') return fail(403, { error: 'Nur Host' });
+
+		const fd = await request.formData();
+		const newModeId = String(fd.get('modeId') ?? '');
+		if (!newModeId) return fail(400, { error: 'Mode-ID fehlt' });
+
+		const newMode = await findModeById(newModeId);
+		if (!newMode) return fail(404, { error: 'Mode nicht gefunden' });
+
+		try {
+			const newBetGraphsSnapshot = await snapshotForMode(newModeId);
+			await switchSessionMode({
+				sessionId: params.id,
+				newModeId,
+				newTrackables: newMode.trackables ?? [],
+				newBetGraphsSnapshot,
+				newDefaultEntities: newMode.defaultEntities ?? []
+			});
+			emit(params.id, 'mode_switched', {
+				newModeId,
+				newModeName: newMode.name
+			});
+		} catch (e) {
+			const msg = (e as Error).message;
+			if (msg === 'ACTIVE_ROUND_EXISTS') {
+				return fail(400, { error: 'Modewechsel nicht möglich — es läuft noch eine Runde.' });
+			}
+			return fail(400, { error: msg });
+		}
+		return { ok: true, switched: true };
 	}
 };

@@ -34,7 +34,7 @@
 
 | Req | Sprint | Artefacts | Tests | Status |
 |---|---|---|---|---|
-| REQ-MODE-001 | D2 | `sessions.modeId` FK NOT NULL, `repos/sessions.ts` | manual | ☑ |
+| REQ-MODE-001 | D2 / Phase 30 | `sessions.modeId` FK NOT NULL, `repos/sessions.ts` (`createSession` + `switchSessionMode`) | manual | ◐ |
 | REQ-MODE-002 | D2 | `modes` table | manual | ☑ |
 | REQ-MODE-003 | D2 / D3 | `modes` schema (terminology, defaultEntities, trackables, defaultConfig); `ModeForm.svelte` Trackables UI | manual | ☑ |
 | REQ-MODE-004 | D3 | `modes/new` no longer seeds a battle-test mode | manual | ☑ |
@@ -237,6 +237,7 @@
 | REQ-MODE-012 | Phase 17 | `src/routes/s/create/+page.svelte` (`SESSION_DEFAULTS` const), `src/routes/s/create/+page.server.ts` (`freshModeDefaultConfig()` fallback, kein `mode.defaultConfig` mehr konsultiert) | manual | ☑ |
 | REQ-MODE-013 | Phase 18a | `drizzle/0009_drop_mode_slug.sql`, `drizzle/meta/_journal.json`, `src/lib/server/db/schema.ts` (slug-Spalte + uniqueIndex entfernt), `src/lib/server/repos/modes.ts` (`findBySlug` entfernt, `duplicateMode` ohne Slug-Suffix), `src/lib/server/modes/parseForm.ts` (kein Slug-Feld mehr), `src/routes/modes/new/+page.server.ts`, `src/routes/modes/[id]/+page.server.ts`, `src/routes/modes/+page.server.ts` | manual | ☑ |
 | REQ-MODE-014 | Phase 19c | `drizzle/0010_drop_mode_unused_cols.sql`, `drizzle/meta/_journal.json`, `src/lib/server/db/schema.ts` (Spalten + `ModeTerminology` entfernt), `src/lib/server/repos/modes.ts` (`CreateModeInput` schmal + `duplicateMode` ohne Terminology/Config), `src/lib/server/modes/parseForm.ts` (kein `description`/`terminology`/`defaultConfig`), `src/routes/s/[id]/+page.server.ts`, `src/routes/s/[id]/info/+page.server.ts` | manual | ☑ |
+| REQ-MODE-015 | Phase 30 | `src/lib/server/repos/sessions.ts` (`switchSessionMode`), `src/lib/server/sse/broadcaster.ts` (`mode_switched`), `src/routes/s/[id]/+page.server.ts` (`?/switchMode`), `src/routes/s/[id]/+page.svelte` (Mode-Picker UI) | vitest + manual | ☐ |
 | REQ-BET-020 | Phase 18b | `src/lib/graph/templates.ts` (7 Templates + `buildGraph` + `findTemplate`), `src/lib/graph/templates.test.ts` (8 Smoke-Tests) | vitest | ☑ |
 | REQ-BET-021 | Phase 18b | `src/lib/graph/compile.ts` (`buildRaceOutcomes` mit N>1 Pfad), `src/lib/graph/graph.test.ts` (Test "race_to_threshold N>1") | vitest | ☑ |
 | REQ-BET-022 | Phase 18b | `src/lib/graph/validate.ts` (`isNumberToTime` Coercion-Exception) | vitest (templates.test.ts) | ☑ |

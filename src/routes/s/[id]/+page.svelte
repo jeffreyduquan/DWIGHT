@@ -20,13 +20,31 @@
 		Trash2,
 		Lock,
 		Unlock,
-		QrCode as QrCodeIcon
+		QrCode as QrCodeIcon,
+		RefreshCw,
+		AlertCircle
 	} from '@lucide/svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	const isHost = $derived(data.me.role === 'HOST');
 	const pendingDrinks = $derived(data.drinks.filter((d) => d.status === 'PENDING'));
+
+	/** Can the host switch modes? Only when no active round. */
+	const canSwitchMode = $derived(
+		isHost &&
+			(!data.currentRound ||
+				data.currentRound.status === 'SETTLED' ||
+				data.currentRound.status === 'CANCELLED')
+	);
+
+	/** Modes available for switching (exclude the current one). */
+	const switchableModes = $derived(
+		data.availableModes.filter((m) => m.id !== data.session.modeId)
+	);
+
+	let showModePicker = $state(false);
+	let selectedSwitchModeId = $state<string | null>(null);
 
 	type StateBadge = { label: string; tone: 'info' | 'warning' | 'success' | 'ghost'; emoji: string };
 	const betState = $derived<StateBadge>(
@@ -88,6 +106,7 @@
 		es.addEventListener('round_settled', h);
 		es.addEventListener('round_cancelled', h);
 		es.addEventListener('session_ended', h);
+		es.addEventListener('mode_switched', h);
 	});
 	onDestroy(() => es?.close());
 </script>
@@ -202,6 +221,29 @@
 			<a href="/s/{data.session.id}/settings" class="btn btn-sm btn-primary glow-primary w-full gap-2">
 				<Settings size={14} /> Einstellungen öffnen
 			</a>
+
+			{#if canSwitchMode && switchableModes.length > 0}
+				<button
+					type="button"
+					class="btn btn-sm btn-outline w-full gap-2"
+					onclick={() => { showModePicker = true; selectedSwitchModeId = null; }}
+				>
+					<RefreshCw size={14} /> Mode wechseln
+				</button>
+			{:else if isHost && !canSwitchMode}
+				<div class="flex items-center gap-2 text-base-content/50 text-[0.65rem] px-1">
+					<AlertCircle size={12} />
+					<span>Mode wechseln erst möglich, wenn keine Runde läuft.</span>
+				</div>
+			{/if}
+
+			{#if form && 'switched' in form && form.switched}
+				<div class="alert alert-success text-xs gap-1">Mode gewechselt!</div>
+			{/if}
+			{#if form && 'error' in form && form.error && !('switched' in form)}
+				<div class="alert alert-error text-xs gap-1">{form.error}</div>
+			{/if}
+
 			<form
 				method="POST"
 				action="?/deleteSession"
@@ -267,6 +309,84 @@
 			<span class="badge badge-ghost tabular text-base font-bold">{data.session.inviteCode}</span>
 		</div>
 	</section>
+{/if}
+
+{#if showModePicker}
+	<div
+		class="bg-base-300/70 fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-sm sm:items-center"
+		role="dialog"
+		aria-modal="true"
+		aria-label="Mode wechseln"
+		onclick={(ev) => { if (ev.target === ev.currentTarget) { showModePicker = false; } }}
+		onkeydown={(ev) => { if (ev.key === 'Escape') { showModePicker = false; } }}
+		tabindex="-1"
+	>
+		<div class="glass glass-xl w-full max-w-md rounded-2xl p-5 max-h-[90vh] overflow-y-auto">
+			<header class="mb-4 flex items-start justify-between">
+				<div>
+					<p class="eyebrow">Mode wechseln</p>
+					<h2 class="text-lg font-medium">Neuen Mode wählen</h2>
+				</div>
+				<button
+					type="button"
+					class="btn btn-ghost btn-sm btn-circle"
+					onclick={() => { showModePicker = false; }}
+					aria-label="Schließen"
+				>✕</button>
+			</header>
+
+			<p class="text-base-content/60 mb-3 text-xs">
+				Spieler und Guthaben bleiben erhalten. Entitäten und Wett-Vorlagen werden durch den neuen Mode ersetzt.
+			</p>
+
+			{#if data.mode}
+				<p class="text-base-content/50 mb-3 text-xs">Aktueller Mode: <strong>{data.mode.name}</strong></p>
+			{/if}
+
+			<ul class="space-y-2 mb-4">
+				{#each switchableModes as m (m.id)}
+					<li>
+						<button
+							type="button"
+							class="glass hover:ring-primary hover:ring-2 flex w-full items-start gap-2 rounded-xl p-3 text-left transition {selectedSwitchModeId === m.id ? 'ring-primary ring-2' : ''}"
+							onclick={() => { selectedSwitchModeId = m.id; }}
+						>
+							<span class="text-sm font-medium">{m.name}</span>
+						</button>
+					</li>
+				{/each}
+			</ul>
+
+			{#if switchableModes.length === 0}
+				<p class="text-base-content/50 text-sm mb-4">Keine anderen Modes verfügbar. Erstelle zuerst einen neuen Mode.</p>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/switchMode"
+				use:enhance={({ cancel }) => {
+					if (!selectedSwitchModeId) { cancel(); return; }
+					if (!confirm('Mode wirklich wechseln? Entitäten und Wett-Vorlagen werden ersetzt. Spieler und Guthaben bleiben.')) {
+						cancel();
+						return;
+					}
+					return async ({ update }) => {
+						await update();
+						showModePicker = false;
+					};
+				}}
+			>
+				<input type="hidden" name="modeId" value={selectedSwitchModeId ?? ''} />
+				<button
+					type="submit"
+					class="btn btn-primary w-full gap-2"
+					disabled={!selectedSwitchModeId}
+				>
+					<RefreshCw size={14} /> Mode wechseln
+				</button>
+			</form>
+		</div>
+	</div>
 {/if}
 
 <style>
