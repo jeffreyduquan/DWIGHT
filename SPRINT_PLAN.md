@@ -682,6 +682,8 @@ Acceptance:
 
 ## Carry-over from MarbleTrace prototype (reference inspiration only)
 
+## Carry-over from MarbleTrace prototype (reference inspiration only)
+
 The `c:\Users\jawra\Documents\Projects\MarbleTrace` workspace contains a working prototype of the marble-racing-only predecessor. Files there will be **read for inspiration** but never copy-pasted unless they have **zero domain coupling**. Eligible carry-over candidates (each must be re-reviewed before reuse):
 
 - `src/lib/server/auth/{jwt,cookie,password,rateLimit,validation}.ts` — auth primitives, no marble-leakage

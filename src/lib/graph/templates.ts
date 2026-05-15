@@ -480,3 +480,46 @@ function buildRaceVsTime(p: TemplateParams, labels: { trackable?: string }): Bui
 	];
 	return { ok: true, name: title, graph: makeGraph(nodes, edges) };
 }
+
+function buildCountCompare(
+p: TemplateParams,
+labels: { trackable?: string },
+op: 'eq' | 'lt' | 'gt',
+thresholdValue: number,
+titleFn: (label: string) => string
+): BuildResult {
+if (!p.trackable) return { ok: false, error: 'Event fehlt' };
+const ents = nid('ents', 'all');
+const evt = nid('evt', 'main');
+const agg = nid('agg', 'main');
+const num = nid('num', 'th');
+const cmp = nid('cmp', op);
+const out = nid('out', 'res');
+const title = titleFn(labels.trackable ?? 'Event');
+const nodes: GraphNode[] = [
+{ id: ents, kind: 'entities', pos: { col: 0, row: 4 } },
+{ id: evt, kind: 'event', pos: { col: 1, row: 3 }, props: { trackableId: p.trackable } },
+{ id: agg, kind: 'aggregate', pos: { col: 3, row: 3 }, props: { agg: 'sum' } },
+{ id: num, kind: 'number', pos: { col: 1, row: 5 }, props: { value: thresholdValue } },
+{ id: cmp, kind: 'compare', pos: { col: 4, row: 4 }, props: { op } },
+{
+id: out,
+kind: 'truth',
+pos: { col: 5, row: 4 },
+props: {
+marketTitle: title,
+trigger: op === 'gt' ? 'OnFirstSatisfied' : 'OnRoundEnd',
+yesLabel: 'Ja',
+noLabel: 'Nein'
+}
+}
+];
+const edges: GraphEdge[] = [
+edge(evt, 'out', agg, 'event'),
+edge(ents, 'out', agg, 'scope'),
+edge(agg, 'out', cmp, 'a'),
+edge(num, 'out', cmp, 'b'),
+edge(cmp, 'out', out, 'result')
+];
+return { ok: true, name: title, graph: makeGraph(nodes, edges) };
+}
