@@ -624,7 +624,7 @@ Acceptance:
 
 Tasks:
 - ☑ **26a Inspector-Overlay (REQ-UI-066):** Inspector ist `position: absolute` overlay statt Grid-Spalte. Slides in/out via `transform: translateX` + `.visible` (gebunden an `selectedNode !== null`). Desktop hat permanenten X-Close-Button. Canvas-leer-Click cleart Selektion → Inspector verschwindet.
-- ⏳ **26b Pin-Popover:** Click auf leeren Pin öffnet kleines Popover mit "passenden Node spawnen" + "mit existierendem verbinden".
+- ☑ **26b Pin-Popover (REQ-UI-067):** `pinPopover` $state + `compatibleKinds`/`compatibleExistingPins`/`spawnAndWireFromPopover`/`connectFromPopover` Helper. Click auf Pin öffnet anchored Popover mit Existing-Connect-Liste und Spawn-Liste. Spawn legt Node neben Source und verdrahtet automatisch. Escape/Canvas-Click schließen.
 - ⏳ **26c Template-Wizard:** Modal nach Template-Klick fragt Trackable-Scope (single vs. global) und passt Graph entsprechend an.
 
 Acceptance (26a):

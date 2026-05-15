@@ -86,6 +86,19 @@
 	};
 	let pendingOutPin = $state<PendingPin | null>(null);
 
+	/** Pin-popover: opens when user clicks an unconnected pin and offers
+	 * "spawn matching new node" + "connect to existing matching pin". */
+	type PinPopover = {
+		nodeId: string;
+		pinName: string;
+		isOutput: boolean;
+		type: PinType;
+		/** Canvas-local coordinates (matches outputPinPos / inputPinPos). */
+		x: number;
+		y: number;
+	};
+	let pinPopover = $state<PinPopover | null>(null);
+
 	/** Sidebar drag (kind being placed). */
 	let sidebarDragKind = $state<GraphNodeKind | null>(null);
 	/** Existing-node drag (re-snap to new slot). */
@@ -394,20 +407,132 @@
 		if (wireDrag) return;
 		if (pendingOutPin && pendingOutPin.nodeId === n.id && pendingOutPin.pin === pin.name) {
 			pendingOutPin = null;
+			closePinPopover();
 		} else {
 			pendingOutPin = { nodeId: n.id, pin: pin.name, type: pin.type };
+			openPinPopover(n, pin, true);
 		}
 	}
 
-	/** Tap on an input pin: if a source pin is pending, create the wire. */
+	/** Tap on an input pin: if a source pin is pending, create the wire; otherwise open popover. */
 	function onInputPinClick(ev: MouseEvent, n: GraphNode, pin: PinDef) {
-		if (!pendingOutPin) return;
 		ev.stopPropagation();
 		ev.preventDefault();
-		if (canConnect(pendingOutPin.type, pin.type)) {
-			addEdge(pendingOutPin.nodeId, pendingOutPin.pin, n.id, pin.name, pin.multi === true);
+		if (pendingOutPin) {
+			if (canConnect(pendingOutPin.type, pin.type)) {
+				addEdge(pendingOutPin.nodeId, pendingOutPin.pin, n.id, pin.name, pin.multi === true);
+			}
+			pendingOutPin = null;
+			closePinPopover();
+			return;
 		}
-		pendingOutPin = null;
+		openPinPopover(n, pin, false);
+	}
+
+	// ---------- pin popover ----------
+	function isPinConnected(nodeId: string, pinName: string, isOutput: boolean): boolean {
+		return graph.edges.some((e) =>
+			isOutput
+				? e.from.nodeId === nodeId && e.from.pin === pinName
+				: e.to.nodeId === nodeId && e.to.pin === pinName
+		);
+	}
+
+	/** Kinds whose specs expose at least one pin compatible with `type` (on the requested side). */
+	function compatibleKinds(type: PinType, wantInputs: boolean): GraphNodeKind[] {
+		const out: GraphNodeKind[] = [];
+		for (const [k, spec] of Object.entries(NODE_CATALOG)) {
+			const pins = wantInputs ? spec.inputs : spec.outputs;
+			const ok = pins.some((p) =>
+				wantInputs ? canConnect(type, p.type) : canConnect(p.type, type)
+			);
+			if (ok) out.push(k as GraphNodeKind);
+		}
+		return out;
+	}
+
+	/** Existing nodes×pins compatible with `type` on the requested side. */
+	function compatibleExistingPins(
+		type: PinType,
+		wantInputs: boolean,
+		excludeNodeId: string
+	): Array<{ node: GraphNode; pin: PinDef }> {
+		const out: Array<{ node: GraphNode; pin: PinDef }> = [];
+		for (const n of graph.nodes) {
+			if (n.id === excludeNodeId) continue;
+			const spec = NODE_CATALOG[n.kind];
+			const pins = wantInputs ? spec.inputs : spec.outputs;
+			for (const p of pins) {
+				const ok = wantInputs ? canConnect(type, p.type) : canConnect(p.type, type);
+				if (!ok) continue;
+				// Skip already-connected non-multi inputs.
+				if (wantInputs && p.multi !== true && isPinConnected(n.id, p.name, false)) continue;
+				out.push({ node: n, pin: p });
+			}
+		}
+		return out;
+	}
+
+	function openPinPopover(n: GraphNode, pin: PinDef, isOutput: boolean) {
+		const pos = isOutput ? outputPinPos(n, pin.name) : inputPinPos(n, pin.name);
+		pinPopover = {
+			nodeId: n.id,
+			pinName: pin.name,
+			isOutput,
+			type: pin.type,
+			x: pos.x,
+			y: pos.y
+		};
+	}
+
+	function closePinPopover() {
+		pinPopover = null;
+	}
+
+	/** Spawn a new node of `kind` and auto-wire it to the popover's pin. */
+	function spawnAndWireFromPopover(kind: GraphNodeKind) {
+		if (!pinPopover) return;
+		const src = graph.nodes.find((n) => n.id === pinPopover!.nodeId);
+		if (!src) return;
+		// Place the new node one column right of the source (or left for input source).
+		const targetCol = pinPopover.isOutput ? src.pos.col + 1 : src.pos.col - 1;
+		const startCol = Math.max(0, Math.min(COLS - 1, targetCol));
+		const slot = findFreeSlotNear(startCol, src.pos.row);
+		const newNode: GraphNode = {
+			id: genNodeId(kind),
+			kind,
+			pos: slot,
+			props: defaultPropsFor(kind)
+		};
+		graph.nodes.push(newNode);
+		// Find matching pin on new node and wire.
+		const spec = NODE_CATALOG[kind];
+		const targetPins = pinPopover.isOutput ? spec.inputs : spec.outputs;
+		const targetPin = targetPins.find((p) =>
+			pinPopover!.isOutput
+				? canConnect(pinPopover!.type, p.type)
+				: canConnect(p.type, pinPopover!.type)
+		);
+		if (targetPin) {
+			if (pinPopover.isOutput) {
+				addEdge(pinPopover.nodeId, pinPopover.pinName, newNode.id, targetPin.name, targetPin.multi === true);
+			} else {
+				addEdge(newNode.id, targetPin.name, pinPopover.nodeId, pinPopover.pinName, false);
+			}
+		}
+		selectedNodeId = newNode.id;
+		closePinPopover();
+	}
+
+	/** Connect popover pin to an existing node×pin pair. */
+	function connectFromPopover(targetNodeId: string, targetPinName: string, targetMulti: boolean) {
+		if (!pinPopover) return;
+		if (pinPopover.isOutput) {
+			addEdge(pinPopover.nodeId, pinPopover.pinName, targetNodeId, targetPinName, targetMulti);
+		} else {
+			addEdge(targetNodeId, targetPinName, pinPopover.nodeId, pinPopover.pinName, false);
+		}
+		closePinPopover();
 	}
 
 	// ---------- bezier path ----------
@@ -428,6 +553,7 @@
 		}
 		if (ev.key === 'Escape') {
 			pendingOutPin = null;
+			closePinPopover();
 		}
 		if (ev.key === 'Delete' || ev.key === 'Backspace') {
 			if (selectedNodeId) {
