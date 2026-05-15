@@ -118,7 +118,10 @@ export function validateGraph(graph: BetGraph): ValidationResult {
 			// Phase 18b: timestamps are seconds-since-round-start numbers
 			// internally, so Number→Timestamp is a legal coercion.
 			const isNumberToTime = fromPin.type === 'Number' && toPin.type === 'Timestamp';
-			if (!isNumberToTime) {
+			// Phase 21 (Graph 2.0): rank outputs EntityList; winner takes Entity.
+			// EntityList → Entity = take first element (head). Legal coercion.
+			const isListToEntity = fromPin.type === 'EntityList' && toPin.type === 'Entity';
+			if (!isNumberToTime && !isListToEntity) {
 				errors.push({
 					code: 'TYPE_MISMATCH',
 					message: `Typ-Konflikt: ${from.kind}.${fromPin.name} (${fromPin.type}) -> ${to.kind}.${toPin.name} (${toPin.type})`,
