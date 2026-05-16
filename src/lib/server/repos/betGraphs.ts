@@ -2,7 +2,7 @@
  * @file betGraphs.ts -- CRUD for mode-level visual bet-graphs.
  * @implements REQ-MODE-007 (Phase 6 -- visual market builder)
  */
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, inArray, sql, count } from 'drizzle-orm';
 import { db } from '../db';
 import { betGraphs, type BetGraph, type SessionBetGraph } from '../db/schema';
 
@@ -65,6 +65,19 @@ export async function updateBetGraph(
 export async function deleteBetGraph(id: string): Promise<boolean> {
 	const rows = await db.delete(betGraphs).where(eq(betGraphs.id, id)).returning({ id: betGraphs.id });
 	return rows.length > 0;
+}
+
+/** Return a map of modeId → bet-graph count for the given mode IDs. */
+export async function countByModeIds(modeIds: string[]): Promise<Map<string, number>> {
+	if (modeIds.length === 0) return new Map();
+	const rows = await db
+		.select({ modeId: betGraphs.modeId, cnt: count() })
+		.from(betGraphs)
+		.where(inArray(betGraphs.modeId, modeIds))
+		.groupBy(betGraphs.modeId);
+	const m = new Map<string, number>();
+	for (const r of rows) m.set(r.modeId, r.cnt);
+	return m;
 }
 
 /** Build the snapshot array for a session from a mode's stored graphs. */

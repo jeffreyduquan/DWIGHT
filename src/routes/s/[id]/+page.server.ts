@@ -18,7 +18,7 @@ import {
 	cancelDrink,
 	listDrinksForSession
 } from '$lib/server/repos/drinks';
-import { snapshotForMode } from '$lib/server/repos/betGraphs';
+import { snapshotForMode, countByModeIds } from '$lib/server/repos/betGraphs';
 import { emit } from '$lib/server/sse/broadcaster';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -40,13 +40,16 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const currentRound = await getCurrentRound(session.id);
 
 	// Load available modes for mode-switch picker (only for host)
-	const availableModes =
-		me.role === 'HOST'
-			? (await listAvailableForUser(locals.user.id)).map((m) => ({
-					id: m.id,
-					name: m.name
-				}))
-			: [];
+	let availableModes: { id: string; name: string; betGraphCount: number }[] = [];
+	if (me.role === 'HOST') {
+		const allModes = await listAvailableForUser(locals.user.id);
+		const counts = await countByModeIds(allModes.map((m) => m.id));
+		availableModes = allModes.map((m) => ({
+			id: m.id,
+			name: m.name,
+			betGraphCount: counts.get(m.id) ?? 0
+		}));
+	}
 
 	const userIds = Array.from(
 		new Set([

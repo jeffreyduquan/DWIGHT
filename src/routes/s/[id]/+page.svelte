@@ -351,7 +351,14 @@
 							class="glass hover:ring-primary hover:ring-2 flex w-full items-start gap-2 rounded-xl p-3 text-left transition {selectedSwitchModeId === m.id ? 'ring-primary ring-2' : ''}"
 							onclick={() => { selectedSwitchModeId = m.id; }}
 						>
-							<span class="text-sm font-medium">{m.name}</span>
+							<div class="flex flex-col gap-0.5">
+								<span class="text-sm font-medium">{m.name}</span>
+								{#if m.betGraphCount > 0}
+									<span class="text-base-content/50 text-[0.65rem]">{m.betGraphCount} Wett-Vorlage{m.betGraphCount === 1 ? '' : 'n'}</span>
+								{:else}
+									<span class="text-warning text-[0.65rem]">⚠ Keine Wett-Vorlagen – erst Bet-Graphs anlegen</span>
+								{/if}
+							</div>
 						</button>
 					</li>
 				{/each}
@@ -366,7 +373,12 @@
 				action="?/switchMode"
 				use:enhance={({ cancel }) => {
 					if (!selectedSwitchModeId) { cancel(); return; }
-					if (!confirm('Mode wirklich wechseln? Entitäten und Wett-Vorlagen werden ersetzt. Spieler und Guthaben bleiben.')) {
+					const target = switchableModes.find((m) => m.id === selectedSwitchModeId);
+					const noBetGraphs = target && target.betGraphCount === 0;
+					const msg = noBetGraphs
+						? 'Dieser Mode hat noch keine Bet-Graphs!\nDu kannst danach keine Wetten starten, bis du Bet-Graphs im Mode-Editor anlegst.\n\nTrotzdem wechseln?'
+						: 'Mode wirklich wechseln? Entitäten und Wett-Vorlagen werden ersetzt. Spieler und Guthaben bleiben.';
+					if (!confirm(msg)) {
 						cancel();
 						return;
 					}

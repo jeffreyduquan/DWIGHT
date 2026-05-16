@@ -680,19 +680,20 @@ Acceptance:
 
 ---
 
-## Phase 30 — Mode Switching ☐
+## Phase 30 — Mode Switching ◐
 **Goal:** Host can switch the active Mode of a Session mid-game (e.g. after a race game, switch to a different game type), preserving players, balances, and history.
 
 Tasks:
-- ☐ **30a Repo: `switchSessionMode()`** in `src/lib/server/repos/sessions.ts`. Guards: HOST-only, no active (non-terminal) round. In a single PG transaction: (1) UPDATE `sessions.modeId`, `sessions.trackables` (re-snapshot from new mode), `sessions.betGraphsSnapshot` (via `snapshotForMode`), clear `config.entityOverrides`; (2) DELETE all `entities` WHERE `sessionId`; (3) INSERT new entities from `mode.defaultEntities`; (4) return updated session.
-- ☐ **30b SSE event: `mode_switched`.** New event type in `src/lib/server/sse/broadcaster.ts`. Payload: `{ newModeId, newModeName }`. Clients invalidateAll() on receipt.
-- ☐ **30c Route action: `?/switchMode`** in `src/routes/s/[id]/+page.server.ts` (lobby). HOST-only guard + active-round check. Calls `switchSessionMode()` + emits `mode_switched` SSE + redirects to lobby.
-- ☐ **30d Lobby UI.** GM section on `/s/[id]/+page.svelte` shows "Mode wechseln" button when no active round. Opens a Mode-picker dropdown/modal (reuses Mode list from `/s/create`). Confirmation dialog warns: "Spieler und Guthaben bleiben. Entitäten und Wett-Vorlagen werden ersetzt."
-- ☐ **30e Info-Page refresh.** `/s/[id]/info/+page.svelte` + `+page.server.ts` already load from `session.trackables` and `entities` — no code change needed, just verify.
-- ☐ **30f Tests.** Vitest: `switchSessionMode` guards (reject if active round, reject if non-host), happy-path (players preserved, entities replaced, trackables re-snapshotted).
+- ☑ **30a Repo: `switchSessionMode()`** in `src/lib/server/repos/sessions.ts`. Guards: HOST-only, no active (non-terminal) round. In a single PG transaction: (1) UPDATE `sessions.modeId`, `sessions.trackables` (re-snapshot from new mode), `sessions.betGraphsSnapshot` (via `snapshotForMode`), clear `config.entityOverrides`; (2) DELETE all `entities` WHERE `sessionId`; (3) INSERT new entities from `mode.defaultEntities`; (4) return updated session.
+- ☑ **30b SSE event: `mode_switched`.** New event type in `src/lib/server/sse/broadcaster.ts`. Payload: `{ newModeId, newModeName }`. Clients invalidateAll() on receipt.
+- ☑ **30c Route action: `?/switchMode`** in `src/routes/s/[id]/+page.server.ts` (lobby). HOST-only guard + active-round check. Calls `switchSessionMode()` + emits `mode_switched` SSE.
+- ☑ **30d Lobby UI.** GM section on `/s/[id]/+page.svelte` shows "Mode wechseln" button when no active round. Opens a Mode-picker modal. Confirmation dialog warns: "Spieler und Guthaben bleiben. Entitäten und Wett-Vorlagen werden ersetzt."
+- ☑ **30e Info-Page refresh.** `/s/[id]/info/+page.svelte` + `+page.server.ts` already load from `session.trackables` and `entities` — no code change needed, verified.
+- ☑ **30f Tests.** Vitest: `switchSessionMode` guards (reject if active round, reject if ENDED), happy-path (players preserved, entities replaced, trackables re-snapshotted). 13 tests.
+- ☑ **30g UX: bet-graph count in mode picker.** `countByModeIds()` in `betGraphs.ts`. Mode picker shows per-mode bet-graph count + warning for modes with 0 graphs. Confirm dialog warns before switching to a mode without bet graphs.
 
 Acceptance:
-- ☐ `pnpm vitest run`: all green.
+- ☑ `pnpm vitest run`: all green (123/123).
 - ☐ `pnpm check`: 0 Errors.
 - ☐ Mode switch preserves player balances, drinks, and settled round history.
 - ☐ Entities + trackables + betGraphsSnapshot reflect the new Mode.
