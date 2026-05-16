@@ -293,6 +293,18 @@ export const actions: Actions = {
 		if ((await getRole(params.id, user.id)) !== 'HOST')
 			return fail(403, { error: 'Nur Host darf das' });
 		try {
+			// Auto-sync bet-graph snapshot from mode if session has none yet.
+			const sess = await findSession(params.id);
+			if (sess && (sess.betGraphsSnapshot ?? []).length === 0) {
+				const fresh = await snapshotForMode(sess.modeId);
+				if (fresh.length > 0) {
+					await db
+						.update(sessionsTable)
+						.set({ betGraphsSnapshot: fresh })
+						.where(eq(sessionsTable.id, params.id));
+				}
+			}
+
 			const r = await createRound(params.id);
 			// Also instantiate markets from bet-graphs (Phase 6, side-by-side).
 			try {

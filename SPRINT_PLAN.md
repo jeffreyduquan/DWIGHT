@@ -699,6 +699,14 @@ Acceptance:
 - ☐ Entities + trackables + betGraphsSnapshot reflect the new Mode.
 - ☐ SSE notifies all clients; lobby and round pages reload correctly.
 
+### Phase 30h — Bet-Graph Auto-Sync Fix ☑
+**Root cause:** When a mode has 0 bet-graphs at session-creation time, `snapshotForMode()` returns `[]`. Even if bet-graphs are later added to the mode, the session's snapshot stays empty — making the round page show "keine Bet-Graphs" permanently.
+
+**Fix (3 changes):**
+- ☑ **Auto-sync on round creation:** `createRound` action now checks if `session.betGraphsSnapshot` is empty and, if so, re-snapshots from the mode before instantiating markets. This means bet-graphs added to the mode after session creation are automatically picked up on the next round.
+- ☑ **Session create page:** Mode picker cards now show bet-graph count per mode + warning for modes with 0 graphs (links to graph editor).
+- ☑ **Round page UX:** Empty-state message improved — "Bet-Graphs vom Mode laden" button with hint text.
+
 ---
 
 ## Carry-over from MarbleTrace prototype (reference inspiration only)

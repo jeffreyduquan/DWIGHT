@@ -6,18 +6,20 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { listAvailableForUser, findById as findModeById } from '$lib/server/repos/modes';
 import { createSession } from '$lib/server/repos/sessions';
-import { snapshotForMode } from '$lib/server/repos/betGraphs';
+import { snapshotForMode, countByModeIds } from '$lib/server/repos/betGraphs';
 import { freshModeDefaultConfig } from '$lib/server/modes/defaults';
 import type { ConfirmationMode, DrinkType, SessionConfig } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(303, '/login');
 	const modes = await listAvailableForUser(locals.user.id);
+	const counts = await countByModeIds(modes.map((m) => m.id));
 	return {
 		modes: modes.map((m) => ({
 			id: m.id,
 			name: m.name,
-			defaultEntities: m.defaultEntities
+			defaultEntities: m.defaultEntities,
+			betGraphCount: counts.get(m.id) ?? 0
 		}))
 	};
 };

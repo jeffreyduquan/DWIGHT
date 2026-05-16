@@ -111,6 +111,11 @@
 								{m.defaultEntities.length} Spieler
 							</span>
 						</div>
+						{#if m.betGraphCount === 0}
+							<span class="text-warning text-[0.65rem]">⚠ Keine Bet-Graphs — <a href="/modes/{m.id}/graphs" class="underline">erst anlegen</a></span>
+						{:else}
+							<span class="text-base-content/40 text-[0.65rem]">{m.betGraphCount} Wett-Vorlage{m.betGraphCount === 1 ? '' : 'n'}</span>
+						{/if}
 					</label>
 				{/each}
 			</div>

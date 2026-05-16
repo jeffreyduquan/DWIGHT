@@ -272,10 +272,11 @@
 						</form>
 					{:else}
 						<p>Diese Session hat noch keine Bet-Graphs.</p>
-						<a href="/modes/{data.session.modeId}/graphs" class="link link-primary mt-2 inline-block">→ Bet-Graphs anlegen</a>
+						<a href="/modes/{data.session.modeId}/graphs" class="link link-primary mt-2 inline-block">→ Bet-Graphs im Mode anlegen</a>
 						<form method="POST" action="?/syncBetGraphs" use:enhance class="mt-3">
-							<button type="submit" class="btn btn-sm btn-ghost rounded-full">Danach hier: Snapshot aktualisieren</button>
+							<button type="submit" class="btn btn-sm btn-primary rounded-full">Bet-Graphs vom Mode laden</button>
 						</form>
+						<p class="text-base-content/40 mt-1 text-[0.65rem]">Erstelle Bet-Graphs im Mode, dann klicke hier — oder starte einfach die nächste Runde.</p>
 					{/if}
 				{:else}
 					Der Host hat noch keine Wetten erstellt.
